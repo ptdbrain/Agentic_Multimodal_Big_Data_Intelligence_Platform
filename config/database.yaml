@@ -1,0 +1,12 @@
+database:
+  rdbms: "postgresql"
+  host: "localhost"
+  port: 5432
+  user: "sentinel"
+  password: "sentinelpass"
+  database: "sentinel_dw"
+  schema: "public"
+  pool_size: 10
+  sqlite_fallback:
+    enabled: true
+    path: "database/sentinel.db"

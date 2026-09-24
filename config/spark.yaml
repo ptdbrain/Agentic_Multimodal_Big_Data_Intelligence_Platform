@@ -1,0 +1,13 @@
+spark:
+  app_name: "SentinelAI-BigData-Engine"
+  master: "local[*]"
+  driver_memory: "2g"
+  executor_memory: "2g"
+  shuffle_partitions: 8
+  serializer: "org.apache.spark.serializer.KryoSerializer"
+  hadoop:
+    fs.s3a.endpoint: "http://localhost:9000"
+    fs.s3a.access.key: "minioadmin"
+    fs.s3a.secret.key: "minioadmin"
+    fs.s3a.path.style.access: "true"
+    fs.s3a.impl: "org.apache.hadoop.fs.s3a.S3AFileSystem"

@@ -1,0 +1,16 @@
+storage:
+  backend: "minio"
+  local_fallback: true
+  minio:
+    endpoint: "localhost:9000"
+    access_key: "minioadmin"
+    secret_key: "minioadmin"
+    secure: false
+  buckets:
+    raw: "sentinel-raw"
+    silver: "sentinel-silver"
+    gold: "sentinel-gold"
+  local_paths:
+    bronze: "storage/datalake/bronze"
+    silver: "storage/datalake/silver"
+    gold: "storage/datalake/gold"

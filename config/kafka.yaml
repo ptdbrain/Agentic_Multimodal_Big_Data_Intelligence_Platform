@@ -1,0 +1,34 @@
+kafka:
+  bootstrap_servers: "localhost:9092"
+  client_id: "sentinel-producer"
+  topics:
+    raw_products:
+      name: "raw.products"
+      partitions: 2
+      replication_factor: 1
+      retention_ms: 604800000
+    raw_reviews:
+      name: "raw.reviews"
+      partitions: 3
+      replication_factor: 1
+      retention_ms: 604800000
+    raw_prices:
+      name: "raw.prices"
+      partitions: 2
+      replication_factor: 1
+      retention_ms: 604800000
+    raw_events:
+      name: "raw.events"
+      partitions: 3
+      replication_factor: 1
+      retention_ms: 604800000
+  producer:
+    acks: "all"
+    retries: 3
+    batch_size: 16384
+    linger_ms: 20
+    compression_type: "snappy"
+  consumer:
+    group_id: "sentinel-lake-ingestion"
+    auto_offset_reset: "earliest"
+    enable_auto_commit: false
