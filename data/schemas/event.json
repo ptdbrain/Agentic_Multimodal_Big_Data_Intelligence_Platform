@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StreamEvent",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "NEW_REVIEW",
+        "PRICE_UPDATE",
+        "RATING_UPDATE",
+        "PRODUCT_UPDATE"
+      ]
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_type",
+    "product_id",
+    "timestamp",
+    "payload"
+  ]
+}
