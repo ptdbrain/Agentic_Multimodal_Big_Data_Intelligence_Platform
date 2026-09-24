@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -44,8 +44,8 @@ class Settings:
     app_name: str = "SentinelAI"
     env: str = get_env("ENV", "development")
     repo_root: Path = REPO_ROOT
-    kafka: KafkaSettings = KafkaSettings()
-    storage: StorageSettings = StorageSettings()
-    database: DatabaseSettings = DatabaseSettings()
+    kafka: KafkaSettings = field(default_factory=KafkaSettings)
+    storage: StorageSettings = field(default_factory=StorageSettings)
+    database: DatabaseSettings = field(default_factory=DatabaseSettings)
 
 settings = Settings()
