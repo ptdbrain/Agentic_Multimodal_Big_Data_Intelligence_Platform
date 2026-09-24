@@ -1,0 +1,4727 @@
+[
+  {
+    "price_id": "pr_000001",
+    "product_id": "iphone_15_pro",
+    "price": 27990000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000002",
+    "product_id": "iphone_15_pro",
+    "price": 27570000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000003",
+    "product_id": "iphone_15_pro",
+    "price": 28730000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000004",
+    "product_id": "iphone_15_pro",
+    "price": 28690000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000005",
+    "product_id": "iphone_15_pro",
+    "price": 28750000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000006",
+    "product_id": "iphone_15_pro",
+    "price": 28640000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000007",
+    "product_id": "iphone_15_pro",
+    "price": 27480000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000008",
+    "product_id": "iphone_15_pro",
+    "price": 28130000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000009",
+    "product_id": "iphone_15_pro",
+    "price": 28410000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000010",
+    "product_id": "iphone_15_pro",
+    "price": 27910000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000011",
+    "product_id": "iphone_15_pro",
+    "price": 27910000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000012",
+    "product_id": "iphone_15_pro",
+    "price": 27560000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000013",
+    "product_id": "iphone_15_pro",
+    "price": 27670000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000014",
+    "product_id": "iphone_15_pro",
+    "price": 28630000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000015",
+    "product_id": "iphone_15_pro",
+    "price": 27580000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000016",
+    "product_id": "iphone_15_pro",
+    "price": 28330000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000017",
+    "product_id": "iphone_15_pro",
+    "price": 27590000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000018",
+    "product_id": "iphone_15_pro",
+    "price": 27980000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000019",
+    "product_id": "iphone_15_pro",
+    "price": 27740000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000020",
+    "product_id": "iphone_15_pro",
+    "price": 28470000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000021",
+    "product_id": "iphone_15_pro",
+    "price": 28660000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000022",
+    "product_id": "iphone_15_pro",
+    "price": 27960000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000023",
+    "product_id": "iphone_15_pro",
+    "price": 28650000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000024",
+    "product_id": "iphone_15_pro",
+    "price": 27640000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000025",
+    "product_id": "iphone_15_pro",
+    "price": 27800000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000026",
+    "product_id": "iphone_15_pro",
+    "price": 28520000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000027",
+    "product_id": "iphone_15_pro",
+    "price": 28750000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000028",
+    "product_id": "iphone_15_pro",
+    "price": 28200000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000029",
+    "product_id": "iphone_15_pro",
+    "price": 28660000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000030",
+    "product_id": "iphone_15_pro",
+    "price": 28250000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000031",
+    "product_id": "iphone_15_pro",
+    "price": 27540000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000032",
+    "product_id": "iphone_15_pro",
+    "price": 28060000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000033",
+    "product_id": "iphone_15_pro",
+    "price": 28540000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000034",
+    "product_id": "iphone_15_pro",
+    "price": 27620000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000035",
+    "product_id": "iphone_15_pro",
+    "price": 27520000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000036",
+    "product_id": "iphone_15",
+    "price": 19670000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000037",
+    "product_id": "iphone_15",
+    "price": 19630000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000038",
+    "product_id": "iphone_15",
+    "price": 19620000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000039",
+    "product_id": "iphone_15",
+    "price": 19310000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000040",
+    "product_id": "iphone_15",
+    "price": 19860000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000041",
+    "product_id": "iphone_15",
+    "price": 19040000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000042",
+    "product_id": "iphone_15",
+    "price": 18980000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000043",
+    "product_id": "iphone_15",
+    "price": 19280000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000044",
+    "product_id": "iphone_15",
+    "price": 19690000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000045",
+    "product_id": "iphone_15",
+    "price": 19160000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000046",
+    "product_id": "iphone_15",
+    "price": 18990000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000047",
+    "product_id": "iphone_15",
+    "price": 19480000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000048",
+    "product_id": "iphone_15",
+    "price": 19410000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000049",
+    "product_id": "iphone_15",
+    "price": 19460000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000050",
+    "product_id": "iphone_15",
+    "price": 18920000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000051",
+    "product_id": "iphone_15",
+    "price": 19090000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000052",
+    "product_id": "iphone_15",
+    "price": 19680000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000053",
+    "product_id": "iphone_15",
+    "price": 19430000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000054",
+    "product_id": "iphone_15",
+    "price": 19730000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000055",
+    "product_id": "iphone_15",
+    "price": 19920000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000056",
+    "product_id": "iphone_15",
+    "price": 19080000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000057",
+    "product_id": "iphone_15",
+    "price": 19590000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000058",
+    "product_id": "iphone_15",
+    "price": 19790000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000059",
+    "product_id": "iphone_15",
+    "price": 19930000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000060",
+    "product_id": "iphone_15",
+    "price": 19940000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000061",
+    "product_id": "iphone_15",
+    "price": 19850000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000062",
+    "product_id": "iphone_15",
+    "price": 19540000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000063",
+    "product_id": "iphone_15",
+    "price": 19190000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000064",
+    "product_id": "iphone_15",
+    "price": 19070000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000065",
+    "product_id": "iphone_15",
+    "price": 19390000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000066",
+    "product_id": "iphone_15",
+    "price": 19630000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000067",
+    "product_id": "iphone_15",
+    "price": 19310000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000068",
+    "product_id": "iphone_15",
+    "price": 19270000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000069",
+    "product_id": "iphone_15",
+    "price": 19790000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000070",
+    "product_id": "iphone_15",
+    "price": 19070000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000071",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29740000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000072",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30390000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000073",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30140000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000074",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30590000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000075",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29220000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000076",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29270000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000077",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30470000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000078",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30320000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000079",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30380000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000080",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30400000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000081",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30370000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000082",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30170000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000083",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29950000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000084",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29130000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000085",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29650000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000086",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30820000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000087",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29940000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000088",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29480000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000089",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30530000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000090",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30280000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000091",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29720000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000092",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30340000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000093",
+    "product_id": "galaxy_s24_ultra",
+    "price": 4500000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000094",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29640000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000095",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30160000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000096",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29720000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000097",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30140000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000098",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30860000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000099",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30170000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000100",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30660000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000101",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29540000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000102",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30220000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000103",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30010000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000104",
+    "product_id": "galaxy_s24_ultra",
+    "price": 30670000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000105",
+    "product_id": "galaxy_s24_ultra",
+    "price": 29250000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000106",
+    "product_id": "galaxy_s24",
+    "price": 17770000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000107",
+    "product_id": "galaxy_s24",
+    "price": 17670000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000108",
+    "product_id": "galaxy_s24",
+    "price": 17990000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000109",
+    "product_id": "galaxy_s24",
+    "price": 17640000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000110",
+    "product_id": "galaxy_s24",
+    "price": 18150000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000111",
+    "product_id": "galaxy_s24",
+    "price": 17720000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000112",
+    "product_id": "galaxy_s24",
+    "price": 18300000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000113",
+    "product_id": "galaxy_s24",
+    "price": 17480000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000114",
+    "product_id": "galaxy_s24",
+    "price": 17850000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000115",
+    "product_id": "galaxy_s24",
+    "price": 18220000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000116",
+    "product_id": "galaxy_s24",
+    "price": 18010000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000117",
+    "product_id": "galaxy_s24",
+    "price": 18320000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000118",
+    "product_id": "galaxy_s24",
+    "price": 18070000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000119",
+    "product_id": "galaxy_s24",
+    "price": 17930000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000120",
+    "product_id": "galaxy_s24",
+    "price": 17920000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000121",
+    "product_id": "galaxy_s24",
+    "price": 18430000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000122",
+    "product_id": "galaxy_s24",
+    "price": 17820000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000123",
+    "product_id": "galaxy_s24",
+    "price": 18480000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000124",
+    "product_id": "galaxy_s24",
+    "price": 18420000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000125",
+    "product_id": "galaxy_s24",
+    "price": 17870000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000126",
+    "product_id": "galaxy_s24",
+    "price": 18030000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000127",
+    "product_id": "galaxy_s24",
+    "price": 17890000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000128",
+    "product_id": "galaxy_s24",
+    "price": 17710000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000129",
+    "product_id": "galaxy_s24",
+    "price": 18300000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000130",
+    "product_id": "galaxy_s24",
+    "price": 17970000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000131",
+    "product_id": "galaxy_s24",
+    "price": 18100000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000132",
+    "product_id": "galaxy_s24",
+    "price": 17530000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000133",
+    "product_id": "galaxy_s24",
+    "price": 17930000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000134",
+    "product_id": "galaxy_s24",
+    "price": 17870000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000135",
+    "product_id": "galaxy_s24",
+    "price": 18170000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000136",
+    "product_id": "galaxy_s24",
+    "price": 18020000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000137",
+    "product_id": "galaxy_s24",
+    "price": 18330000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000138",
+    "product_id": "galaxy_s24",
+    "price": 18410000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000139",
+    "product_id": "galaxy_s24",
+    "price": 18480000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000140",
+    "product_id": "galaxy_s24",
+    "price": 18410000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000141",
+    "product_id": "xiaomi_14_pro",
+    "price": 17310000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000142",
+    "product_id": "xiaomi_14_pro",
+    "price": 17210000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000143",
+    "product_id": "xiaomi_14_pro",
+    "price": 16680000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000144",
+    "product_id": "xiaomi_14_pro",
+    "price": 17060000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000145",
+    "product_id": "xiaomi_14_pro",
+    "price": 17280000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000146",
+    "product_id": "xiaomi_14_pro",
+    "price": 17450000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000147",
+    "product_id": "xiaomi_14_pro",
+    "price": 16770000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000148",
+    "product_id": "xiaomi_14_pro",
+    "price": 16930000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000149",
+    "product_id": "xiaomi_14_pro",
+    "price": 16680000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000150",
+    "product_id": "xiaomi_14_pro",
+    "price": 16840000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000151",
+    "product_id": "xiaomi_14_pro",
+    "price": 16530000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000152",
+    "product_id": "xiaomi_14_pro",
+    "price": 17340000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000153",
+    "product_id": "xiaomi_14_pro",
+    "price": 17080000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000154",
+    "product_id": "xiaomi_14_pro",
+    "price": 16850000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000155",
+    "product_id": "xiaomi_14_pro",
+    "price": 16490000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000156",
+    "product_id": "xiaomi_14_pro",
+    "price": 17100000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000157",
+    "product_id": "xiaomi_14_pro",
+    "price": 16960000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000158",
+    "product_id": "xiaomi_14_pro",
+    "price": 16970000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000159",
+    "product_id": "xiaomi_14_pro",
+    "price": 16880000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000160",
+    "product_id": "xiaomi_14_pro",
+    "price": 16820000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000161",
+    "product_id": "xiaomi_14_pro",
+    "price": 16790000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000162",
+    "product_id": "xiaomi_14_pro",
+    "price": 16630000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000163",
+    "product_id": "xiaomi_14_pro",
+    "price": 16970000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000164",
+    "product_id": "xiaomi_14_pro",
+    "price": 16930000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000165",
+    "product_id": "xiaomi_14_pro",
+    "price": 17270000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000166",
+    "product_id": "xiaomi_14_pro",
+    "price": 16770000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000167",
+    "product_id": "xiaomi_14_pro",
+    "price": 16610000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000168",
+    "product_id": "xiaomi_14_pro",
+    "price": 16560000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000169",
+    "product_id": "xiaomi_14_pro",
+    "price": 17410000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000170",
+    "product_id": "xiaomi_14_pro",
+    "price": 16870000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000171",
+    "product_id": "xiaomi_14_pro",
+    "price": 17440000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000172",
+    "product_id": "xiaomi_14_pro",
+    "price": 17370000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000173",
+    "product_id": "xiaomi_14_pro",
+    "price": 16890000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000174",
+    "product_id": "xiaomi_14_pro",
+    "price": 17200000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000175",
+    "product_id": "xiaomi_14_pro",
+    "price": 16880000.0,
+    "currency": "VND",
+    "seller": "Xiaomi Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000176",
+    "product_id": "pixel_8_pro",
+    "price": 18260000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000177",
+    "product_id": "pixel_8_pro",
+    "price": 18100000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000178",
+    "product_id": "pixel_8_pro",
+    "price": 19030000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000179",
+    "product_id": "pixel_8_pro",
+    "price": 18180000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000180",
+    "product_id": "pixel_8_pro",
+    "price": 18250000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000181",
+    "product_id": "pixel_8_pro",
+    "price": 18550000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000182",
+    "product_id": "pixel_8_pro",
+    "price": 18500000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000183",
+    "product_id": "pixel_8_pro",
+    "price": 18660000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000184",
+    "product_id": "pixel_8_pro",
+    "price": 18140000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000185",
+    "product_id": "pixel_8_pro",
+    "price": 18370000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000186",
+    "product_id": "pixel_8_pro",
+    "price": 18910000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000187",
+    "product_id": "pixel_8_pro",
+    "price": 18790000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000188",
+    "product_id": "pixel_8_pro",
+    "price": 18600000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000189",
+    "product_id": "pixel_8_pro",
+    "price": 18070000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000190",
+    "product_id": "pixel_8_pro",
+    "price": 17960000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000191",
+    "product_id": "pixel_8_pro",
+    "price": 18600000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000192",
+    "product_id": "pixel_8_pro",
+    "price": 18690000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000193",
+    "product_id": "pixel_8_pro",
+    "price": 18590000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000194",
+    "product_id": "pixel_8_pro",
+    "price": 18510000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000195",
+    "product_id": "pixel_8_pro",
+    "price": 18840000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000196",
+    "product_id": "pixel_8_pro",
+    "price": 18980000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000197",
+    "product_id": "pixel_8_pro",
+    "price": 18590000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000198",
+    "product_id": "pixel_8_pro",
+    "price": 18440000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000199",
+    "product_id": "pixel_8_pro",
+    "price": 18640000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000200",
+    "product_id": "pixel_8_pro",
+    "price": 18500000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000201",
+    "product_id": "pixel_8_pro",
+    "price": 18200000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000202",
+    "product_id": "pixel_8_pro",
+    "price": 18770000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000203",
+    "product_id": "pixel_8_pro",
+    "price": 18410000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000204",
+    "product_id": "pixel_8_pro",
+    "price": 18660000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000205",
+    "product_id": "pixel_8_pro",
+    "price": 18720000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000206",
+    "product_id": "pixel_8_pro",
+    "price": 18110000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000207",
+    "product_id": "pixel_8_pro",
+    "price": 18650000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000208",
+    "product_id": "pixel_8_pro",
+    "price": 18790000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000209",
+    "product_id": "pixel_8_pro",
+    "price": 18200000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000210",
+    "product_id": "pixel_8_pro",
+    "price": 19010000.0,
+    "currency": "VND",
+    "seller": "Google Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000211",
+    "product_id": "rog_phone_8",
+    "price": 25710000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000212",
+    "product_id": "rog_phone_8",
+    "price": 25690000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000213",
+    "product_id": "rog_phone_8",
+    "price": 24870000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000214",
+    "product_id": "rog_phone_8",
+    "price": 24300000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000215",
+    "product_id": "rog_phone_8",
+    "price": 24850000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000216",
+    "product_id": "rog_phone_8",
+    "price": 25110000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000217",
+    "product_id": "rog_phone_8",
+    "price": 25420000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000218",
+    "product_id": "rog_phone_8",
+    "price": 25200000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000219",
+    "product_id": "rog_phone_8",
+    "price": 25390000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000220",
+    "product_id": "rog_phone_8",
+    "price": 24830000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000221",
+    "product_id": "rog_phone_8",
+    "price": 24850000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000222",
+    "product_id": "rog_phone_8",
+    "price": 25510000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000223",
+    "product_id": "rog_phone_8",
+    "price": 24550000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000224",
+    "product_id": "rog_phone_8",
+    "price": 25350000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000225",
+    "product_id": "rog_phone_8",
+    "price": 25030000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000226",
+    "product_id": "rog_phone_8",
+    "price": 25220000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000227",
+    "product_id": "rog_phone_8",
+    "price": 25340000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000228",
+    "product_id": "rog_phone_8",
+    "price": 24950000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000229",
+    "product_id": "rog_phone_8",
+    "price": 25370000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000230",
+    "product_id": "rog_phone_8",
+    "price": 25070000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000231",
+    "product_id": "rog_phone_8",
+    "price": 25300000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000232",
+    "product_id": "rog_phone_8",
+    "price": 25250000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000233",
+    "product_id": "rog_phone_8",
+    "price": 24770000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000234",
+    "product_id": "rog_phone_8",
+    "price": 24450000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000235",
+    "product_id": "rog_phone_8",
+    "price": 24420000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000236",
+    "product_id": "rog_phone_8",
+    "price": 25620000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000237",
+    "product_id": "rog_phone_8",
+    "price": 24810000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000238",
+    "product_id": "rog_phone_8",
+    "price": 25320000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000239",
+    "product_id": "rog_phone_8",
+    "price": 25120000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000240",
+    "product_id": "rog_phone_8",
+    "price": 25050000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000241",
+    "product_id": "rog_phone_8",
+    "price": 25420000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000242",
+    "product_id": "rog_phone_8",
+    "price": 24430000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000243",
+    "product_id": "rog_phone_8",
+    "price": 24560000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000244",
+    "product_id": "rog_phone_8",
+    "price": 24340000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000245",
+    "product_id": "rog_phone_8",
+    "price": 25550000.0,
+    "currency": "VND",
+    "seller": "Asus Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000246",
+    "product_id": "macbook_pro_m3",
+    "price": 40530000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000247",
+    "product_id": "macbook_pro_m3",
+    "price": 39810000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000248",
+    "product_id": "macbook_pro_m3",
+    "price": 40020000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000249",
+    "product_id": "macbook_pro_m3",
+    "price": 40450000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000250",
+    "product_id": "macbook_pro_m3",
+    "price": 40510000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000251",
+    "product_id": "macbook_pro_m3",
+    "price": 40080000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000252",
+    "product_id": "macbook_pro_m3",
+    "price": 39790000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000253",
+    "product_id": "macbook_pro_m3",
+    "price": 40260000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000254",
+    "product_id": "macbook_pro_m3",
+    "price": 39600000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000255",
+    "product_id": "macbook_pro_m3",
+    "price": 39640000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000256",
+    "product_id": "macbook_pro_m3",
+    "price": 39250000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000257",
+    "product_id": "macbook_pro_m3",
+    "price": 39350000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000258",
+    "product_id": "macbook_pro_m3",
+    "price": 39890000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000259",
+    "product_id": "macbook_pro_m3",
+    "price": 40730000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000260",
+    "product_id": "macbook_pro_m3",
+    "price": 38910000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000261",
+    "product_id": "macbook_pro_m3",
+    "price": 40150000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000262",
+    "product_id": "macbook_pro_m3",
+    "price": 40540000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000263",
+    "product_id": "macbook_pro_m3",
+    "price": 39350000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000264",
+    "product_id": "macbook_pro_m3",
+    "price": 38890000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000265",
+    "product_id": "macbook_pro_m3",
+    "price": 39450000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000266",
+    "product_id": "macbook_pro_m3",
+    "price": 39180000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000267",
+    "product_id": "macbook_pro_m3",
+    "price": 39230000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000268",
+    "product_id": "macbook_pro_m3",
+    "price": 39900000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000269",
+    "product_id": "macbook_pro_m3",
+    "price": 39250000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000270",
+    "product_id": "macbook_pro_m3",
+    "price": 40170000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000271",
+    "product_id": "macbook_pro_m3",
+    "price": 40200000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000272",
+    "product_id": "macbook_pro_m3",
+    "price": 39850000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000273",
+    "product_id": "macbook_pro_m3",
+    "price": 39780000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000274",
+    "product_id": "macbook_pro_m3",
+    "price": 41170000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000275",
+    "product_id": "macbook_pro_m3",
+    "price": 38830000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000276",
+    "product_id": "macbook_pro_m3",
+    "price": 39720000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000277",
+    "product_id": "macbook_pro_m3",
+    "price": 39810000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000278",
+    "product_id": "macbook_pro_m3",
+    "price": 40160000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000279",
+    "product_id": "macbook_pro_m3",
+    "price": 39840000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000280",
+    "product_id": "macbook_pro_m3",
+    "price": 39630000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000281",
+    "product_id": "macbook_air_m3",
+    "price": 27920000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000282",
+    "product_id": "macbook_air_m3",
+    "price": 28250000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000283",
+    "product_id": "macbook_air_m3",
+    "price": 27080000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000284",
+    "product_id": "macbook_air_m3",
+    "price": 28080000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000285",
+    "product_id": "macbook_air_m3",
+    "price": 27870000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000286",
+    "product_id": "macbook_air_m3",
+    "price": 28100000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000287",
+    "product_id": "macbook_air_m3",
+    "price": 27590000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000288",
+    "product_id": "macbook_air_m3",
+    "price": 28140000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000289",
+    "product_id": "macbook_air_m3",
+    "price": 28100000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000290",
+    "product_id": "macbook_air_m3",
+    "price": 28130000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000291",
+    "product_id": "macbook_air_m3",
+    "price": 26790000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000292",
+    "product_id": "macbook_air_m3",
+    "price": 27530000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000293",
+    "product_id": "macbook_air_m3",
+    "price": 28010000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000294",
+    "product_id": "macbook_air_m3",
+    "price": 27040000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000295",
+    "product_id": "macbook_air_m3",
+    "price": 27730000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000296",
+    "product_id": "macbook_air_m3",
+    "price": 27950000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000297",
+    "product_id": "macbook_air_m3",
+    "price": 27400000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000298",
+    "product_id": "macbook_air_m3",
+    "price": 27760000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000299",
+    "product_id": "macbook_air_m3",
+    "price": 27580000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000300",
+    "product_id": "macbook_air_m3",
+    "price": 27120000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000301",
+    "product_id": "macbook_air_m3",
+    "price": 27050000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000302",
+    "product_id": "macbook_air_m3",
+    "price": 27090000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000303",
+    "product_id": "macbook_air_m3",
+    "price": 27290000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000304",
+    "product_id": "macbook_air_m3",
+    "price": 27070000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000305",
+    "product_id": "macbook_air_m3",
+    "price": 26750000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000306",
+    "product_id": "macbook_air_m3",
+    "price": 26770000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000307",
+    "product_id": "macbook_air_m3",
+    "price": 27420000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000308",
+    "product_id": "macbook_air_m3",
+    "price": 28290000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000309",
+    "product_id": "macbook_air_m3",
+    "price": 26980000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000310",
+    "product_id": "macbook_air_m3",
+    "price": 27290000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000311",
+    "product_id": "macbook_air_m3",
+    "price": 26690000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000312",
+    "product_id": "macbook_air_m3",
+    "price": 26910000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000313",
+    "product_id": "macbook_air_m3",
+    "price": 26730000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000314",
+    "product_id": "macbook_air_m3",
+    "price": 26960000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000315",
+    "product_id": "macbook_air_m3",
+    "price": 27090000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000316",
+    "product_id": "dell_xps_15",
+    "price": 44880000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000317",
+    "product_id": "dell_xps_15",
+    "price": 44700000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000318",
+    "product_id": "dell_xps_15",
+    "price": 45530000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000319",
+    "product_id": "dell_xps_15",
+    "price": 47210000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000320",
+    "product_id": "dell_xps_15",
+    "price": 45710000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000321",
+    "product_id": "dell_xps_15",
+    "price": 46970000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000322",
+    "product_id": "dell_xps_15",
+    "price": 45720000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000323",
+    "product_id": "dell_xps_15",
+    "price": 44750000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000324",
+    "product_id": "dell_xps_15",
+    "price": 45660000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000325",
+    "product_id": "dell_xps_15",
+    "price": 45610000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000326",
+    "product_id": "dell_xps_15",
+    "price": 45790000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000327",
+    "product_id": "dell_xps_15",
+    "price": 46340000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000328",
+    "product_id": "dell_xps_15",
+    "price": 44750000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000329",
+    "product_id": "dell_xps_15",
+    "price": 44720000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000330",
+    "product_id": "dell_xps_15",
+    "price": 45660000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000331",
+    "product_id": "dell_xps_15",
+    "price": 45540000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000332",
+    "product_id": "dell_xps_15",
+    "price": 44970000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000333",
+    "product_id": "dell_xps_15",
+    "price": 47010000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000334",
+    "product_id": "dell_xps_15",
+    "price": 45570000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000335",
+    "product_id": "dell_xps_15",
+    "price": 46000000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000336",
+    "product_id": "dell_xps_15",
+    "price": 46320000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000337",
+    "product_id": "dell_xps_15",
+    "price": 47330000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000338",
+    "product_id": "dell_xps_15",
+    "price": 44730000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000339",
+    "product_id": "dell_xps_15",
+    "price": 45450000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000340",
+    "product_id": "dell_xps_15",
+    "price": 47290000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000341",
+    "product_id": "dell_xps_15",
+    "price": 47310000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000342",
+    "product_id": "dell_xps_15",
+    "price": 47000000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000343",
+    "product_id": "dell_xps_15",
+    "price": 47360000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000344",
+    "product_id": "dell_xps_15",
+    "price": 46380000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000345",
+    "product_id": "dell_xps_15",
+    "price": 44770000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000346",
+    "product_id": "dell_xps_15",
+    "price": 47360000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000347",
+    "product_id": "dell_xps_15",
+    "price": 47150000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000348",
+    "product_id": "dell_xps_15",
+    "price": 46610000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000349",
+    "product_id": "dell_xps_15",
+    "price": 45460000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000350",
+    "product_id": "dell_xps_15",
+    "price": 46730000.0,
+    "currency": "VND",
+    "seller": "Dell Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000351",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38040000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000352",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39510000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000353",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38890000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000354",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38230000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000355",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38760000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000356",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38380000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000357",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38750000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000358",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39860000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000359",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38100000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000360",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39680000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000361",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 37980000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000362",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38460000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000363",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38110000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000364",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38720000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000365",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39210000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000366",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38100000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000367",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39280000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000368",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38570000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000369",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39870000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000370",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39400000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000371",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39960000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000372",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39920000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000373",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38550000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000374",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39150000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000375",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39040000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000376",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38440000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000377",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39130000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000378",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38130000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000379",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38350000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000380",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39750000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000381",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39620000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000382",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38100000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000383",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39260000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000384",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 38490000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000385",
+    "product_id": "thinkpad_x1_carbon",
+    "price": 39010000.0,
+    "currency": "VND",
+    "seller": "Lenovo Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000386",
+    "product_id": "ipad_pro_m4",
+    "price": 29720000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000387",
+    "product_id": "ipad_pro_m4",
+    "price": 29530000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000388",
+    "product_id": "ipad_pro_m4",
+    "price": 28490000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000389",
+    "product_id": "ipad_pro_m4",
+    "price": 29170000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000390",
+    "product_id": "ipad_pro_m4",
+    "price": 28680000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000391",
+    "product_id": "ipad_pro_m4",
+    "price": 28610000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000392",
+    "product_id": "ipad_pro_m4",
+    "price": 28580000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000393",
+    "product_id": "ipad_pro_m4",
+    "price": 29370000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000394",
+    "product_id": "ipad_pro_m4",
+    "price": 28310000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000395",
+    "product_id": "ipad_pro_m4",
+    "price": 28680000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000396",
+    "product_id": "ipad_pro_m4",
+    "price": 28400000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000397",
+    "product_id": "ipad_pro_m4",
+    "price": 28160000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000398",
+    "product_id": "ipad_pro_m4",
+    "price": 28280000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000399",
+    "product_id": "ipad_pro_m4",
+    "price": 28820000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000400",
+    "product_id": "ipad_pro_m4",
+    "price": 28660000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000401",
+    "product_id": "ipad_pro_m4",
+    "price": 28920000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000402",
+    "product_id": "ipad_pro_m4",
+    "price": 28530000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000403",
+    "product_id": "ipad_pro_m4",
+    "price": 28610000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000404",
+    "product_id": "ipad_pro_m4",
+    "price": 29090000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000405",
+    "product_id": "ipad_pro_m4",
+    "price": 29850000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000406",
+    "product_id": "ipad_pro_m4",
+    "price": 28560000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000407",
+    "product_id": "ipad_pro_m4",
+    "price": 28570000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000408",
+    "product_id": "ipad_pro_m4",
+    "price": 28950000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000409",
+    "product_id": "ipad_pro_m4",
+    "price": 29100000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000410",
+    "product_id": "ipad_pro_m4",
+    "price": 28160000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000411",
+    "product_id": "ipad_pro_m4",
+    "price": 29560000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000412",
+    "product_id": "ipad_pro_m4",
+    "price": 28710000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000413",
+    "product_id": "ipad_pro_m4",
+    "price": 29190000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000414",
+    "product_id": "ipad_pro_m4",
+    "price": 29630000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000415",
+    "product_id": "ipad_pro_m4",
+    "price": 29850000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000416",
+    "product_id": "ipad_pro_m4",
+    "price": 28180000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000417",
+    "product_id": "ipad_pro_m4",
+    "price": 29220000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000418",
+    "product_id": "ipad_pro_m4",
+    "price": 29210000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000419",
+    "product_id": "ipad_pro_m4",
+    "price": 29130000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000420",
+    "product_id": "ipad_pro_m4",
+    "price": 29590000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000421",
+    "product_id": "galaxy_tab_s9",
+    "price": 16200000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000422",
+    "product_id": "galaxy_tab_s9",
+    "price": 16790000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000423",
+    "product_id": "galaxy_tab_s9",
+    "price": 16010000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000424",
+    "product_id": "galaxy_tab_s9",
+    "price": 16100000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000425",
+    "product_id": "galaxy_tab_s9",
+    "price": 16570000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000426",
+    "product_id": "galaxy_tab_s9",
+    "price": 16780000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000427",
+    "product_id": "galaxy_tab_s9",
+    "price": 16470000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000428",
+    "product_id": "galaxy_tab_s9",
+    "price": 16680000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000429",
+    "product_id": "galaxy_tab_s9",
+    "price": 16590000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000430",
+    "product_id": "galaxy_tab_s9",
+    "price": 16220000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000431",
+    "product_id": "galaxy_tab_s9",
+    "price": 16130000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000432",
+    "product_id": "galaxy_tab_s9",
+    "price": 16370000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000433",
+    "product_id": "galaxy_tab_s9",
+    "price": 16390000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000434",
+    "product_id": "galaxy_tab_s9",
+    "price": 16910000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000435",
+    "product_id": "galaxy_tab_s9",
+    "price": 16110000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000436",
+    "product_id": "galaxy_tab_s9",
+    "price": 16170000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000437",
+    "product_id": "galaxy_tab_s9",
+    "price": 16040000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000438",
+    "product_id": "galaxy_tab_s9",
+    "price": 16380000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000439",
+    "product_id": "galaxy_tab_s9",
+    "price": 16590000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000440",
+    "product_id": "galaxy_tab_s9",
+    "price": 16660000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000441",
+    "product_id": "galaxy_tab_s9",
+    "price": 16750000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000442",
+    "product_id": "galaxy_tab_s9",
+    "price": 16010000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000443",
+    "product_id": "galaxy_tab_s9",
+    "price": 16960000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000444",
+    "product_id": "galaxy_tab_s9",
+    "price": 16700000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000445",
+    "product_id": "galaxy_tab_s9",
+    "price": 16600000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000446",
+    "product_id": "galaxy_tab_s9",
+    "price": 16430000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000447",
+    "product_id": "galaxy_tab_s9",
+    "price": 16970000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000448",
+    "product_id": "galaxy_tab_s9",
+    "price": 16820000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000449",
+    "product_id": "galaxy_tab_s9",
+    "price": 16490000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000450",
+    "product_id": "galaxy_tab_s9",
+    "price": 16670000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000451",
+    "product_id": "galaxy_tab_s9",
+    "price": 16020000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000452",
+    "product_id": "galaxy_tab_s9",
+    "price": 16940000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000453",
+    "product_id": "galaxy_tab_s9",
+    "price": 16520000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000454",
+    "product_id": "galaxy_tab_s9",
+    "price": 16540000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000455",
+    "product_id": "galaxy_tab_s9",
+    "price": 16200000.0,
+    "currency": "VND",
+    "seller": "Samsung Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000456",
+    "product_id": "sony_wh1000xm5",
+    "price": 7780000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000457",
+    "product_id": "sony_wh1000xm5",
+    "price": 7820000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000458",
+    "product_id": "sony_wh1000xm5",
+    "price": 7980000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000459",
+    "product_id": "sony_wh1000xm5",
+    "price": 7820000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000460",
+    "product_id": "sony_wh1000xm5",
+    "price": 8140000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000461",
+    "product_id": "sony_wh1000xm5",
+    "price": 8020000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000462",
+    "product_id": "sony_wh1000xm5",
+    "price": 7940000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000463",
+    "product_id": "sony_wh1000xm5",
+    "price": 7910000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000464",
+    "product_id": "sony_wh1000xm5",
+    "price": 8110000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000465",
+    "product_id": "sony_wh1000xm5",
+    "price": 7920000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000466",
+    "product_id": "sony_wh1000xm5",
+    "price": 8180000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000467",
+    "product_id": "sony_wh1000xm5",
+    "price": 7970000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000468",
+    "product_id": "sony_wh1000xm5",
+    "price": 8100000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000469",
+    "product_id": "sony_wh1000xm5",
+    "price": 8170000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000470",
+    "product_id": "sony_wh1000xm5",
+    "price": 7890000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000471",
+    "product_id": "sony_wh1000xm5",
+    "price": 8120000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000472",
+    "product_id": "sony_wh1000xm5",
+    "price": 7770000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000473",
+    "product_id": "sony_wh1000xm5",
+    "price": 7890000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000474",
+    "product_id": "sony_wh1000xm5",
+    "price": 7760000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000475",
+    "product_id": "sony_wh1000xm5",
+    "price": 8010000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000476",
+    "product_id": "sony_wh1000xm5",
+    "price": 7940000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000477",
+    "product_id": "sony_wh1000xm5",
+    "price": 7890000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000478",
+    "product_id": "sony_wh1000xm5",
+    "price": 8140000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000479",
+    "product_id": "sony_wh1000xm5",
+    "price": 8070000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000480",
+    "product_id": "sony_wh1000xm5",
+    "price": 7860000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000481",
+    "product_id": "sony_wh1000xm5",
+    "price": 7940000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000482",
+    "product_id": "sony_wh1000xm5",
+    "price": 7990000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000483",
+    "product_id": "sony_wh1000xm5",
+    "price": 7820000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000484",
+    "product_id": "sony_wh1000xm5",
+    "price": 8070000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000485",
+    "product_id": "sony_wh1000xm5",
+    "price": 7750000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000486",
+    "product_id": "sony_wh1000xm5",
+    "price": 8200000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000487",
+    "product_id": "sony_wh1000xm5",
+    "price": 7770000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000488",
+    "product_id": "sony_wh1000xm5",
+    "price": 8110000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000489",
+    "product_id": "sony_wh1000xm5",
+    "price": 8020000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000490",
+    "product_id": "sony_wh1000xm5",
+    "price": 8190000.0,
+    "currency": "VND",
+    "seller": "Sony Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000491",
+    "product_id": "airpods_pro_2",
+    "price": 5640000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000492",
+    "product_id": "airpods_pro_2",
+    "price": 5530000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000493",
+    "product_id": "airpods_pro_2",
+    "price": 5360000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000494",
+    "product_id": "airpods_pro_2",
+    "price": 5340000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-23T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000495",
+    "product_id": "airpods_pro_2",
+    "price": 5610000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-24T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000496",
+    "product_id": "airpods_pro_2",
+    "price": 5510000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-25T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000497",
+    "product_id": "airpods_pro_2",
+    "price": 5570000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-26T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000498",
+    "product_id": "airpods_pro_2",
+    "price": 5540000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-27T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000499",
+    "product_id": "airpods_pro_2",
+    "price": 5570000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-28T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000500",
+    "product_id": "airpods_pro_2",
+    "price": 5380000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-29T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000501",
+    "product_id": "airpods_pro_2",
+    "price": 5490000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-30T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000502",
+    "product_id": "airpods_pro_2",
+    "price": 5430000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-08-31T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000503",
+    "product_id": "airpods_pro_2",
+    "price": 5590000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-01T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000504",
+    "product_id": "airpods_pro_2",
+    "price": 5360000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-02T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000505",
+    "product_id": "airpods_pro_2",
+    "price": 5340000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-03T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000506",
+    "product_id": "airpods_pro_2",
+    "price": 5600000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-04T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000507",
+    "product_id": "airpods_pro_2",
+    "price": 5440000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-05T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000508",
+    "product_id": "airpods_pro_2",
+    "price": 5600000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-06T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000509",
+    "product_id": "airpods_pro_2",
+    "price": 5470000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-07T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000510",
+    "product_id": "airpods_pro_2",
+    "price": 5450000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-08T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000511",
+    "product_id": "airpods_pro_2",
+    "price": 5430000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-09T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000512",
+    "product_id": "airpods_pro_2",
+    "price": 5330000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-10T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000513",
+    "product_id": "airpods_pro_2",
+    "price": 5560000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-11T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000514",
+    "product_id": "airpods_pro_2",
+    "price": 5630000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-12T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000515",
+    "product_id": "airpods_pro_2",
+    "price": 5450000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-13T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000516",
+    "product_id": "airpods_pro_2",
+    "price": 5450000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-14T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000517",
+    "product_id": "airpods_pro_2",
+    "price": 5370000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-15T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000518",
+    "product_id": "airpods_pro_2",
+    "price": 5520000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-16T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000519",
+    "product_id": "airpods_pro_2",
+    "price": 5520000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-17T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000520",
+    "product_id": "airpods_pro_2",
+    "price": 5450000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-18T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000521",
+    "product_id": "airpods_pro_2",
+    "price": 5470000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-19T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000522",
+    "product_id": "airpods_pro_2",
+    "price": 5620000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-20T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000523",
+    "product_id": "airpods_pro_2",
+    "price": 5630000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-21T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000524",
+    "product_id": "airpods_pro_2",
+    "price": 5580000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-22T10:00:00Z",
+    "source": "price_poller"
+  },
+  {
+    "price_id": "pr_000525",
+    "product_id": "airpods_pro_2",
+    "price": 5430000.0,
+    "currency": "VND",
+    "seller": "Apple Official Store",
+    "timestamp": "2026-09-23T10:00:00Z",
+    "source": "price_poller"
+  }
+]

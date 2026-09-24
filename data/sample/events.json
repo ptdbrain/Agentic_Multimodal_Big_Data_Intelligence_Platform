@@ -1,0 +1,4402 @@
+[
+  {
+    "event_id": "evt_000001",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:00:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.8
+    }
+  },
+  {
+    "event_id": "evt_000002",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:00:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0001"
+    }
+  },
+  {
+    "event_id": "evt_000003",
+    "event_type": "NEW_REVIEW",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:00:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0002"
+    }
+  },
+  {
+    "event_id": "evt_000004",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:00:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0003"
+    }
+  },
+  {
+    "event_id": "evt_000005",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:00:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 17990000.0,
+      "new_price": 18830000.0
+    }
+  },
+  {
+    "event_id": "evt_000006",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:00:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 29990000.0,
+      "new_price": 28790000.0
+    }
+  },
+  {
+    "event_id": "evt_000007",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:00:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0006"
+    }
+  },
+  {
+    "event_id": "evt_000008",
+    "event_type": "NEW_REVIEW",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:00:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0007"
+    }
+  },
+  {
+    "event_id": "evt_000009",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:00:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 29990000.0,
+      "new_price": 29180000.0
+    }
+  },
+  {
+    "event_id": "evt_000010",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:00:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 5490000.0,
+      "new_price": 5480000.0
+    }
+  },
+  {
+    "event_id": "evt_000011",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:00:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0010"
+    }
+  },
+  {
+    "event_id": "evt_000012",
+    "event_type": "RATING_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:00:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000013",
+    "event_type": "NEW_REVIEW",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:00:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0012"
+    }
+  },
+  {
+    "event_id": "evt_000014",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:00:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000015",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:00:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.0
+    }
+  },
+  {
+    "event_id": "evt_000016",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:00:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 7990000.0,
+      "new_price": 7850000.0
+    }
+  },
+  {
+    "event_id": "evt_000017",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:00:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0016"
+    }
+  },
+  {
+    "event_id": "evt_000018",
+    "event_type": "RATING_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:00:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000019",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:00:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.5,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000020",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:00:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000021",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:00:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16490000.0,
+      "new_price": 16150000.0
+    }
+  },
+  {
+    "event_id": "evt_000022",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:00:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0021"
+    }
+  },
+  {
+    "event_id": "evt_000023",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:00:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0022"
+    }
+  },
+  {
+    "event_id": "evt_000024",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:00:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16490000.0,
+      "new_price": 16120000.0
+    }
+  },
+  {
+    "event_id": "evt_000025",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:00:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0024"
+    }
+  },
+  {
+    "event_id": "evt_000026",
+    "event_type": "NEW_REVIEW",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:00:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0025"
+    }
+  },
+  {
+    "event_id": "evt_000027",
+    "event_type": "RATING_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:00:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 5.0
+    }
+  },
+  {
+    "event_id": "evt_000028",
+    "event_type": "NEW_REVIEW",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:00:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0027"
+    }
+  },
+  {
+    "event_id": "evt_000029",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:00:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.0
+    }
+  },
+  {
+    "event_id": "evt_000030",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:00:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 45990000.0,
+      "new_price": 44230000.0
+    }
+  },
+  {
+    "event_id": "evt_000031",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:01:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0030"
+    }
+  },
+  {
+    "event_id": "evt_000032",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:01:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000033",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:01:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0032"
+    }
+  },
+  {
+    "event_id": "evt_000034",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:01:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16990000.0,
+      "new_price": 16820000.0
+    }
+  },
+  {
+    "event_id": "evt_000035",
+    "event_type": "NEW_REVIEW",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:01:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0034"
+    }
+  },
+  {
+    "event_id": "evt_000036",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:01:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0035"
+    }
+  },
+  {
+    "event_id": "evt_000037",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:01:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 7990000.0,
+      "new_price": 7600000.0
+    }
+  },
+  {
+    "event_id": "evt_000038",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:01:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0037"
+    }
+  },
+  {
+    "event_id": "evt_000039",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:01:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0038"
+    }
+  },
+  {
+    "event_id": "evt_000040",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:01:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 45990000.0,
+      "new_price": 48050000.0
+    }
+  },
+  {
+    "event_id": "evt_000041",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:01:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000042",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:01:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.1
+    }
+  },
+  {
+    "event_id": "evt_000043",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:01:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27990000.0,
+      "new_price": 27670000.0
+    }
+  },
+  {
+    "event_id": "evt_000044",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:01:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000045",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:01:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 45990000.0,
+      "new_price": 46920000.0
+    }
+  },
+  {
+    "event_id": "evt_000046",
+    "event_type": "NEW_REVIEW",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:01:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0045"
+    }
+  },
+  {
+    "event_id": "evt_000047",
+    "event_type": "NEW_REVIEW",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:01:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0046"
+    }
+  },
+  {
+    "event_id": "evt_000048",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:01:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 24160000.0
+    }
+  },
+  {
+    "event_id": "evt_000049",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:01:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0048"
+    }
+  },
+  {
+    "event_id": "evt_000050",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:01:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16990000.0,
+      "new_price": 16900000.0
+    }
+  },
+  {
+    "event_id": "evt_000051",
+    "event_type": "NEW_REVIEW",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:01:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0050"
+    }
+  },
+  {
+    "event_id": "evt_000052",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:01:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.5,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000053",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:01:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0052"
+    }
+  },
+  {
+    "event_id": "evt_000054",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:01:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000055",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:01:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 29990000.0,
+      "new_price": 29210000.0
+    }
+  },
+  {
+    "event_id": "evt_000056",
+    "event_type": "RATING_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:01:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000057",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:01:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 17990000.0,
+      "new_price": 18390000.0
+    }
+  },
+  {
+    "event_id": "evt_000058",
+    "event_type": "NEW_REVIEW",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:01:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0057"
+    }
+  },
+  {
+    "event_id": "evt_000059",
+    "event_type": "RATING_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:01:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.1
+    }
+  },
+  {
+    "event_id": "evt_000060",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:01:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000061",
+    "event_type": "NEW_REVIEW",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:02:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0060"
+    }
+  },
+  {
+    "event_id": "evt_000062",
+    "event_type": "NEW_REVIEW",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:02:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0061"
+    }
+  },
+  {
+    "event_id": "evt_000063",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:02:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.8
+    }
+  },
+  {
+    "event_id": "evt_000064",
+    "event_type": "RATING_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:02:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000065",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:02:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000066",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:02:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27490000.0,
+      "new_price": 28810000.0
+    }
+  },
+  {
+    "event_id": "evt_000067",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:02:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0066"
+    }
+  },
+  {
+    "event_id": "evt_000068",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:02:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 39990000.0,
+      "new_price": 41450000.0
+    }
+  },
+  {
+    "event_id": "evt_000069",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:02:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0068"
+    }
+  },
+  {
+    "event_id": "evt_000070",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:02:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 17990000.0,
+      "new_price": 17760000.0
+    }
+  },
+  {
+    "event_id": "evt_000071",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:02:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.8
+    }
+  },
+  {
+    "event_id": "evt_000072",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:02:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 5490000.0,
+      "new_price": 5500000.0
+    }
+  },
+  {
+    "event_id": "evt_000073",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:02:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0072"
+    }
+  },
+  {
+    "event_id": "evt_000074",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:02:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000075",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:02:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.2
+    }
+  },
+  {
+    "event_id": "evt_000076",
+    "event_type": "NEW_REVIEW",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:02:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0075"
+    }
+  },
+  {
+    "event_id": "evt_000077",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:02:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0076"
+    }
+  },
+  {
+    "event_id": "evt_000078",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:02:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 25680000.0
+    }
+  },
+  {
+    "event_id": "evt_000079",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:02:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0078"
+    }
+  },
+  {
+    "event_id": "evt_000080",
+    "event_type": "NEW_REVIEW",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:02:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0079"
+    }
+  },
+  {
+    "event_id": "evt_000081",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:02:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0080"
+    }
+  },
+  {
+    "event_id": "evt_000082",
+    "event_type": "NEW_REVIEW",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:02:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0081"
+    }
+  },
+  {
+    "event_id": "evt_000083",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:02:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 7990000.0,
+      "new_price": 8210000.0
+    }
+  },
+  {
+    "event_id": "evt_000084",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:02:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0083"
+    }
+  },
+  {
+    "event_id": "evt_000085",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:02:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000086",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:02:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000087",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:02:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27490000.0,
+      "new_price": 27060000.0
+    }
+  },
+  {
+    "event_id": "evt_000088",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:02:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 7990000.0,
+      "new_price": 8380000.0
+    }
+  },
+  {
+    "event_id": "evt_000089",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:02:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16490000.0,
+      "new_price": 16950000.0
+    }
+  },
+  {
+    "event_id": "evt_000090",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:02:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000091",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:03:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 45990000.0,
+      "new_price": 47860000.0
+    }
+  },
+  {
+    "event_id": "evt_000092",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:03:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27490000.0,
+      "new_price": 28710000.0
+    }
+  },
+  {
+    "event_id": "evt_000093",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:03:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0092"
+    }
+  },
+  {
+    "event_id": "evt_000094",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:03:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0093"
+    }
+  },
+  {
+    "event_id": "evt_000095",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:03:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000096",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:03:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000097",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:03:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 19490000.0,
+      "new_price": 18560000.0
+    }
+  },
+  {
+    "event_id": "evt_000098",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:03:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.5
+    }
+  },
+  {
+    "event_id": "evt_000099",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:03:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 19490000.0,
+      "new_price": 20090000.0
+    }
+  },
+  {
+    "event_id": "evt_000100",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:03:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0099"
+    }
+  },
+  {
+    "event_id": "evt_000101",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:03:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 38990000.0,
+      "new_price": 40560000.0
+    }
+  },
+  {
+    "event_id": "evt_000102",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:03:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.2
+    }
+  },
+  {
+    "event_id": "evt_000103",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:03:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0102"
+    }
+  },
+  {
+    "event_id": "evt_000104",
+    "event_type": "NEW_REVIEW",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:03:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0103"
+    }
+  },
+  {
+    "event_id": "evt_000105",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:03:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000106",
+    "event_type": "NEW_REVIEW",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:03:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0105"
+    }
+  },
+  {
+    "event_id": "evt_000107",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:03:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.8
+    }
+  },
+  {
+    "event_id": "evt_000108",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:03:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27490000.0,
+      "new_price": 27450000.0
+    }
+  },
+  {
+    "event_id": "evt_000109",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:03:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 5490000.0,
+      "new_price": 5610000.0
+    }
+  },
+  {
+    "event_id": "evt_000110",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:03:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 19490000.0,
+      "new_price": 18590000.0
+    }
+  },
+  {
+    "event_id": "evt_000111",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:03:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 28990000.0,
+      "new_price": 30230000.0
+    }
+  },
+  {
+    "event_id": "evt_000112",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:03:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0111"
+    }
+  },
+  {
+    "event_id": "evt_000113",
+    "event_type": "NEW_REVIEW",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:03:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0112"
+    }
+  },
+  {
+    "event_id": "evt_000114",
+    "event_type": "RATING_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:03:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000115",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:03:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16990000.0,
+      "new_price": 16810000.0
+    }
+  },
+  {
+    "event_id": "evt_000116",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:03:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0115"
+    }
+  },
+  {
+    "event_id": "evt_000117",
+    "event_type": "RATING_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:03:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.0
+    }
+  },
+  {
+    "event_id": "evt_000118",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:03:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16990000.0,
+      "new_price": 17690000.0
+    }
+  },
+  {
+    "event_id": "evt_000119",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:03:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 24560000.0
+    }
+  },
+  {
+    "event_id": "evt_000120",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:03:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0119"
+    }
+  },
+  {
+    "event_id": "evt_000121",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:04:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.8
+    }
+  },
+  {
+    "event_id": "evt_000122",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:04:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000123",
+    "event_type": "NEW_REVIEW",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:04:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0122"
+    }
+  },
+  {
+    "event_id": "evt_000124",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:04:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.2
+    }
+  },
+  {
+    "event_id": "evt_000125",
+    "event_type": "NEW_REVIEW",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:04:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0124"
+    }
+  },
+  {
+    "event_id": "evt_000126",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:04:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 5.0
+    }
+  },
+  {
+    "event_id": "evt_000127",
+    "event_type": "NEW_REVIEW",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:04:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0126"
+    }
+  },
+  {
+    "event_id": "evt_000128",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:04:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000129",
+    "event_type": "RATING_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:04:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000130",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:04:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 18500000.0,
+      "new_price": 19070000.0
+    }
+  },
+  {
+    "event_id": "evt_000131",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:04:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 28990000.0,
+      "new_price": 28640000.0
+    }
+  },
+  {
+    "event_id": "evt_000132",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:04:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 25660000.0
+    }
+  },
+  {
+    "event_id": "evt_000133",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:04:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0132"
+    }
+  },
+  {
+    "event_id": "evt_000134",
+    "event_type": "RATING_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:04:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000135",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:04:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0134"
+    }
+  },
+  {
+    "event_id": "evt_000136",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:04:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.2
+    }
+  },
+  {
+    "event_id": "evt_000137",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:04:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 25580000.0
+    }
+  },
+  {
+    "event_id": "evt_000138",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:04:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000139",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:04:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000140",
+    "event_type": "NEW_REVIEW",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:04:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0139"
+    }
+  },
+  {
+    "event_id": "evt_000141",
+    "event_type": "NEW_REVIEW",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:04:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0140"
+    }
+  },
+  {
+    "event_id": "evt_000142",
+    "event_type": "NEW_REVIEW",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:04:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0141"
+    }
+  },
+  {
+    "event_id": "evt_000143",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:04:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 45990000.0,
+      "new_price": 47910000.0
+    }
+  },
+  {
+    "event_id": "evt_000144",
+    "event_type": "NEW_REVIEW",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:04:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0143"
+    }
+  },
+  {
+    "event_id": "evt_000145",
+    "event_type": "RATING_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:04:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.8
+    }
+  },
+  {
+    "event_id": "evt_000146",
+    "event_type": "RATING_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:04:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.1
+    }
+  },
+  {
+    "event_id": "evt_000147",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:04:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0146"
+    }
+  },
+  {
+    "event_id": "evt_000148",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:04:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 5490000.0,
+      "new_price": 5690000.0
+    }
+  },
+  {
+    "event_id": "evt_000149",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:04:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16990000.0,
+      "new_price": 16830000.0
+    }
+  },
+  {
+    "event_id": "evt_000150",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:04:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27490000.0,
+      "new_price": 26340000.0
+    }
+  },
+  {
+    "event_id": "evt_000151",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:05:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 28990000.0,
+      "new_price": 28620000.0
+    }
+  },
+  {
+    "event_id": "evt_000152",
+    "event_type": "RATING_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:05:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000153",
+    "event_type": "RATING_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:05:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.0
+    }
+  },
+  {
+    "event_id": "evt_000154",
+    "event_type": "RATING_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:05:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 5.0
+    }
+  },
+  {
+    "event_id": "evt_000155",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:05:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 5490000.0,
+      "new_price": 5220000.0
+    }
+  },
+  {
+    "event_id": "evt_000156",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:05:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 19490000.0,
+      "new_price": 18960000.0
+    }
+  },
+  {
+    "event_id": "evt_000157",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:05:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16490000.0,
+      "new_price": 16680000.0
+    }
+  },
+  {
+    "event_id": "evt_000158",
+    "event_type": "RATING_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:05:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 5.0
+    }
+  },
+  {
+    "event_id": "evt_000159",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:05:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 28990000.0,
+      "new_price": 28290000.0
+    }
+  },
+  {
+    "event_id": "evt_000160",
+    "event_type": "NEW_REVIEW",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:05:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0159"
+    }
+  },
+  {
+    "event_id": "evt_000161",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:05:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27990000.0,
+      "new_price": 27410000.0
+    }
+  },
+  {
+    "event_id": "evt_000162",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:05:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 17990000.0,
+      "new_price": 18640000.0
+    }
+  },
+  {
+    "event_id": "evt_000163",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:05:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0162"
+    }
+  },
+  {
+    "event_id": "evt_000164",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:05:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 25600000.0
+    }
+  },
+  {
+    "event_id": "evt_000165",
+    "event_type": "NEW_REVIEW",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:05:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0164"
+    }
+  },
+  {
+    "event_id": "evt_000166",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:05:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0165"
+    }
+  },
+  {
+    "event_id": "evt_000167",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:05:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 39990000.0,
+      "new_price": 39100000.0
+    }
+  },
+  {
+    "event_id": "evt_000168",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:05:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16990000.0,
+      "new_price": 17020000.0
+    }
+  },
+  {
+    "event_id": "evt_000169",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:05:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0168"
+    }
+  },
+  {
+    "event_id": "evt_000170",
+    "event_type": "NEW_REVIEW",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:05:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0169"
+    }
+  },
+  {
+    "event_id": "evt_000171",
+    "event_type": "RATING_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:05:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.5
+    }
+  },
+  {
+    "event_id": "evt_000172",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:05:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.1
+    }
+  },
+  {
+    "event_id": "evt_000173",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:05:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 45990000.0,
+      "new_price": 44050000.0
+    }
+  },
+  {
+    "event_id": "evt_000174",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:05:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 5.0
+    }
+  },
+  {
+    "event_id": "evt_000175",
+    "event_type": "RATING_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:05:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000176",
+    "event_type": "RATING_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:05:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.5
+    }
+  },
+  {
+    "event_id": "evt_000177",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:05:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000178",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:05:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000179",
+    "event_type": "NEW_REVIEW",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:05:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0178"
+    }
+  },
+  {
+    "event_id": "evt_000180",
+    "event_type": "RATING_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:05:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.5
+    }
+  },
+  {
+    "event_id": "evt_000181",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:06:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27490000.0,
+      "new_price": 27460000.0
+    }
+  },
+  {
+    "event_id": "evt_000182",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:06:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0181"
+    }
+  },
+  {
+    "event_id": "evt_000183",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:06:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0182"
+    }
+  },
+  {
+    "event_id": "evt_000184",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:06:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000185",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:06:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 17990000.0,
+      "new_price": 17620000.0
+    }
+  },
+  {
+    "event_id": "evt_000186",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:06:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 17990000.0,
+      "new_price": 17590000.0
+    }
+  },
+  {
+    "event_id": "evt_000187",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:06:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 38990000.0,
+      "new_price": 39830000.0
+    }
+  },
+  {
+    "event_id": "evt_000188",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:06:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27490000.0,
+      "new_price": 27770000.0
+    }
+  },
+  {
+    "event_id": "evt_000189",
+    "event_type": "RATING_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:06:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000190",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:06:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 29990000.0,
+      "new_price": 30860000.0
+    }
+  },
+  {
+    "event_id": "evt_000191",
+    "event_type": "RATING_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:06:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000192",
+    "event_type": "NEW_REVIEW",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:06:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0191"
+    }
+  },
+  {
+    "event_id": "evt_000193",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:06:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.5,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000194",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:06:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 38990000.0,
+      "new_price": 39850000.0
+    }
+  },
+  {
+    "event_id": "evt_000195",
+    "event_type": "NEW_REVIEW",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:06:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0194"
+    }
+  },
+  {
+    "event_id": "evt_000196",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:06:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 29990000.0,
+      "new_price": 29900000.0
+    }
+  },
+  {
+    "event_id": "evt_000197",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:06:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000198",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:06:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0197"
+    }
+  },
+  {
+    "event_id": "evt_000199",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:06:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0198"
+    }
+  },
+  {
+    "event_id": "evt_000200",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:06:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 5.0
+    }
+  },
+  {
+    "event_id": "evt_000201",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:06:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 38990000.0,
+      "new_price": 40600000.0
+    }
+  },
+  {
+    "event_id": "evt_000202",
+    "event_type": "NEW_REVIEW",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:06:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0201"
+    }
+  },
+  {
+    "event_id": "evt_000203",
+    "event_type": "NEW_REVIEW",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:06:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0202"
+    }
+  },
+  {
+    "event_id": "evt_000204",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:06:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 25750000.0
+    }
+  },
+  {
+    "event_id": "evt_000205",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:06:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27490000.0,
+      "new_price": 28740000.0
+    }
+  },
+  {
+    "event_id": "evt_000206",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:06:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 5490000.0,
+      "new_price": 5730000.0
+    }
+  },
+  {
+    "event_id": "evt_000207",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:06:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0206"
+    }
+  },
+  {
+    "event_id": "evt_000208",
+    "event_type": "NEW_REVIEW",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:06:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0207"
+    }
+  },
+  {
+    "event_id": "evt_000209",
+    "event_type": "RATING_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:06:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000210",
+    "event_type": "NEW_REVIEW",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:06:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0209"
+    }
+  },
+  {
+    "event_id": "evt_000211",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:07:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0210"
+    }
+  },
+  {
+    "event_id": "evt_000212",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:07:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0211"
+    }
+  },
+  {
+    "event_id": "evt_000213",
+    "event_type": "NEW_REVIEW",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:07:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0212"
+    }
+  },
+  {
+    "event_id": "evt_000214",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:07:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27990000.0,
+      "new_price": 26940000.0
+    }
+  },
+  {
+    "event_id": "evt_000215",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:07:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 24600000.0
+    }
+  },
+  {
+    "event_id": "evt_000216",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:07:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0215"
+    }
+  },
+  {
+    "event_id": "evt_000217",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:07:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16490000.0,
+      "new_price": 16100000.0
+    }
+  },
+  {
+    "event_id": "evt_000218",
+    "event_type": "RATING_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:07:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000219",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:07:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0218"
+    }
+  },
+  {
+    "event_id": "evt_000220",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:07:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000221",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:07:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27990000.0,
+      "new_price": 27180000.0
+    }
+  },
+  {
+    "event_id": "evt_000222",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:07:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 29990000.0,
+      "new_price": 30570000.0
+    }
+  },
+  {
+    "event_id": "evt_000223",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:07:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16490000.0,
+      "new_price": 16560000.0
+    }
+  },
+  {
+    "event_id": "evt_000224",
+    "event_type": "RATING_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:07:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000225",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:07:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 45990000.0,
+      "new_price": 45570000.0
+    }
+  },
+  {
+    "event_id": "evt_000226",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:07:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16490000.0,
+      "new_price": 17220000.0
+    }
+  },
+  {
+    "event_id": "evt_000227",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:07:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27990000.0,
+      "new_price": 26640000.0
+    }
+  },
+  {
+    "event_id": "evt_000228",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:07:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27490000.0,
+      "new_price": 27980000.0
+    }
+  },
+  {
+    "event_id": "evt_000229",
+    "event_type": "NEW_REVIEW",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:07:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0228"
+    }
+  },
+  {
+    "event_id": "evt_000230",
+    "event_type": "NEW_REVIEW",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:07:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0229"
+    }
+  },
+  {
+    "event_id": "evt_000231",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:07:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 39990000.0,
+      "new_price": 39700000.0
+    }
+  },
+  {
+    "event_id": "evt_000232",
+    "event_type": "NEW_REVIEW",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:07:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0231"
+    }
+  },
+  {
+    "event_id": "evt_000233",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:07:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.2
+    }
+  },
+  {
+    "event_id": "evt_000234",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:07:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000235",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:07:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 29990000.0,
+      "new_price": 30450000.0
+    }
+  },
+  {
+    "event_id": "evt_000236",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:07:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000237",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:07:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000238",
+    "event_type": "RATING_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:07:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000239",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:07:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16990000.0,
+      "new_price": 17010000.0
+    }
+  },
+  {
+    "event_id": "evt_000240",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:07:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0239"
+    }
+  },
+  {
+    "event_id": "evt_000241",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:08:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000242",
+    "event_type": "NEW_REVIEW",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:08:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0241"
+    }
+  },
+  {
+    "event_id": "evt_000243",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:08:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 25360000.0
+    }
+  },
+  {
+    "event_id": "evt_000244",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:08:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 25540000.0
+    }
+  },
+  {
+    "event_id": "evt_000245",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:08:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.5
+    }
+  },
+  {
+    "event_id": "evt_000246",
+    "event_type": "NEW_REVIEW",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:08:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0245"
+    }
+  },
+  {
+    "event_id": "evt_000247",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:08:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.5,
+      "new_rating": 4.1
+    }
+  },
+  {
+    "event_id": "evt_000248",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:08:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 7990000.0,
+      "new_price": 8350000.0
+    }
+  },
+  {
+    "event_id": "evt_000249",
+    "event_type": "RATING_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:08:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.1
+    }
+  },
+  {
+    "event_id": "evt_000250",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:08:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0249"
+    }
+  },
+  {
+    "event_id": "evt_000251",
+    "event_type": "RATING_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:08:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 5.0
+    }
+  },
+  {
+    "event_id": "evt_000252",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:08:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000253",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:08:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 29990000.0,
+      "new_price": 29560000.0
+    }
+  },
+  {
+    "event_id": "evt_000254",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:08:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 5.0
+    }
+  },
+  {
+    "event_id": "evt_000255",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:08:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.8
+    }
+  },
+  {
+    "event_id": "evt_000256",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:08:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 5490000.0,
+      "new_price": 5570000.0
+    }
+  },
+  {
+    "event_id": "evt_000257",
+    "event_type": "NEW_REVIEW",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:08:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0256"
+    }
+  },
+  {
+    "event_id": "evt_000258",
+    "event_type": "NEW_REVIEW",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:08:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0257"
+    }
+  },
+  {
+    "event_id": "evt_000259",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:08:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000260",
+    "event_type": "NEW_REVIEW",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:08:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0259"
+    }
+  },
+  {
+    "event_id": "evt_000261",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:08:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0260"
+    }
+  },
+  {
+    "event_id": "evt_000262",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:08:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.0
+    }
+  },
+  {
+    "event_id": "evt_000263",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:08:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.5
+    }
+  },
+  {
+    "event_id": "evt_000264",
+    "event_type": "RATING_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:08:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000265",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:08:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 38990000.0,
+      "new_price": 38190000.0
+    }
+  },
+  {
+    "event_id": "evt_000266",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:08:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27990000.0,
+      "new_price": 27420000.0
+    }
+  },
+  {
+    "event_id": "evt_000267",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:08:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27490000.0,
+      "new_price": 27560000.0
+    }
+  },
+  {
+    "event_id": "evt_000268",
+    "event_type": "NEW_REVIEW",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:08:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0267"
+    }
+  },
+  {
+    "event_id": "evt_000269",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:08:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0268"
+    }
+  },
+  {
+    "event_id": "evt_000270",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:08:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000271",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:09:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0270"
+    }
+  },
+  {
+    "event_id": "evt_000272",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:09:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000273",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:09:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 28990000.0,
+      "new_price": 29110000.0
+    }
+  },
+  {
+    "event_id": "evt_000274",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:09:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 18500000.0,
+      "new_price": 18610000.0
+    }
+  },
+  {
+    "event_id": "evt_000275",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:09:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16490000.0,
+      "new_price": 16580000.0
+    }
+  },
+  {
+    "event_id": "evt_000276",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:09:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 38990000.0,
+      "new_price": 38280000.0
+    }
+  },
+  {
+    "event_id": "evt_000277",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:09:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 17990000.0,
+      "new_price": 18760000.0
+    }
+  },
+  {
+    "event_id": "evt_000278",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:09:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000279",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:09:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27990000.0,
+      "new_price": 26670000.0
+    }
+  },
+  {
+    "event_id": "evt_000280",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:09:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0279"
+    }
+  },
+  {
+    "event_id": "evt_000281",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:09:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000282",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:09:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.5
+    }
+  },
+  {
+    "event_id": "evt_000283",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:09:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.1
+    }
+  },
+  {
+    "event_id": "evt_000284",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:09:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 18500000.0,
+      "new_price": 17850000.0
+    }
+  },
+  {
+    "event_id": "evt_000285",
+    "event_type": "RATING_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:09:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000286",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:09:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0285"
+    }
+  },
+  {
+    "event_id": "evt_000287",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:09:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0286"
+    }
+  },
+  {
+    "event_id": "evt_000288",
+    "event_type": "NEW_REVIEW",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:09:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0287"
+    }
+  },
+  {
+    "event_id": "evt_000289",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:09:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000290",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:09:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0289"
+    }
+  },
+  {
+    "event_id": "evt_000291",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:09:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0290"
+    }
+  },
+  {
+    "event_id": "evt_000292",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:09:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000293",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:09:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000294",
+    "event_type": "RATING_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:09:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000295",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:09:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16490000.0,
+      "new_price": 16030000.0
+    }
+  },
+  {
+    "event_id": "evt_000296",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:09:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0295"
+    }
+  },
+  {
+    "event_id": "evt_000297",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:09:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 18500000.0,
+      "new_price": 18170000.0
+    }
+  },
+  {
+    "event_id": "evt_000298",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:09:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0297"
+    }
+  },
+  {
+    "event_id": "evt_000299",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:09:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 45990000.0,
+      "new_price": 46280000.0
+    }
+  },
+  {
+    "event_id": "evt_000300",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:09:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 7990000.0,
+      "new_price": 7750000.0
+    }
+  },
+  {
+    "event_id": "evt_000301",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:10:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 45990000.0,
+      "new_price": 46490000.0
+    }
+  },
+  {
+    "event_id": "evt_000302",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:10:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 19490000.0,
+      "new_price": 19480000.0
+    }
+  },
+  {
+    "event_id": "evt_000303",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:10:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 19490000.0,
+      "new_price": 19780000.0
+    }
+  },
+  {
+    "event_id": "evt_000304",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:10:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 38990000.0,
+      "new_price": 39490000.0
+    }
+  },
+  {
+    "event_id": "evt_000305",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:10:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 24990000.0,
+      "new_price": 23880000.0
+    }
+  },
+  {
+    "event_id": "evt_000306",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:10:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000307",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:10:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 38990000.0,
+      "new_price": 37070000.0
+    }
+  },
+  {
+    "event_id": "evt_000308",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:10:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0307"
+    }
+  },
+  {
+    "event_id": "evt_000309",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:10:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 19490000.0,
+      "new_price": 18900000.0
+    }
+  },
+  {
+    "event_id": "evt_000310",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:10:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 18500000.0,
+      "new_price": 18830000.0
+    }
+  },
+  {
+    "event_id": "evt_000311",
+    "event_type": "NEW_REVIEW",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:10:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0310"
+    }
+  },
+  {
+    "event_id": "evt_000312",
+    "event_type": "NEW_REVIEW",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:10:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0311"
+    }
+  },
+  {
+    "event_id": "evt_000313",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:10:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0312"
+    }
+  },
+  {
+    "event_id": "evt_000314",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:10:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000315",
+    "event_type": "NEW_REVIEW",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:10:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0314"
+    }
+  },
+  {
+    "event_id": "evt_000316",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:10:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 17990000.0,
+      "new_price": 18600000.0
+    }
+  },
+  {
+    "event_id": "evt_000317",
+    "event_type": "NEW_REVIEW",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:10:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0316"
+    }
+  },
+  {
+    "event_id": "evt_000318",
+    "event_type": "NEW_REVIEW",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:10:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0317"
+    }
+  },
+  {
+    "event_id": "evt_000319",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:10:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 39990000.0,
+      "new_price": 40510000.0
+    }
+  },
+  {
+    "event_id": "evt_000320",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:10:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 28990000.0,
+      "new_price": 29670000.0
+    }
+  },
+  {
+    "event_id": "evt_000321",
+    "event_type": "NEW_REVIEW",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:10:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0320"
+    }
+  },
+  {
+    "event_id": "evt_000322",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:10:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 39990000.0,
+      "new_price": 41090000.0
+    }
+  },
+  {
+    "event_id": "evt_000323",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:10:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000324",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:10:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 39990000.0,
+      "new_price": 40200000.0
+    }
+  },
+  {
+    "event_id": "evt_000325",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:10:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 38990000.0,
+      "new_price": 39140000.0
+    }
+  },
+  {
+    "event_id": "evt_000326",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:10:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 39990000.0,
+      "new_price": 38140000.0
+    }
+  },
+  {
+    "event_id": "evt_000327",
+    "event_type": "NEW_REVIEW",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:10:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0326"
+    }
+  },
+  {
+    "event_id": "evt_000328",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:10:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000329",
+    "event_type": "RATING_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:10:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000330",
+    "event_type": "RATING_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:10:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.2
+    }
+  },
+  {
+    "event_id": "evt_000331",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:11:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.9
+    }
+  },
+  {
+    "event_id": "evt_000332",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:11:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0331"
+    }
+  },
+  {
+    "event_id": "evt_000333",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:11:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.5
+    }
+  },
+  {
+    "event_id": "evt_000334",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:11:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 29990000.0,
+      "new_price": 29630000.0
+    }
+  },
+  {
+    "event_id": "evt_000335",
+    "event_type": "NEW_REVIEW",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:11:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0334"
+    }
+  },
+  {
+    "event_id": "evt_000336",
+    "event_type": "RATING_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:11:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000337",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:11:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 39990000.0,
+      "new_price": 39850000.0
+    }
+  },
+  {
+    "event_id": "evt_000338",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:11:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 19490000.0,
+      "new_price": 19360000.0
+    }
+  },
+  {
+    "event_id": "evt_000339",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:11:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 18500000.0,
+      "new_price": 18910000.0
+    }
+  },
+  {
+    "event_id": "evt_000340",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:11:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 5490000.0,
+      "new_price": 5650000.0
+    }
+  },
+  {
+    "event_id": "evt_000341",
+    "event_type": "NEW_REVIEW",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:11:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0340"
+    }
+  },
+  {
+    "event_id": "evt_000342",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:11:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0341"
+    }
+  },
+  {
+    "event_id": "evt_000343",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:11:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27990000.0,
+      "new_price": 28860000.0
+    }
+  },
+  {
+    "event_id": "evt_000344",
+    "event_type": "NEW_REVIEW",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:11:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0343"
+    }
+  },
+  {
+    "event_id": "evt_000345",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:11:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16990000.0,
+      "new_price": 17350000.0
+    }
+  },
+  {
+    "event_id": "evt_000346",
+    "event_type": "RATING_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:11:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000347",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:11:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000348",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:11:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 17990000.0,
+      "new_price": 17660000.0
+    }
+  },
+  {
+    "event_id": "evt_000349",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:11:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.2
+    }
+  },
+  {
+    "event_id": "evt_000350",
+    "event_type": "RATING_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:11:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.8
+    }
+  },
+  {
+    "event_id": "evt_000351",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:11:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0350"
+    }
+  },
+  {
+    "event_id": "evt_000352",
+    "event_type": "RATING_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:11:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000353",
+    "event_type": "NEW_REVIEW",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:11:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0352"
+    }
+  },
+  {
+    "event_id": "evt_000354",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:11:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 38990000.0,
+      "new_price": 39770000.0
+    }
+  },
+  {
+    "event_id": "evt_000355",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:11:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0354"
+    }
+  },
+  {
+    "event_id": "evt_000356",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:11:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000357",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:11:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16990000.0,
+      "new_price": 16330000.0
+    }
+  },
+  {
+    "event_id": "evt_000358",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:11:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16990000.0,
+      "new_price": 16420000.0
+    }
+  },
+  {
+    "event_id": "evt_000359",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:11:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 7990000.0,
+      "new_price": 8300000.0
+    }
+  },
+  {
+    "event_id": "evt_000360",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:11:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.5,
+      "new_rating": 4.2
+    }
+  },
+  {
+    "event_id": "evt_000361",
+    "event_type": "RATING_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:12:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.8
+    }
+  },
+  {
+    "event_id": "evt_000362",
+    "event_type": "NEW_REVIEW",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:12:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0361"
+    }
+  },
+  {
+    "event_id": "evt_000363",
+    "event_type": "NEW_REVIEW",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:12:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0362"
+    }
+  },
+  {
+    "event_id": "evt_000364",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:12:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.5,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000365",
+    "event_type": "NEW_REVIEW",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:12:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0364"
+    }
+  },
+  {
+    "event_id": "evt_000366",
+    "event_type": "RATING_UPDATE",
+    "product_id": "rog_phone_8",
+    "timestamp": "2026-09-24T12:12:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000367",
+    "event_type": "RATING_UPDATE",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:12:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.1
+    }
+  },
+  {
+    "event_id": "evt_000368",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:12:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.0
+    }
+  },
+  {
+    "event_id": "evt_000369",
+    "event_type": "RATING_UPDATE",
+    "product_id": "macbook_pro_m3",
+    "timestamp": "2026-09-24T12:12:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.0
+    }
+  },
+  {
+    "event_id": "evt_000370",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:12:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.5,
+      "new_rating": 4.5
+    }
+  },
+  {
+    "event_id": "evt_000371",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:12:20Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0370"
+    }
+  },
+  {
+    "event_id": "evt_000372",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:12:22Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000373",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:12:24Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.2
+    }
+  },
+  {
+    "event_id": "evt_000374",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:12:26Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0373"
+    }
+  },
+  {
+    "event_id": "evt_000375",
+    "event_type": "RATING_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:12:28Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000376",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:12:30Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.5,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000377",
+    "event_type": "NEW_REVIEW",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:12:32Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 3.0,
+      "review_id": "rv_stream_0376"
+    }
+  },
+  {
+    "event_id": "evt_000378",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "airpods_pro_2",
+    "timestamp": "2026-09-24T12:12:34Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 5490000.0,
+      "new_price": 5730000.0
+    }
+  },
+  {
+    "event_id": "evt_000379",
+    "event_type": "RATING_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:12:36Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.4
+    }
+  },
+  {
+    "event_id": "evt_000380",
+    "event_type": "NEW_REVIEW",
+    "product_id": "macbook_air_m3",
+    "timestamp": "2026-09-24T12:12:38Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0379"
+    }
+  },
+  {
+    "event_id": "evt_000381",
+    "event_type": "RATING_UPDATE",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:12:40Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.7,
+      "new_rating": 4.7
+    }
+  },
+  {
+    "event_id": "evt_000382",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15",
+    "timestamp": "2026-09-24T12:12:42Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 19490000.0,
+      "new_price": 20420000.0
+    }
+  },
+  {
+    "event_id": "evt_000383",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:12:44Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27990000.0,
+      "new_price": 29070000.0
+    }
+  },
+  {
+    "event_id": "evt_000384",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:12:46Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.1
+    }
+  },
+  {
+    "event_id": "evt_000385",
+    "event_type": "RATING_UPDATE",
+    "product_id": "galaxy_s24",
+    "timestamp": "2026-09-24T12:12:48Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.3,
+      "new_rating": 4.6
+    }
+  },
+  {
+    "event_id": "evt_000386",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:12:50Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 18500000.0,
+      "new_price": 18020000.0
+    }
+  },
+  {
+    "event_id": "evt_000387",
+    "event_type": "NEW_REVIEW",
+    "product_id": "sony_wh1000xm5",
+    "timestamp": "2026-09-24T12:12:52Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 4.0,
+      "review_id": "rv_stream_0386"
+    }
+  },
+  {
+    "event_id": "evt_000388",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "dell_xps_15",
+    "timestamp": "2026-09-24T12:12:54Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 45990000.0,
+      "new_price": 47570000.0
+    }
+  },
+  {
+    "event_id": "evt_000389",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_s24_ultra",
+    "timestamp": "2026-09-24T12:12:56Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 29990000.0,
+      "new_price": 30230000.0
+    }
+  },
+  {
+    "event_id": "evt_000390",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:12:58Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 28990000.0,
+      "new_price": 29030000.0
+    }
+  },
+  {
+    "event_id": "evt_000391",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "galaxy_tab_s9",
+    "timestamp": "2026-09-24T12:13:00Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 16490000.0,
+      "new_price": 16000000.0
+    }
+  },
+  {
+    "event_id": "evt_000392",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:13:02Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0391"
+    }
+  },
+  {
+    "event_id": "evt_000393",
+    "event_type": "RATING_UPDATE",
+    "product_id": "ipad_pro_m4",
+    "timestamp": "2026-09-24T12:13:04Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.2
+    }
+  },
+  {
+    "event_id": "evt_000394",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:13:06Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 18500000.0,
+      "new_price": 18840000.0
+    }
+  },
+  {
+    "event_id": "evt_000395",
+    "event_type": "PRICE_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:13:08Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_price": 27990000.0,
+      "new_price": 27720000.0
+    }
+  },
+  {
+    "event_id": "evt_000396",
+    "event_type": "RATING_UPDATE",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:13:10Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.5,
+      "new_rating": 4.3
+    }
+  },
+  {
+    "event_id": "evt_000397",
+    "event_type": "NEW_REVIEW",
+    "product_id": "iphone_15_pro",
+    "timestamp": "2026-09-24T12:13:12Z",
+    "source": "stream_simulator",
+    "payload": {
+      "rating": 5.0,
+      "review_id": "rv_stream_0396"
+    }
+  },
+  {
+    "event_id": "evt_000398",
+    "event_type": "RATING_UPDATE",
+    "product_id": "pixel_8_pro",
+    "timestamp": "2026-09-24T12:13:14Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.4,
+      "new_rating": 4.0
+    }
+  },
+  {
+    "event_id": "evt_000399",
+    "event_type": "RATING_UPDATE",
+    "product_id": "xiaomi_14_pro",
+    "timestamp": "2026-09-24T12:13:16Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.8,
+      "new_rating": 4.0
+    }
+  },
+  {
+    "event_id": "evt_000400",
+    "event_type": "RATING_UPDATE",
+    "product_id": "thinkpad_x1_carbon",
+    "timestamp": "2026-09-24T12:13:18Z",
+    "source": "stream_simulator",
+    "payload": {
+      "old_rating": 4.6,
+      "new_rating": 4.9
+    }
+  }
+]
