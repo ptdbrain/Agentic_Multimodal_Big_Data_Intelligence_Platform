@@ -47,7 +47,7 @@ class ReplayEngine:
 
         duration = max(time.time() - t0, 0.001)
         actual_throughput = emitted / duration
-        print(f"[✓] Replay finished: {emitted} events in {duration:.2f}s (Throughput: {actual_throughput:.1f} events/sec)")
+        print(f"[OK] Replay finished: {emitted} events in {duration:.2f}s (Throughput: {actual_throughput:.1f} events/sec)")
         return {
             "emitted": emitted,
             "duration_sec": duration,

@@ -62,7 +62,7 @@ class GoldAggregator:
         cat_daily["avg_price"] = cat_daily["avg_price"].round(2)
         storage.write_gold_parquet("category_daily_stats", cat_daily)
 
-        print("[✓] Gold Data Marts successfully generated and stored in Data Lake.")
+        print("[OK] Gold Data Marts successfully generated and stored in Data Lake.")
         return {
             "product_daily_stats": merged_p,
             "brand_daily_stats": brand_daily,
