@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'sentinel-kafka'
+    static_configs:
+      - targets: ['kafka:9092']
+
+  - job_name: 'sentinel-spark'
+    static_configs:
+      - targets: ['spark-master:8080']
+
+  - job_name: 'sentinel-postgres'
+    static_configs:
+      - targets: ['postgres:5432']

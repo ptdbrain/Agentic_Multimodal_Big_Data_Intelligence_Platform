@@ -1,0 +1,16 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+
+  - name: PostgreSQL-SentinelDW
+    type: postgres
+    url: postgres:5432
+    user: sentinel
+    database: sentinel_dw
+    jsonData:
+      sslmode: disable
