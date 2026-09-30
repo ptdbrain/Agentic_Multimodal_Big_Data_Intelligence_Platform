@@ -4,13 +4,22 @@ import plotly.express as px
 from dashboard.utils import load_catalog_data, load_reviews_data
 from analytics.descriptive.stats import DescriptiveStats
 
-st.set_page_config(page_title="Product Analytics", page_icon="📱", layout="wide")
-st.title("📱 Product Analytics Explorer")
+st.set_page_config(page_title="Product Analytics", page_icon="\U0001f4f1", layout="wide")
+st.title("\U0001f4f1 Product Analytics Explorer")
 
 prods = load_catalog_data()
 revs = load_reviews_data()
 
+if prods.empty:
+    st.warning("No product data available. Please run the E2E pipeline first.")
+    st.stop()
+
 metrics_df = DescriptiveStats.compute_product_metrics(revs, prods)
+
+# Ensure required columns exist with defaults for empty data
+for col in ["review_count", "avg_rating"]:
+    if col not in metrics_df.columns:
+        metrics_df[col] = 0 if col == "review_count" else 0.0
 
 # Filters
 col_f1, col_f2 = st.columns(2)
@@ -27,14 +36,19 @@ if selected_brand != "All":
 if selected_cat != "All":
     filtered = filtered[filtered["category"] == selected_cat]
 
+display_cols = [c for c in ["product_id", "product_name", "brand", "category", "price", "avg_rating", "review_count"] if c in filtered.columns]
 st.subheader(f"Catalog Products ({len(filtered)} items)")
-st.dataframe(filtered[["product_id", "product_name", "brand", "category", "price", "avg_rating", "review_count"]], use_container_width=True)
+st.dataframe(filtered[display_cols], use_container_width=True)
 
 st.divider()
 st.subheader("Price vs Average Rating Distribution")
-fig_scatter = px.scatter(
-    filtered, x="price", y="avg_rating", size="review_count", color="brand",
-    hover_name="product_name", labels={"price": "Price (VND)", "avg_rating": "Average Rating"},
-    title="Product Positioning Matrix (Price vs Rating vs Volume)"
-)
-st.plotly_chart(fig_scatter, use_container_width=True)
+if not filtered.empty and "review_count" in filtered.columns and filtered["review_count"].sum() > 0:
+    fig_scatter = px.scatter(
+        filtered, x="price", y="avg_rating", size="review_count", color="brand",
+        hover_name="product_name", labels={"price": "Price (VND)", "avg_rating": "Average Rating"},
+        title="Product Positioning Matrix (Price vs Rating vs Volume)"
+    )
+    st.plotly_chart(fig_scatter, use_container_width=True)
+else:
+    st.info("No review data available for scatter plot.")
+

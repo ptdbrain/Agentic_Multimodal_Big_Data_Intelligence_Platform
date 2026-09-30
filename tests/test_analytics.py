@@ -4,8 +4,6 @@ from analytics.descriptive.stats import DescriptiveStats
 from analytics.descriptive.comparative import ComparativeAnalytics
 from analytics.trend.trends import TrendAnalyzer
 from analytics.anomaly.price_anomaly import PriceAnomalyDetector
-from analytics.anomaly.review_burst import ReviewBurstDetector
-from analytics.anomaly.rating_anomaly import RatingAnomalyDetector
 
 @pytest.fixture
 def sample_data():

@@ -10,6 +10,7 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+.env
 .env.local
 storage/datalake/bronze/*
 storage/datalake/silver/*
