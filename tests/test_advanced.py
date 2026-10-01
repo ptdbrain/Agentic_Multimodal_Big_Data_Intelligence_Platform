@@ -571,3 +571,98 @@ class TestComparativeAnalyticsDynamic:
         assert store_a["product_count"] == 2
         assert store_a["review_count"] == 2
 
+
+# ============================================================
+# 16. Pluggable E-Commerce Crawler Ecosystem Tests
+# ============================================================
+from ingestion.crawler.registry import CrawlerRegistry
+from ingestion.crawler.tiki import TikiCrawler
+from ingestion.crawler.generic_html import UniversalProductScraper
+from ingestion.crawler.mock import MockEcommerceCrawler
+
+class TestCrawlerEcosystem:
+    def test_crawler_registry_discovery_and_registration(self):
+        available = CrawlerRegistry.list_available()
+        assert "tiki" in available
+        assert "universal" in available
+        assert "mock" in available
+
+        tiki = CrawlerRegistry.get("tiki")
+        assert isinstance(tiki, TikiCrawler)
+
+        mock = CrawlerRegistry.get("mock")
+        assert isinstance(mock, MockEcommerceCrawler)
+
+    def test_tiki_product_and_review_standardization(self):
+        crawler = TikiCrawler()
+        raw_prod = {
+            "id": 123456,
+            "name": "Apple iPhone 15 Pro",
+            "price": 27990000,
+            "brand_name": "Apple",
+            "primary_category_name": "Smartphone",
+            "rating_average": 4.8,
+            "review_count": 150,
+            "seller_name": "Tiki Trading"
+        }
+        std_p = crawler.standardize_product(raw_prod)
+        assert std_p["product_id"] == "tiki_123456"
+        assert std_p["product_name"] == "Apple iPhone 15 Pro"
+        assert std_p["price"] == 27990000.0
+        assert std_p["currency"] == "VND"
+        assert std_p["source"] == "tiki_crawler"
+
+        raw_rev = {
+            "id": 999,
+            "product_id": 123456,
+            "customer_id": 888,
+            "rating": 5,
+            "title": "Tuyệt vời",
+            "content": "Máy rất đẹp và mượt",
+            "created_at": 1727000000,
+            "thank_count": 5
+        }
+        std_r = crawler.standardize_review(raw_rev)
+        assert std_r["review_id"] == "tiki_rv_999"
+        assert std_r["product_id"] == "tiki_123456"
+        assert std_r["rating"] == 5.0
+        assert std_r["review_title"] == "Tuyệt vời"
+        assert std_r["source"] == "tiki_crawler"
+
+    def test_universal_scraper_json_ld_extraction(self):
+        scraper = UniversalProductScraper()
+        sample_html = """
+        <html>
+        <head>
+            <script type="application/ld+json">
+            {
+                "@context": "https://schema.org/",
+                "@type": "Product",
+                "name": "Sony WH-1000XM5",
+                "image": "https://example.com/sony.jpg",
+                "brand": {"@type": "Brand", "name": "Sony"},
+                "offers": {
+                    "@type": "Offer",
+                    "price": "7990000",
+                    "priceCurrency": "VND"
+                },
+                "aggregateRating": {
+                    "@type": "AggregateRating",
+                    "ratingValue": "4.9",
+                    "reviewCount": "89"
+                }
+            }
+            </script>
+        </head>
+        <body></body>
+        </html>
+        """
+        data = scraper._extract_metadata_from_html(sample_html, "https://sony-store.vn/wh1000xm5")
+        assert data["product_name"] == "Sony WH-1000XM5"
+        assert data["brand"] == "Sony"
+        assert data["price"] == 7990000.0
+        assert data["currency"] == "VND"
+        assert data["rating"] == 4.9
+        assert data["review_count"] == 89
+
+

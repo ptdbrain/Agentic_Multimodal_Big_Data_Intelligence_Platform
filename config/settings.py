@@ -82,6 +82,20 @@ class SearchSettings:
     default_search_limit: int = int(get_env("SEARCH_DEFAULT_LIMIT", "20"))
 
 @dataclass
+class CrawlerSettings:
+    tiki_base_url: str = get_env("TIKI_BASE_URL", "https://tiki.vn")
+    tiki_products_endpoint: str = get_env("TIKI_PRODUCTS_ENDPOINT", "/api/v2/products")
+    tiki_reviews_endpoint: str = get_env("TIKI_REVIEWS_ENDPOINT", "/api/v2/reviews")
+    user_agent: str = get_env(
+        "CRAWLER_USER_AGENT",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
+    request_timeout_sec: int = int(get_env("CRAWLER_TIMEOUT_SEC", "15"))
+    rate_limit_rps: float = float(get_env("CRAWLER_RATE_LIMIT_RPS", "2.0"))
+    max_retries: int = int(get_env("CRAWLER_MAX_RETRIES", "3"))
+    retry_backoff_sec: float = float(get_env("CRAWLER_RETRY_BACKOFF_SEC", "1.5"))
+
+@dataclass
 class Settings:
     app_name: str = "SentinelAI"
     env: str = get_env("ENV", "development")
@@ -94,6 +108,8 @@ class Settings:
     spark: SparkSettings = field(default_factory=SparkSettings)
     ingestion: IngestionSettings = field(default_factory=IngestionSettings)
     search: SearchSettings = field(default_factory=SearchSettings)
+    crawler: CrawlerSettings = field(default_factory=CrawlerSettings)
 
 settings = Settings()
+
 
