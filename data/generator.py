@@ -62,18 +62,28 @@ NEGATIVE_FEEDBACK_EN = [
     "Occasional software glitch causing random restarts."
 ]
 
-def generate_products() -> List[Dict[str, Any]]:
+from typing import List, Dict, Any, Optional
+from config.settings import settings
+
+def generate_products(
+    metadata: Optional[List[Dict[str, Any]]] = None,
+    reference_date: Optional[datetime.datetime] = None,
+    currency: Optional[str] = None
+) -> List[Dict[str, Any]]:
     products = []
-    now = datetime.datetime(2026, 9, 24, 8, 0, 0)
-    for p in PRODUCTS_METADATA:
+    now = reference_date or datetime.datetime(2026, 9, 24, 8, 0, 0)
+    meta_list = metadata or PRODUCTS_METADATA
+    curr = currency or settings.analytics.default_currency
+
+    for p in meta_list:
         prod = {
             "product_id": p["id"],
             "product_name": p["name"],
             "brand": p["brand"],
             "category": p["category"],
-            "subcategory": "Premium Tech",
+            "subcategory": p.get("subcategory", "Premium Tech"),
             "price": float(p["base_price"]),
-            "currency": "VND",
+            "currency": curr,
             "rating": round(random.uniform(4.1, 4.9), 1),
             "review_count": random.randint(150, 4500),
             "seller": f"{p['brand']} Official Store",
@@ -86,14 +96,22 @@ def generate_products() -> List[Dict[str, Any]]:
         products.append(prod)
     return products
 
-def generate_reviews(products: List[Dict[str, Any]], count: int = 1500, inject_anomalies: bool = True) -> List[Dict[str, Any]]:
+def generate_reviews(
+    products: List[Dict[str, Any]],
+    count: int = 1500,
+    inject_anomalies: bool = True,
+    start_date: Optional[datetime.datetime] = None,
+    burst_product_id: Optional[str] = None,
+    burst_count: int = 60
+) -> List[Dict[str, Any]]:
     reviews = []
-    start_date = datetime.datetime(2026, 8, 20, 0, 0, 0)
+    base_start = start_date or datetime.datetime(2026, 8, 20, 0, 0, 0)
+    target_burst_prod = burst_product_id or ("iphone_15" if any(p["product_id"] == "iphone_15" for p in products) else products[0]["product_id"])
     
     for i in range(count):
         prod = random.choice(products)
         delta_seconds = random.randint(0, 35 * 86400)
-        review_time = start_date + datetime.timedelta(seconds=delta_seconds)
+        review_time = base_start + datetime.timedelta(seconds=delta_seconds)
         
         is_vi = random.random() < 0.65
         lang = "vi" if is_vi else "en"
@@ -137,14 +155,13 @@ def generate_reviews(products: List[Dict[str, Any]], count: int = 1500, inject_a
         }
         reviews.append(review)
 
-    # Inject specific anomalies as specified in plan.md
-    if inject_anomalies:
-        # Anomaly 1: Review Burst on iPhone 15 on Sep 20 (60 reviews in 1 hour)
-        burst_time = datetime.datetime(2026, 9, 20, 14, 0, 0)
-        for b in range(60):
+    # Inject specific anomaly
+    if inject_anomalies and target_burst_prod:
+        burst_time = base_start + datetime.timedelta(days=31, hours=14)
+        for b in range(burst_count):
             reviews.append({
                 "review_id": f"rv_burst_{b+1:03d}",
-                "product_id": "iphone_15",
+                "product_id": target_burst_prod,
                 "user_id": f"usr_burst_{b+1}",
                 "rating": 1.0 if b % 2 == 0 else 2.0,
                 "review_title": "Lỗi màn hình sau update",
@@ -159,30 +176,35 @@ def generate_reviews(products: List[Dict[str, Any]], count: int = 1500, inject_a
 
     return reviews
 
-def generate_price_history(products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def generate_price_history(
+    products: List[Dict[str, Any]],
+    days_history: int = 35,
+    start_date: Optional[datetime.datetime] = None,
+    currency: Optional[str] = None
+) -> List[Dict[str, Any]]:
     prices = []
-    start_date = datetime.datetime(2026, 8, 20, 0, 0, 0)
+    base_start = start_date or datetime.datetime(2026, 8, 20, 0, 0, 0)
+    curr = currency or settings.analytics.default_currency
     price_idx = 1
     
     for prod in products:
         base = prod["price"]
-        # Generate daily snapshots
-        for day in range(35):
-            cur_time = start_date + datetime.timedelta(days=day, hours=10)
-            # Slight natural fluctuation +/- 3%
+        for day in range(days_history):
+            cur_time = base_start + datetime.timedelta(days=day, hours=10)
             fluctuation = random.uniform(-0.03, 0.03)
             current_price = round(base * (1.0 + fluctuation), -4)
             
-            # Anomaly injection for galaxy_s24_ultra: sudden glitch drop on day 22
-            if prod["product_id"] == "galaxy_s24_ultra" and day == 22:
-                current_price = round(base * 0.15, -4) # 85% discount glitch
+            # Anomaly injection for first product or galaxy_s24_ultra: sudden glitch drop
+            is_anomaly_prod = prod["product_id"] == "galaxy_s24_ultra" or (prod == products[0] and len(products) == 1)
+            if is_anomaly_prod and day == int(days_history * 0.65):
+                current_price = round(base * 0.15, -4)
 
             prices.append({
                 "price_id": f"pr_{price_idx:06d}",
                 "product_id": prod["product_id"],
                 "price": float(current_price),
-                "currency": "VND",
-                "seller": prod["seller"],
+                "currency": curr,
+                "seller": prod.get("seller", "Official Store"),
                 "timestamp": cur_time.isoformat() + "Z",
                 "source": "price_poller"
             })
@@ -190,12 +212,16 @@ def generate_price_history(products: List[Dict[str, Any]]) -> List[Dict[str, Any
             
     return prices
 
-def generate_streaming_events(products: List[Dict[str, Any]], count: int = 500) -> List[Dict[str, Any]]:
+def generate_streaming_events(
+    products: List[Dict[str, Any]],
+    count: int = 500,
+    base_time: Optional[datetime.datetime] = None
+) -> List[Dict[str, Any]]:
     events = []
-    base_time = datetime.datetime(2026, 9, 24, 12, 0, 0)
+    start_t = base_time or datetime.datetime(2026, 9, 24, 12, 0, 0)
     for i in range(count):
         prod = random.choice(products)
-        event_time = base_time + datetime.timedelta(seconds=i * 2)
+        event_time = start_t + datetime.timedelta(seconds=i * 2)
         event_type = random.choice(["NEW_REVIEW", "PRICE_UPDATE", "RATING_UPDATE"])
         
         if event_type == "NEW_REVIEW":
@@ -203,7 +229,7 @@ def generate_streaming_events(products: List[Dict[str, Any]], count: int = 500) 
         elif event_type == "PRICE_UPDATE":
             payload = {"old_price": prod["price"], "new_price": round(prod["price"] * random.uniform(0.95, 1.05), -4)}
         else:
-            payload = {"old_rating": prod["rating"], "new_rating": round(random.uniform(4.0, 5.0), 1)}
+            payload = {"old_rating": prod.get("rating", 4.5), "new_rating": round(random.uniform(4.0, 5.0), 1)}
 
         events.append({
             "event_id": f"evt_{i+1:06d}",
@@ -221,3 +247,4 @@ if __name__ == "__main__":
     prs = generate_price_history(prods)
     evts = generate_streaming_events(prods, count=300)
     print(f"Generated {len(prods)} products, {len(revs)} reviews, {len(prs)} price points, {len(evts)} events.")
+

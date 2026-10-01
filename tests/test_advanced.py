@@ -379,3 +379,195 @@ class TestPriceTracker:
         df = pd.DataFrame(columns=["product_id", "price", "timestamp"])
         result = PriceTracker.calculate_price_volatility(df)
         assert result.empty
+
+
+# ============================================================
+# 9. Dynamic Normalization & Currency Tests
+# ============================================================
+from spark.etl.normalizer import EntityNormalizer
+
+class TestEntityNormalizerDynamic:
+    def test_normalize_price_international_formats(self):
+        # US format
+        assert EntityNormalizer.normalize_price("$1,299.99") == 1299.99
+        assert EntityNormalizer.normalize_price("1,500.00") == 1500.00
+        # EU/VN format
+        assert EntityNormalizer.normalize_price("19.990.000 VND") == 19990000.0
+        assert EntityNormalizer.normalize_price("1.299,50 €") == 1299.50
+        # Numeric values
+        assert EntityNormalizer.normalize_price(25000000) == 25000000.0
+        assert EntityNormalizer.normalize_price(None) == 0.0
+        assert EntityNormalizer.normalize_price("invalid") == 0.0
+
+    def test_normalize_brand_custom_map(self):
+        custom = {"sams": "Samsung Custom", "fruit": "Apple"}
+        assert EntityNormalizer.normalize_brand("sams", custom_map=custom) == "Samsung Custom"
+        assert EntityNormalizer.normalize_brand("fruit", custom_map=custom) == "Apple"
+        assert EntityNormalizer.normalize_brand("other_brand", custom_map=custom) == "Other_Brand"
+
+    def test_normalize_category_custom_map(self):
+        custom = {"phone": "Mobile", "vr": "Virtual Reality"}
+        assert EntityNormalizer.normalize_category("vr", custom_map=custom) == "Virtual Reality"
+        assert EntityNormalizer.normalize_category("unknown", custom_map=custom) == "Unknown"
+
+
+# ============================================================
+# 10. Robust Data Cleaner Tests
+# ============================================================
+from spark.etl.cleaner import DataCleaner
+
+class TestDataCleanerRobustness:
+    def test_clean_reviews_string_ratings(self):
+        reviews = [
+            {"review_id": "r1", "review_text": "Good phone", "rating": "4.5"},
+            {"review_id": "r2", "review_text": "Bad phone", "rating": "1.0"},
+            {"review_id": "r3", "review_text": "Missing rating", "rating": None},
+            {"review_id": "r4", "review_text": "   ", "rating": 5.0}, # empty text
+        ]
+        cleaned = DataCleaner.clean_reviews(reviews)
+        assert len(cleaned) == 2
+        assert cleaned[0]["rating"] == 4.5
+        assert cleaned[1]["rating"] == 1.0
+
+    def test_clean_products_robustness(self):
+        products = [
+            {"product_id": "p1", "product_name": "Phone", "price": "15000000"},
+            {"product_id": "p2", "product_name": "Free Tool", "price": None},
+            {"product_id": "", "product_name": "No ID", "price": 100}
+        ]
+        cleaned = DataCleaner.clean_products(products)
+        assert len(cleaned) == 2
+        assert cleaned[0]["price"] == 15000000.0
+        assert cleaned[1]["price"] == 0.0
+
+
+# ============================================================
+# 11. Generic Deduplicator Tests
+# ============================================================
+from spark.etl.deduplicator import Deduplicator
+
+class TestGenericDeduplicator:
+    def test_deduplicate_arbitrary_records(self):
+        records = [
+            {"code": "C1", "vendor": "V1", "amount": 100},
+            {"code": "C1", "vendor": "V1", "amount": 100}, # duplicate by id & content
+            {"code": "C2", "vendor": "V1", "amount": 200},
+            {"code": "C3", "vendor": "V1", "amount": 200}, # duplicate content
+        ]
+        unique, dups = Deduplicator.deduplicate_records(
+            records,
+            id_field="code",
+            hash_fields=["vendor", "amount"]
+        )
+        assert len(unique) == 2
+        assert dups == 2
+
+
+# ============================================================
+# 12. Rule Registry & Per-Rule Metrics Tests
+# ============================================================
+from spark.quality.rules import RuleRegistry, NonNullRule, RangeRule, CustomPredicateRule
+from spark.quality.metrics import DataQualityEvaluator
+
+class TestRuleRegistryAndMetrics:
+    def test_custom_rule_and_per_rule_eval(self):
+        custom_rule = CustomPredicateRule(
+            name="EvenRatingRule",
+            predicate=lambda r: float(r.get("rating", 0)) % 2 == 0,
+            error_message="Rating must be even"
+        )
+        rules = [
+            NonNullRule("id"),
+            RangeRule("rating", 1.0, 5.0),
+            custom_rule
+        ]
+        records = [
+            {"id": "1", "rating": 4.0}, # passes all
+            {"id": "2", "rating": 3.0}, # fails even rating
+            {"id": None, "rating": 2.0} # fails NonNull
+        ]
+        res = DataQualityEvaluator.evaluate_batch("test", records, rules, primary_key="id")
+        assert res["records_received"] == 3
+        assert res["records_valid"] == 1
+        assert len(res["rule_evaluations"]) == 3
+        # Check rule breakdown
+        even_stat = next(re for re in res["rule_evaluations"] if re["Rule Name"] == "EvenRatingRule")
+        assert even_stat["Failed Count"] == 1
+
+
+# ============================================================
+# 13. File Loader Diversity (JSONL, Delimiters)
+# ============================================================
+from ingestion.file_loader.loader import FileLoader
+
+class TestFileLoaderDiversity:
+    @pytest.fixture(autouse=True)
+    def setup_files(self):
+        self.temp_dir = tempfile.mkdtemp(prefix="test_loader_")
+        yield
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_load_jsonl(self):
+        jsonl_path = os.path.join(self.temp_dir, "data.jsonl")
+        with open(jsonl_path, "w", encoding="utf-8") as f:
+            f.write('{"id": 1, "name": "Alpha"}\n')
+            f.write('{"id": 2, "name": "Beta"}\n')
+
+        records = FileLoader.load_records(jsonl_path)
+        assert len(records) == 2
+        assert records[0]["name"] == "Alpha"
+
+    def test_load_tsv(self):
+        tsv_path = os.path.join(self.temp_dir, "data.tsv")
+        with open(tsv_path, "w", encoding="utf-8") as f:
+            f.write("col_a\tcol_b\n1\tApple\n2\tBanana\n")
+
+        df = FileLoader.load_file(tsv_path)
+        assert len(df) == 2
+        assert list(df.columns) == ["col_a", "col_b"]
+
+
+# ============================================================
+# 14. Stream Producer Virtual Buffer Tests
+# ============================================================
+from kafka.producers.stream_producer import StreamProducer
+
+class TestStreamProducerVirtualQueue:
+    def test_offline_virtual_queue_buffering(self):
+        prod = StreamProducer(bootstrap_servers="invalid_broker:9999", enable_offline_buffer=True)
+        records = [
+            {"product_id": "p1", "price": 100},
+            {"product_id": "p2", "price": 200}
+        ]
+        sent, rate = prod.produce_batch("raw.test", records, rate=100.0)
+        assert sent == 2
+        assert len(prod.virtual_queue) == 2
+        assert prod.virtual_queue[0]["topic"] == "raw.test"
+        prod.clear_virtual_queue()
+        assert len(prod.virtual_queue) == 0
+
+
+# ============================================================
+# 15. Comparative Analytics by Arbitrary Dimension
+# ============================================================
+from analytics.descriptive.comparative import ComparativeAnalytics
+
+class TestComparativeAnalyticsDynamic:
+    def test_compare_by_arbitrary_dimension(self):
+        prods = pd.DataFrame([
+            {"product_id": "p1", "seller": "Store A", "price": 100.0},
+            {"product_id": "p2", "seller": "Store A", "price": 150.0},
+            {"product_id": "p3", "seller": "Store B", "price": 300.0},
+        ])
+        revs = pd.DataFrame([
+            {"review_id": "r1", "product_id": "p1", "rating": 5.0},
+            {"review_id": "r2", "product_id": "p2", "rating": 4.0},
+        ])
+        res = ComparativeAnalytics.compare_by_dimension(prods, revs, dimension="seller")
+        assert len(res) == 2
+        assert "seller" in res.columns
+        assert "product_count" in res.columns
+        store_a = res[res["seller"] == "Store A"].iloc[0]
+        assert store_a["product_count"] == 2
+        assert store_a["review_count"] == 2
+

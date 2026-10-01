@@ -7,40 +7,55 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
+from typing import Optional, List, Dict, Any, Union
 from kafka.producers.stream_producer import StreamProducer
+from ingestion.file_loader.loader import FileLoader
+from config.settings import settings
 
 class ReplayEngine:
-    """Replays static historical datasets as real-time event streams with updated timestamps.
+    """Replays static historical datasets (CSV, JSON, JSONL, Parquet) as real-time event streams.
     Direct proof of Velocity for Big Data evaluations.
     """
     
-    def __init__(self, producer: StreamProducer = None):
+    def __init__(self, producer: Optional[StreamProducer] = None):
         self.producer = producer or StreamProducer()
 
-    def replay_dataset(self, file_path: str, topic: str, rate: float = 100.0, limit: int = None):
+    def replay_dataset(
+        self,
+        file_path: Union[str, Path],
+        topic: str,
+        rate: Optional[float] = None,
+        limit: Optional[int] = None,
+        key_field: Optional[str] = None,
+        timestamp_fields: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         p = Path(file_path)
-        with open(p, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        data = FileLoader.load_records(p)
 
         if limit:
             data = data[:limit]
 
-        print(f"[*] Starting Replay Engine on {len(data)} records -> topic '{topic}' @ {rate} events/sec")
-        interval = 1.0 / rate if rate > 0 else 0
+        target_rate = rate if rate is not None else settings.ingestion.rate_limit_rps
+        print(f"[*] Starting Replay Engine on {len(data)} records -> topic '{topic}' @ {target_rate} events/sec")
+        interval = 1.0 / target_rate if target_rate > 0 else 0
         t0 = time.time()
         emitted = 0
+        ts_fields = timestamp_fields or ["timestamp", "review_date", "created_at"]
 
         for record in data:
             # Replay with current timestamp
             record_copy = dict(record)
             now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
-            if "timestamp" in record_copy:
-                record_copy["timestamp"] = now_iso
-            if "review_date" in record_copy:
-                record_copy["review_date"] = now_iso
+            for tf in ts_fields:
+                if tf in record_copy:
+                    record_copy[tf] = now_iso
             
-            key = record_copy.get("product_id", "")
-            self.producer.send_message(topic, key=key, value=record_copy)
+            if key_field:
+                key = record_copy.get(key_field)
+            else:
+                key = record_copy.get("product_id") or record_copy.get("review_id") or record_copy.get("id")
+
+            self.producer.send_message(topic, key=str(key) if key else None, value=record_copy)
             emitted += 1
             if interval > 0:
                 time.sleep(interval)
@@ -53,6 +68,7 @@ class ReplayEngine:
             "duration_sec": duration,
             "throughput_eps": actual_throughput
         }
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
