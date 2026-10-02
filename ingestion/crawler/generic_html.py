@@ -1,6 +1,7 @@
 import re
 import json
 import datetime
+import hashlib
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse
 from ingestion.crawler.base import BaseEcommerceCrawler
@@ -24,7 +25,7 @@ class UniversalProductScraper(BaseEcommerceCrawler):
 
     def _extract_metadata_from_html(self, html: str, url: str) -> Dict[str, Any]:
         """Extracts JSON-LD Schema.org Product markup or OpenGraph tags."""
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
+        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
         domain = urlparse(url).netloc
 
         # 1. Try to extract Schema.org JSON-LD
@@ -43,7 +44,7 @@ class UniversalProductScraper(BaseEcommerceCrawler):
 
                         raw_price = offers.get("price") or 0.0
                         return {
-                            "product_id": f"web_{abs(hash(url)) % 100000000}",
+                            "product_id": f"web_{hashlib.sha256(url.encode()).hexdigest()[:12]}",
                             "product_name": str(item.get("name") or "Web Product").strip(),
                             "brand": str(item.get("brand", {}).get("name") if isinstance(item.get("brand"), dict) else item.get("brand") or domain).strip(),
                             "category": str(item.get("category") or "Retail").strip(),
@@ -84,7 +85,7 @@ class UniversalProductScraper(BaseEcommerceCrawler):
             price = 0.0
 
         return {
-            "product_id": f"web_{abs(hash(url)) % 100000000}",
+            "product_id": f"web_{hashlib.sha256(url.encode()).hexdigest()[:12]}",
             "product_name": title,
             "brand": domain.replace("www.", "").split(".")[0].title(),
             "category": "Electronics",

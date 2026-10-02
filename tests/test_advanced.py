@@ -258,7 +258,7 @@ class TestReviewBurstDetector:
                 reviews.append({
                     "review_id": f"r{rid}", "product_id": "p1",
                     "rating": 4.0,
-                    "review_date": (base_date + timedelta(hours=h, minutes=rid % 60)).isoformat() + "Z"
+                    "review_date": (base_date + timedelta(hours=h, minutes=rid % 60)).isoformat().replace("+00:00", "Z")
                 })
         # Spike: 20 reviews in hour 11
         for _ in range(20):
@@ -266,7 +266,7 @@ class TestReviewBurstDetector:
             reviews.append({
                 "review_id": f"r{rid}", "product_id": "p1",
                 "rating": 1.5,
-                "review_date": (base_date + timedelta(hours=11, minutes=rid % 60)).isoformat() + "Z"
+                "review_date": (base_date + timedelta(hours=11, minutes=rid % 60)).isoformat().replace("+00:00", "Z")
             })
         df = pd.DataFrame(reviews)
         anomalies = ReviewBurstDetector.detect_bursts(df, window_hours=1, threshold_multiplier=2.0)
@@ -297,7 +297,7 @@ class TestRatingAnomalyDetector:
                 reviews.append({
                     "review_id": f"r{rid}", "product_id": "p1",
                     "rating": 5.0,
-                    "review_date": (base + timedelta(days=day, hours=rid % 12)).isoformat() + "Z"
+                    "review_date": (base + timedelta(days=day, hours=rid % 12)).isoformat().replace("+00:00", "Z")
                 })
         # Day 11: sudden drop to 1.0 ratings, 10 reviews
         for _ in range(10):
@@ -305,7 +305,7 @@ class TestRatingAnomalyDetector:
             reviews.append({
                 "review_id": f"r{rid}", "product_id": "p1",
                 "rating": 1.0,
-                "review_date": (base + timedelta(days=11, hours=rid % 12)).isoformat() + "Z"
+                "review_date": (base + timedelta(days=11, hours=rid % 12)).isoformat().replace("+00:00", "Z")
             })
         df = pd.DataFrame(reviews)
         anomalies = RatingAnomalyDetector.detect_rating_drops(df, drop_threshold=0.5)
@@ -322,7 +322,7 @@ class TestRatingAnomalyDetector:
                 reviews.append({
                     "review_id": f"r{rid}", "product_id": "p1",
                     "rating": 4.5,
-                    "review_date": (base + timedelta(days=day, hours=rid % 12)).isoformat() + "Z"
+                    "review_date": (base + timedelta(days=day, hours=rid % 12)).isoformat().replace("+00:00", "Z")
                 })
         df = pd.DataFrame(reviews)
         anomalies = RatingAnomalyDetector.detect_rating_drops(df)

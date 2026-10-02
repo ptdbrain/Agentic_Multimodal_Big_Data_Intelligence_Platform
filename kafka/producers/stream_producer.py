@@ -1,7 +1,9 @@
 import sys
 import time
 import json
+import uuid
 import argparse
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -12,46 +14,68 @@ from typing import List, Dict, Any, Optional, Tuple
 
 class StreamProducer:
     """Rate-controlled Kafka message producer demonstrating velocity control.
-    Supports Kafka cluster mode and resilient in-memory virtual queue fallback.
+    Supports real Kafka integration.
     """
     
-    def __init__(self, bootstrap_servers: Optional[str] = None, enable_offline_buffer: bool = True):
+    def __init__(self, bootstrap_servers: Optional[str] = None, enable_offline_buffer: bool = False):
         self.bootstrap_servers = bootstrap_servers or settings.kafka.bootstrap_servers
-        self.producer = None
         self.enable_offline_buffer = enable_offline_buffer
         self.virtual_queue: List[Dict[str, Any]] = []
+        self.producer = None
         self._init_producer()
 
     def _init_producer(self):
+        if self.enable_offline_buffer:
+            # Explicit test mode, don't require Kafka
+            return
+            
         try:
+            import sys
+            old_path = sys.path.copy()
+            sys.path = [p for p in sys.path if 'big data' not in p or p.endswith('site-packages')]
             from kafka import KafkaProducer
+            sys.path = old_path
+            
             self.producer = KafkaProducer(
                 bootstrap_servers=self.bootstrap_servers,
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
-                key_serializer=lambda k: k.encode('utf-8') if k else None,
-                request_timeout_ms=1000
+                key_serializer=lambda k: str(k).encode('utf-8') if k else None,
+                request_timeout_ms=5000,
+                retries=3
             )
-        except Exception:
-            self.producer = None
+        except Exception as e:
+            # Raise exception if Kafka is unavailable in production
+            raise RuntimeError(f"Failed to connect to Kafka at {self.bootstrap_servers}: {e}")
 
-    def send_message(self, topic: str, key: Optional[str], value: dict):
+    def send_message(self, topic: str, key: Optional[str], value: dict, event_type: str = "EVENT", source: str = "stream_producer"):
+        envelope = {
+            "event_id": f"evt_{uuid.uuid4()}",
+            "event_type": event_type,
+            "source": source,
+            "ingested_at": datetime.now(timezone.utc).isoformat(),
+            "payload": value
+        }
+        
+        if self.enable_offline_buffer:
+            self.virtual_queue.append({"topic": topic, "key": key, "value": envelope, "sent_at": time.time()})
+            return
+
         if self.producer:
             try:
-                self.producer.send(topic, key=key, value=value)
-                return
-            except Exception:
-                pass
-        
-        # Virtual Queue fallback
-        if self.enable_offline_buffer:
-            self.virtual_queue.append({"topic": topic, "key": key, "value": value, "sent_at": time.time()})
+                self.producer.send(topic, key=key, value=envelope)
+            except Exception as e:
+                raise RuntimeError(f"Failed to send message to Kafka topic {topic}: {e}")
+        else:
+            raise RuntimeError("Kafka producer is not initialized and offline buffer is disabled")
 
     def produce_batch(
         self,
         topic: str,
         records: list,
         rate: Optional[float] = None,
-        key_field: Optional[str] = None
+        key_field: Optional[str] = None,
+        event_type: str = "EVENT",
+        source: str = "stream_producer"
     ) -> Tuple[int, float]:
         target_rate = rate if rate is not None else settings.ingestion.rate_limit_rps
         interval = 1.0 / target_rate if target_rate > 0 else 0
@@ -62,12 +86,16 @@ class StreamProducer:
             if key_field:
                 key = rec.get(key_field)
             else:
-                key = rec.get("review_id") or rec.get("product_id") or rec.get("event_id") or rec.get("id")
+                # Default logic: Use product_id for reviews and products, or other ids
+                key = rec.get("product_id") or rec.get("review_id") or rec.get("event_id") or rec.get("id")
             
-            self.send_message(topic, key=str(key) if key else None, value=rec)
+            self.send_message(topic, key=str(key) if key else None, value=rec, event_type=event_type, source=source)
             sent += 1
             if interval > 0:
                 time.sleep(interval)
+
+        if self.producer:
+            self.producer.flush()
 
         duration = max(time.time() - t0, 0.001)
         actual_rate = sent / duration
@@ -86,8 +114,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     sample_file = REPO_ROOT / "data" / "sample" / "reviews.json"
-    with open(sample_file, "r", encoding="utf-8") as f:
-        records = json.load(f)[:args.count]
-
-    producer = StreamProducer()
-    producer.produce_batch(args.topic, records, rate=args.rate)
+    if sample_file.exists():
+        with open(sample_file, "r", encoding="utf-8") as f:
+            records = json.load(f)[:args.count]
+        
+        producer = StreamProducer()
+        producer.produce_batch(args.topic, records, rate=args.rate, event_type="NEW_REVIEW")

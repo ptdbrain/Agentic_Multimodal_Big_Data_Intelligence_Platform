@@ -1,54 +1,81 @@
 import sys
-import sqlite3
 from pathlib import Path
-from typing import Dict, Any, Optional
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
 from config.settings import settings
+from kafka import KafkaConsumer
+from minio import Minio
+import psycopg2
+import requests
 
-def check_system_health(timeout_ms: int = 1500) -> Dict[str, Any]:
-    """Checks health status of all infrastructure and platform components dynamically."""
-    status = {}
-    
-    # 1. Database Check
+def check_kafka():
+    print("Checking Kafka...")
     try:
-        conn = sqlite3.connect(settings.database.sqlite_path)
-        cur = conn.cursor()
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = [r[0] for r in cur.fetchall()]
-        conn.close()
-        status["database"] = {"status": "HEALTHY", "tables_count": len(tables), "path": str(settings.database.sqlite_path)}
+        consumer = KafkaConsumer(
+            bootstrap_servers=settings.kafka.bootstrap_servers,
+            request_timeout_ms=5000,
+            session_timeout_ms=5000
+        )
+        topics = consumer.topics()
+        print(f"Kafka is UP. Topics: {topics}")
+        return True
     except Exception as e:
-        status["database"] = {"status": "UNHEALTHY", "error": str(e)}
+        print(f"Kafka is DOWN: {e}")
+        return False
 
-    # 2. Data Lake Storage Check
-    lake_dir = settings.storage.local_data_dir
-    silver_dir = lake_dir / "silver"
-    gold_dir = lake_dir / "gold"
-    status["storage"] = {
-        "status": "HEALTHY" if lake_dir.exists() else "UNHEALTHY",
-        "path": str(lake_dir),
-        "silver_ready": silver_dir.exists(),
-        "gold_ready": gold_dir.exists()
-    }
-
-    # 3. Kafka Broker Connectivity
+def check_minio():
+    print("Checking MinIO...")
     try:
-        from kafka.admin import KafkaAdminClient
-        admin = KafkaAdminClient(bootstrap_servers=settings.kafka.bootstrap_servers, request_timeout_ms=timeout_ms)
-        topics = admin.list_topics()
-        admin.close()
-        status["kafka"] = {"status": "HEALTHY", "mode": "cluster", "topics_count": len(topics)}
-    except Exception:
-        status["kafka"] = {"status": "STANDALONE_FALLBACK", "mode": "virtual_queue"}
+        client = Minio(
+            settings.storage.endpoint,
+            access_key=settings.storage.access_key,
+            secret_key=settings.storage.secret_key,
+            secure=settings.storage.secure
+        )
+        exists = client.bucket_exists(settings.storage.data_lake_bucket)
+        print(f"MinIO is UP. Bucket '{settings.storage.data_lake_bucket}' exists: {exists}")
+        return True
+    except Exception as e:
+        print(f"MinIO is DOWN: {e}")
+        return False
 
-    print("================ SENTINEL HEALTH REPORT ================")
-    for comp, res in status.items():
-        print(f"[{comp.upper()}]: {res['status']} | {res}")
-    print("========================================================")
-    return status
+def check_postgres():
+    print("Checking PostgreSQL...")
+    try:
+        conn = psycopg2.connect(
+            host=settings.database.host,
+            port=settings.database.port,
+            user=settings.database.user,
+            password=settings.database.password,
+            dbname=settings.database.database,
+            connect_timeout=5
+        )
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        conn.close()
+        print("PostgreSQL is UP.")
+        return True
+    except Exception as e:
+        print(f"PostgreSQL is DOWN: {e}")
+        return False
+
+def check_spark():
+    print("Checking Spark...")
+    try:
+        if settings.spark.master.startswith("local"):
+            print("Spark is configured for local mode. No external master to check.")
+            return True
+        else:
+            print("Spark master is remote. Not performing deep connectivity check.")
+            return True
+    except Exception as e:
+        print(f"Spark check failed: {e}")
+        return False
 
 if __name__ == "__main__":
-    check_system_health()
-
+    print("Running SentinelAI Health Checks...")
+    check_kafka()
+    check_minio()
+    check_postgres()
+    check_spark()
+    print("Done.")

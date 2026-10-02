@@ -10,7 +10,7 @@ def get_env(key: str, default: str) -> str:
 
 @dataclass
 class KafkaSettings:
-    bootstrap_servers: str = get_env("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+    bootstrap_servers: str = get_env("KAFKA_BOOTSTRAP_SERVERS", "localhost:9094")
     client_id: str = get_env("KAFKA_CLIENT_ID", "sentinel-producer")
     group_id: str = get_env("KAFKA_GROUP_ID", "sentinel-consumers")
     topic_products: str = get_env("KAFKA_TOPIC_PRODUCTS", "raw.products")
@@ -24,9 +24,7 @@ class StorageSettings:
     access_key: str = get_env("MINIO_ACCESS_KEY", "minioadmin")
     secret_key: str = get_env("MINIO_SECRET_KEY", "minioadmin")
     secure: bool = get_env("MINIO_SECURE", "false").lower() == "true"
-    bucket_raw: str = get_env("MINIO_BUCKET_RAW", "sentinel-raw")
-    bucket_silver: str = get_env("MINIO_BUCKET_SILVER", "sentinel-silver")
-    bucket_gold: str = get_env("MINIO_BUCKET_GOLD", "sentinel-gold")
+    data_lake_bucket: str = get_env("DATA_LAKE_BUCKET", "sentinel-data")
     local_data_dir: Path = REPO_ROOT / get_env("LOCAL_DATA_DIR", "storage/datalake")
 
 @dataclass
@@ -36,7 +34,6 @@ class DatabaseSettings:
     user: str = get_env("POSTGRES_USER", "sentinel")
     password: str = get_env("POSTGRES_PASSWORD", "sentinelpass")
     database: str = get_env("POSTGRES_DB", "sentinel_dw")
-    use_sqlite_fallback: bool = get_env("USE_SQLITE_FALLBACK", "true").lower() == "true"
     sqlite_path: Path = REPO_ROOT / get_env("SQLITE_DB_PATH", "database/sentinel.db")
 
 @dataclass

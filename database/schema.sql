@@ -88,3 +88,16 @@ CREATE INDEX IF NOT EXISTS idx_prod_daily_date ON product_daily_stats(date);
 CREATE INDEX IF NOT EXISTS idx_brand_daily_date ON brand_daily_stats(date);
 CREATE INDEX IF NOT EXISTS idx_cat_daily_date ON category_daily_stats(date);
 CREATE INDEX IF NOT EXISTS idx_anomaly_timestamp ON anomaly_events(timestamp);
+
+CREATE TABLE IF NOT EXISTS price_daily_stats (
+    date DATE NOT NULL,
+    product_id VARCHAR(100) NOT NULL,
+    min_price NUMERIC(15, 2),
+    max_price NUMERIC(15, 2),
+    avg_price NUMERIC(15, 2),
+    price_std NUMERIC(15, 2),
+    data_points INTEGER DEFAULT 0,
+    PRIMARY KEY (date, product_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_price_daily_date ON price_daily_stats(date);

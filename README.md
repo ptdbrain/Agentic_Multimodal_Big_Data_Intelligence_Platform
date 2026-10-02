@@ -1,24 +1,31 @@
 # SentinelAI — Agentic Multimodal Big Data Intelligence Platform
-### Phase 1: Data Foundation & Analytics Engine
 
-[![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://python.org)
-[![Apache Kafka](https://img.shields.io/badge/Kafka-KRaft%203.7-black?logo=apachekafka)](https://kafka.apache.org/)
-[![Apache Spark](https://img.shields.io/badge/Spark-3.5.0-orange?logo=apachespark)](https://spark.apache.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql)](https://postgresql.org/)
-[![MinIO](https://img.shields.io/badge/MinIO-Data%20Lake-red?logo=minio)](https://min.io/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red?logo=streamlit)](https://streamlit.io/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+## Phase 1 Status: Under Active Development
 
----
+### ✅ Completed
+- [x] Schema design & data contracts (JSON Schema validation)
+- [x] Multi-format data ingestion (CSV, JSON, JSONL, Parquet)
+- [x] E-commerce crawler ecosystem (Tiki, Universal, Mock)
+- [x] Kafka real producer with message envelope (event_id, event_type, source, ingested_at, payload)
+- [x] Kafka consumer with manual offset commit and DLQ
+- [x] MinIO storage backend with local fallback
+- [x] Batch ETL pipeline (Clean -> Normalize -> Deduplicate -> Validate)  
+- [x] Price pipeline
+- [x] Gold analytics marts (product_daily_stats, brand_daily_stats, category_daily_stats, price_daily_stats)
+- [x] PostgreSQL warehouse with UPSERT
+- [x] Spark Structured Streaming (windowed aggregation with watermark)
+- [x] Anomaly detection (Review Burst, Price Anomaly, Rating Drop)
+- [x] Data Quality evaluator with per-rule metrics
+- [x] Streamlit dashboard
+- [x] 3V Benchmark suite
+- [x] Airflow DAG orchestration
+- [x] 65+ unit tests passing
 
-## 📌 Overview
-**SentinelAI (Phase 1)** delivers an enterprise-grade Big Data platform capable of ingesting, streaming, cleaning, validating, aggregating, and monitoring technology consumer product feedback and telemetry.
+### 🔄 Infrastructure Requirements  
+- Docker Compose with Kafka (KRaft), MinIO, Spark, PostgreSQL, Elasticsearch
+- `pip install -r requirements.txt`
 
-Architecture design adheres strictly to the **Medallion Data Lake** (Bronze, Silver, Gold) paradigm, preparing structured foundation data for downstream AI/ML and Agentic intelligence (Phase 2 & 3).
-
----
-
-## 🏛️ System Architecture
+### Architecture
 
 ```mermaid
 flowchart TD
@@ -67,15 +74,6 @@ flowchart TD
     PG --> AE --> ST
 ```
 
----
-
-## 🌟 The 3V Big Data Evidence
-- **Volume**: Processing thousands of tech products, reviews, and time-series price points stored in partitioned Parquet format.
-- **Velocity**: Rate-controlled Kafka streaming (10 to 500+ events/sec) and Spark window analytics (1-min and 5-min tumbling windows).
-- **Variety**: Ingestion across CSV, JSON, Parquet, relational tables, and bilingual customer feedback (Vietnamese & English).
-
----
-
 ## 🚀 Quickstart Guide
 
 ### 1. Prerequisites & Environment
@@ -85,7 +83,7 @@ git clone https://github.com/ptdbrain/Agentic_Multimodal_Big_Data_Intelligence_P
 cd Agentic_Multimodal_Big_Data_Intelligence_Platform
 
 # Install Python requirements
-pip install -r requirements.txt  # Or use pre-installed packages: pandas, pyarrow, streamlit, plotly, pytest
+pip install -r requirements.txt
 ```
 
 ### 2. Run the End-to-End Pipeline
@@ -98,38 +96,11 @@ python scripts/run_e2e_pipeline.py
 ```bash
 streamlit run dashboard/app.py
 ```
-The dashboard features 7 dedicated pages:
-1. **Overview**: Executive KPIs, review trajectories, category distribution.
-2. **Data Pipeline**: Real-time Kafka velocity gauges, latency metrics, live event stream simulation.
-3. **Product Analytics**: Product catalog matrix, price vs. rating scatter plot.
-4. **Review Analytics**: Rating distributions (1-5 stars), language split, buyer verification ratio.
-5. **Trend Analytics**: 7-day moving averages, positive vs. negative volume trends.
-6. **Anomaly Center**: Review bursts (review bombing), sudden price drops, rating drops.
-7. **Data Quality & Lineage**: Detailed DQ scorecards, rule breakdown, and interactive visual data lineage.
 
 ### 4. Run Test Suite
 ```bash
-pytest
+pytest -v
 ```
-
----
-
-## 📊 Phase 1 Definition of Done Checklist
-- [x] Multi-source real & synthetic dataset (Smartphones, Laptops, Tablets, Accessories)
-- [x] Multi-format support (CSV, JSON, Parquet)
-- [x] Medallion Data Lake architecture (Bronze, Silver, Gold)
-- [x] Kafka topics with partitioned ingestion
-- [x] Spark Batch ETL (Cleaner, Normalizer, Deduplicator)
-- [x] Spark Structured Streaming & Windowed Aggregations (1m, 5m)
-- [x] Comprehensive Data Quality Framework (Scorecards & Rule Engine)
-- [x] Analytics Engine (Descriptive, Trends, Price Anomalies, Review Bursts, Rating Drops)
-- [x] PostgreSQL Data Warehouse schema & sync
-- [x] Interactive Multi-page Streamlit Dashboard
-- [x] Prometheus & Grafana Monitoring configuration
-- [x] Apache Airflow orchestration DAG
-- [x] End-to-end integration tests & 100% test pass rate
-
----
 
 ## 👥 Author
 **PTDBrain** — *phandat20052009@gmail.com*

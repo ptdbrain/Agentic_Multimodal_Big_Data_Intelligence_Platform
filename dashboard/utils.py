@@ -6,6 +6,12 @@ from pathlib import Path
 from storage.storage_manager import storage
 
 def load_catalog_data() -> pd.DataFrame:
+    from dashboard.db_connector import DashboardDB
+    db = DashboardDB()
+    df_prods = db.query("SELECT * FROM products")
+    if not df_prods.empty:
+        return df_prods
+        
     df_prods = storage.read_silver_parquet("products")
     if df_prods.empty:
         sample_path = Path(__file__).resolve().parent.parent / "data" / "sample" / "products.parquet"
@@ -14,6 +20,12 @@ def load_catalog_data() -> pd.DataFrame:
     return df_prods
 
 def load_reviews_data() -> pd.DataFrame:
+    from dashboard.db_connector import DashboardDB
+    db = DashboardDB()
+    df_revs = db.query("SELECT * FROM reviews")
+    if not df_revs.empty:
+        return df_revs
+        
     df_revs = storage.read_silver_parquet("reviews")
     if df_revs.empty:
         sample_path = Path(__file__).resolve().parent.parent / "data" / "sample" / "reviews.parquet"
