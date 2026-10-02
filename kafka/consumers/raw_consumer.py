@@ -22,11 +22,9 @@ class RawConsumer:
         self.consumer = None
 
     def _init_consumer(self, topics: List[str]):
-        import sys
-        old_path = sys.path.copy()
-        sys.path = [p for p in sys.path if 'big data' not in p or p.endswith('site-packages')]
         from kafka import KafkaConsumer
-        sys.path = old_path
+        if not KafkaConsumer:
+            raise ImportError("KafkaConsumer not available")
         
         self.consumer = KafkaConsumer(
             *topics,

@@ -57,5 +57,7 @@ class PricePipeline:
             'processed': len(prices_source),
             'valid': len(valid),
             'invalid': len(invalid),
+            'prices_processed': len(valid),
+            'prices_invalid': len(invalid),
             'silver_records': valid
         }

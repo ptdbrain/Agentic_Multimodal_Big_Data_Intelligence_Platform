@@ -30,18 +30,18 @@ class StreamProducer:
             return
             
         try:
-            import sys
-            old_path = sys.path.copy()
-            sys.path = [p for p in sys.path if 'big data' not in p or p.endswith('site-packages')]
             from kafka import KafkaProducer
-            sys.path = old_path
+            if not KafkaProducer:
+                raise ImportError("KafkaProducer not available")
             
             self.producer = KafkaProducer(
                 bootstrap_servers=self.bootstrap_servers,
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                 key_serializer=lambda k: str(k).encode('utf-8') if k else None,
-                request_timeout_ms=5000,
-                retries=3
+                bootstrap_timeout_ms=1000,
+                request_timeout_ms=1000,
+                max_block_ms=1000,
+                retries=1
             )
         except Exception as e:
             # Raise exception if Kafka is unavailable in production

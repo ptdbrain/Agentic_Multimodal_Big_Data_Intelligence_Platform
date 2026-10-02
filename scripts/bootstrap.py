@@ -14,75 +14,28 @@ def main():
     print("  SENTINELAI PIPELINE BOOTSTRAP")
     print("=" * 60)
     
-    # 1. Provision Kafka Topics (if real Kafka is used)
-    # Not fully implemented without real Kafka, assuming standalone for now
+    # 1. Provision Kafka Topics
     print("\n[1/7] Provisioning Kafka topics...")
-    from config.settings import settings
-    print(f"Topics to provision: {settings.kafka.topic_products}, {settings.kafka.topic_reviews}")
-    time.sleep(1)
-    
-    # 2. MinIO Buckets
-    print("\n[2/7] Creating MinIO buckets...")
-    print(f"Buckets: {settings.storage.bucket_raw}")
-    time.sleep(1)
-    
-    # 3. PostgreSQL Schema
-    print("\n[3/7] Initializing PostgreSQL schema...")
-    from database.postgres_client import PostgresClient
-    client = PostgresClient()
     try:
-        client.execute("""
-            CREATE TABLE IF NOT EXISTS product_daily_stats (
-                date DATE,
-                product_id VARCHAR(50),
-                review_count INT,
-                avg_rating FLOAT,
-                rating_std FLOAT,
-                avg_price FLOAT,
-                min_price FLOAT,
-                max_price FLOAT,
-                high_rating_ratio FLOAT,
-                low_rating_ratio FLOAT
-            )
-        """)
-        client.execute("""
-            CREATE TABLE IF NOT EXISTS brand_daily_stats (
-                date DATE,
-                brand VARCHAR(100),
-                review_count INT,
-                avg_rating FLOAT
-            )
-        """)
-        client.execute("""
-            CREATE TABLE IF NOT EXISTS anomaly_events (
-                timestamp TIMESTAMP,
-                product_id VARCHAR(50),
-                anomaly_type VARCHAR(50),
-                severity VARCHAR(20),
-                details TEXT
-            )
-        """)
-        client.execute("""
-            CREATE TABLE IF NOT EXISTS data_quality_metrics (
-                timestamp TIMESTAMP,
-                dataset_name VARCHAR(50),
-                total_count INT,
-                valid_count INT,
-                invalid_count INT,
-                dq_score FLOAT
-            )
-        """)
-        client.execute("""
-            CREATE TABLE IF NOT EXISTS products (
-                product_id VARCHAR(50),
-                product_name VARCHAR(255),
-                brand VARCHAR(100),
-                category VARCHAR(100),
-                price FLOAT
-            )
-        """)
+        from kafka.topics.topic_manager import provision_topics
+        provision_topics()
     except Exception as e:
-        print(f"PostgreSQL initialization failed (falling back to SQLite/Parquet): {e}")
+        print(f"Topic provisioning skipped: {e}")
+    
+    # 2. MinIO Buckets / Storage Directories
+    print("\n[2/7] Initializing Storage / MinIO buckets...")
+    from storage.storage_manager import storage
+    print(f"Data Lake root / bucket ready: {storage.base_dir}")
+    
+    # 3. PostgreSQL / SQLite Schema
+    print("\n[3/7] Initializing database schema...")
+    try:
+        from database.warehouse import WarehouseManager
+        wm = WarehouseManager()
+        wm.initialize_schema()
+        print(f"Database schema initialized ({wm._engine_type}).")
+    except Exception as e:
+        print(f"Database initialization failed: {e}")
     time.sleep(1)
     
     # 4. Generate Sample Data

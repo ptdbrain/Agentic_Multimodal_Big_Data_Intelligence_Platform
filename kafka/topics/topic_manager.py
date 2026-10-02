@@ -5,11 +5,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from config.settings import settings
 
-import sys
-old_path = sys.path.copy()
-sys.path = [p for p in sys.path if 'big data' not in p or p.endswith('site-packages')]
 from kafka.admin import KafkaAdminClient, NewTopic
-sys.path = old_path
 
 def setup_topics():
     try:
