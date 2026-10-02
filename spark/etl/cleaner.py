@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 class DataCleaner:
     """Handles field-specific missing, malformed, and anomalous data.
@@ -69,3 +69,53 @@ class DataCleaner:
             cleaned.append(item)
         return cleaned
 
+    @staticmethod
+    def validate_reviews(reviews: List[Dict[str, Any]], min_rating: float = 1.0, max_rating: float = 5.0) -> Tuple[List, List]:
+        """Returns (valid_records, invalid_records). Invalid = out of range, NOT clamped."""
+        valid_records = []
+        invalid_records = []
+        
+        for r in reviews:
+            raw_rating = r.get("rating")
+            if raw_rating is None:
+                invalid_records.append(r)
+                continue
+            
+            try:
+                numeric_rating = float(raw_rating)
+                if min_rating <= numeric_rating <= max_rating:
+                    valid_records.append(r)
+                else:
+                    invalid_records.append(r)
+            except (ValueError, TypeError):
+                invalid_records.append(r)
+                
+        return valid_records, invalid_records
+
+    @staticmethod  
+    def clean_text_fields(records: List[Dict[str, Any]], text_fields: List[str]) -> List[Dict[str, Any]]:
+        """Pure cleaning: trim, fix encoding. No validation."""
+        cleaned = []
+        for r in records:
+            item = dict(r)
+            for field in text_fields:
+                if field in item and isinstance(item[field], str):
+                    item[field] = item[field].strip()
+            cleaned.append(item)
+        return cleaned
+
+    @staticmethod
+    def validate_and_clean(reviews: List[Dict[str, Any]], min_rating: float = 1.0, max_rating: float = 5.0) -> Dict[str, Any]:
+        """Returns {'valid': [...], 'invalid': [...], 'stats': {'valid': N, 'invalid': N, 'repaired': N}}"""
+        valid, invalid = DataCleaner.validate_reviews(reviews, min_rating, max_rating)
+        cleaned_valid = DataCleaner.clean_text_fields(valid, ["review_text", "review_title"])
+        
+        return {
+            'valid': cleaned_valid,
+            'invalid': invalid,
+            'stats': {
+                'valid': len(cleaned_valid),
+                'invalid': len(invalid),
+                'repaired': 0
+            }
+        }

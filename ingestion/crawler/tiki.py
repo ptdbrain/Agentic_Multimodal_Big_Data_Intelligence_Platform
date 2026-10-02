@@ -74,7 +74,7 @@ class TikiCrawler(BaseEcommerceCrawler):
         """Maps Tiki raw product JSON to SentinelAI canonical Product schema."""
         raw_id = raw_item.get("id")
         p_id = f"tiki_{raw_id}" if raw_id else "tiki_unknown"
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
+        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
 
         url_path = raw_item.get("url_path", "")
         prod_url = f"https://tiki.vn/{url_path}" if url_path else f"https://tiki.vn/p/{raw_id}.html"
@@ -106,11 +106,11 @@ class TikiCrawler(BaseEcommerceCrawler):
         # Parse timestamp
         created_at_val = raw_review.get("created_at")
         if isinstance(created_at_val, (int, float)):
-            rev_time = datetime.datetime.fromtimestamp(created_at_val, tz=datetime.timezone.utc).isoformat() + "Z"
+            rev_time = datetime.datetime.fromtimestamp(created_at_val, tz=datetime.timezone.utc).isoformat().replace("+00:00", "Z")
         elif isinstance(created_at_val, str) and created_at_val:
             rev_time = created_at_val
         else:
-            rev_time = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z"
+            rev_time = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
 
         title = str(raw_review.get("title") or "Đánh giá từ khách hàng").strip()
         text = str(raw_review.get("content") or title).strip()

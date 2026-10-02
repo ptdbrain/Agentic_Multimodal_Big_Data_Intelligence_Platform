@@ -55,6 +55,7 @@
     "product_id",
     "user_id",
     "rating",
+    "review_title",
     "review_text",
     "review_date"
   ]

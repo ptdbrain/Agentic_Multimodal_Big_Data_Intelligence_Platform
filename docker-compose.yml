@@ -34,6 +34,11 @@ services:
       - kafka_data:/var/lib/kafka/data
     networks:
       - sentinel-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # MinIO S3-compatible Data Lake
   minio:
@@ -50,6 +55,11 @@ services:
     command: server /data --console-address ":9001"
     networks:
       - sentinel-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Apache Spark Master
   spark-master:
@@ -64,6 +74,11 @@ services:
       - "8080:8080"
     networks:
       - sentinel-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Apache Spark Worker
   spark-worker:
@@ -78,6 +93,11 @@ services:
       - SPARK_WORKER_CORES=2
     networks:
       - sentinel-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # PostgreSQL Data Warehouse
   postgres:
@@ -94,6 +114,11 @@ services:
       - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - sentinel-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Elasticsearch for search indexing
   elasticsearch:
@@ -109,3 +134,8 @@ services:
       - es_data:/usr/share/elasticsearch/data
     networks:
       - sentinel-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

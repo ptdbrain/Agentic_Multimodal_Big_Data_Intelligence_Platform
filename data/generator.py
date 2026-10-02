@@ -90,8 +90,8 @@ def generate_products(
             "product_url": f"https://shop.sentinel.ai/p/{p['id']}",
             "image_url": f"https://assets.sentinel.ai/images/{p['id']}.jpg",
             "source": "catalog_sync",
-            "created_at": (now - datetime.timedelta(days=60)).isoformat() + "Z",
-            "updated_at": now.isoformat() + "Z"
+            "created_at": (now - datetime.timedelta(days=60)).isoformat().replace("+00:00", "Z"),
+            "updated_at": now.isoformat().replace("+00:00", "Z")
         }
         products.append(prod)
     return products
@@ -146,12 +146,12 @@ def generate_reviews(
             "rating": rating,
             "review_title": title,
             "review_text": text,
-            "review_date": review_time.isoformat() + "Z",
+            "review_date": review_time.isoformat().replace("+00:00", "Z"),
             "verified_purchase": random.random() < 0.88,
             "helpful_count": random.randint(0, 45),
             "source": random.choice(["web_crawler", "mobile_app", "partner_api"]),
             "language": lang,
-            "created_at": review_time.isoformat() + "Z"
+            "created_at": review_time.isoformat().replace("+00:00", "Z")
         }
         reviews.append(review)
 
@@ -166,12 +166,12 @@ def generate_reviews(
                 "rating": 1.0 if b % 2 == 0 else 2.0,
                 "review_title": "Lỗi màn hình sau update",
                 "review_text": "Sau bản cập nhật iOS mới màn hình bị chớp xanh và nóng ran!",
-                "review_date": (burst_time + datetime.timedelta(minutes=b)).isoformat() + "Z",
+                "review_date": (burst_time + datetime.timedelta(minutes=b)).isoformat().replace("+00:00", "Z"),
                 "verified_purchase": True,
                 "helpful_count": random.randint(10, 80),
                 "source": "mobile_app",
                 "language": "vi",
-                "created_at": (burst_time + datetime.timedelta(minutes=b)).isoformat() + "Z"
+                "created_at": (burst_time + datetime.timedelta(minutes=b)).isoformat().replace("+00:00", "Z")
             })
 
     return reviews
@@ -205,7 +205,7 @@ def generate_price_history(
                 "price": float(current_price),
                 "currency": curr,
                 "seller": prod.get("seller", "Official Store"),
-                "timestamp": cur_time.isoformat() + "Z",
+                "timestamp": cur_time.isoformat().replace("+00:00", "Z"),
                 "source": "price_poller"
             })
             price_idx += 1
@@ -235,7 +235,7 @@ def generate_streaming_events(
             "event_id": f"evt_{i+1:06d}",
             "event_type": event_type,
             "product_id": prod["product_id"],
-            "timestamp": event_time.isoformat() + "Z",
+            "timestamp": event_time.isoformat().replace("+00:00", "Z"),
             "source": "stream_simulator",
             "payload": payload
         })

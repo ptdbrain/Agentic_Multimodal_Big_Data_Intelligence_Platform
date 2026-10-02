@@ -120,3 +120,11 @@ PRODUCT_QUALITY_RULES = [
 RuleRegistry.register("reviews", REVIEW_QUALITY_RULES)
 RuleRegistry.register("products", PRODUCT_QUALITY_RULES)
 
+PRICE_QUALITY_RULES = [
+    NonNullRule('price_id'),
+    NonNullRule('product_id'),
+    PositiveNumberRule('price', allow_zero=False),
+    NonNullRule('currency'),
+]
+RuleRegistry.register('prices', PRICE_QUALITY_RULES)
+
