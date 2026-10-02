@@ -47,6 +47,30 @@ class StorageManager:
                 bucket=settings.storage.data_lake_bucket
             )
 
+    def write_json(self, path: str, data: Any) -> str:
+        """Writes JSON to Data Lake via current backend."""
+        return self.backend.write_json(path, data)
+
+    def read_json(self, path: str) -> Any:
+        """Reads JSON from Data Lake via current backend."""
+        return self.backend.read_json(path)
+
+    def write_parquet(self, path: str, df: pd.DataFrame) -> str:
+        """Writes Parquet to Data Lake via current backend."""
+        return self.backend.write_parquet(path, df)
+
+    def read_parquet(self, path: str) -> pd.DataFrame:
+        """Reads Parquet from Data Lake via current backend."""
+        return self.backend.read_parquet(path)
+
+    def list_objects(self, prefix: str) -> List[str]:
+        """Lists objects under prefix via current backend."""
+        return self.backend.list_objects(prefix)
+
+    def object_exists(self, path: str) -> bool:
+        """Checks if object exists via current backend."""
+        return self.backend.object_exists(path)
+
     def write_bronze_json(
         self,
         topic: str,

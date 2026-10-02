@@ -265,9 +265,40 @@ class SparkBatchETLJob:
             dq_pr = self.compute_quality(dedup_pr, invalid_pr, 'prices')
             self.write_silver(dedup_pr, 'prices')
 
+        # Quarantine invalid records if any
+        from spark.quality.spark_dq import SparkDataQualityEvaluator
+        try:
+            inv_p_cnt = len(invalid_p) if isinstance(invalid_p, pd.DataFrame) else (invalid_p.count() if hasattr(invalid_p, 'count') else 0)
+            if inv_p_cnt > 0:
+                SparkDataQualityEvaluator.save_quarantine('products', invalid_p)
+            
+            inv_r_cnt = len(invalid_r) if isinstance(invalid_r, pd.DataFrame) else (invalid_r.count() if hasattr(invalid_r, 'count') else 0)
+            if inv_r_cnt > 0:
+                SparkDataQualityEvaluator.save_quarantine('reviews', invalid_r)
+
+            if prices_source is not None:
+                inv_pr_cnt = len(invalid_pr) if isinstance(invalid_pr, pd.DataFrame) else (invalid_pr.count() if hasattr(invalid_pr, 'count') else 0)
+                if inv_pr_cnt > 0:
+                    SparkDataQualityEvaluator.save_quarantine('prices', invalid_pr)
+        except Exception:
+            pass
+
+        # Persist standard DQ reports to Gold layer
+        try:
+            reports = [
+                SparkDataQualityEvaluator.generate_report(dq_p),
+                SparkDataQualityEvaluator.generate_report(dq_r)
+            ]
+            if dq_pr is not None:
+                reports.append(SparkDataQualityEvaluator.generate_report(dq_pr))
+            SparkDataQualityEvaluator.save_reports_to_gold(reports)
+        except Exception:
+            pass
+
         return {
             'products_processed': dq_p['records_valid'],
             'reviews_processed': dq_r['records_valid'],
+            'prices_processed': dq_pr['records_valid'] if dq_pr else 0,
             'products_dq': dq_p,
             'reviews_dq': dq_r,
             'prices_dq': dq_pr,

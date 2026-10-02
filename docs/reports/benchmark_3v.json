@@ -1,0 +1,94 @@
+{
+  "volume": {
+    "benchmark_type": "volume",
+    "results": [
+      {
+        "records": 100,
+        "duration_sec": 2.223,
+        "throughput_rps": 45.0,
+        "products_processed": 15,
+        "reviews_processed": 100,
+        "dq_score": 100.0
+      },
+      {
+        "records": 1000,
+        "duration_sec": 0.044,
+        "throughput_rps": 22601.1,
+        "products_processed": 15,
+        "reviews_processed": 1000,
+        "dq_score": 100.0
+      },
+      {
+        "records": 5000,
+        "duration_sec": 0.045,
+        "throughput_rps": 111645.7,
+        "products_processed": 15,
+        "reviews_processed": 5000,
+        "dq_score": 100.0
+      },
+      {
+        "records": 10000,
+        "duration_sec": 0.061,
+        "throughput_rps": 163792.0,
+        "products_processed": 15,
+        "reviews_processed": 10000,
+        "dq_score": 100.0
+      }
+    ]
+  },
+  "velocity": {
+    "benchmark_type": "velocity",
+    "results": [
+      {
+        "target_rate": 10,
+        "actual_rate": 10.0,
+        "messages_sent": 100,
+        "duration_sec": 10.038
+      },
+      {
+        "target_rate": 50,
+        "actual_rate": 48.8,
+        "messages_sent": 100,
+        "duration_sec": 2.048
+      },
+      {
+        "target_rate": 100,
+        "actual_rate": 95.6,
+        "messages_sent": 100,
+        "duration_sec": 1.047
+      },
+      {
+        "target_rate": 500,
+        "actual_rate": 410.6,
+        "messages_sent": 100,
+        "duration_sec": 0.244
+      }
+    ]
+  },
+  "variety": {
+    "benchmark_type": "variety",
+    "results": [
+      {
+        "format": "JSON",
+        "files_processed": 3,
+        "records_loaded": 1800,
+        "duration_sec": 0.029,
+        "throughput_rps": 62181.9
+      },
+      {
+        "format": "CSV",
+        "files_processed": 3,
+        "records_loaded": 1800,
+        "duration_sec": 0.056,
+        "throughput_rps": 32056.7
+      },
+      {
+        "format": "Parquet",
+        "files_processed": 3,
+        "records_loaded": 1800,
+        "duration_sec": 0.044,
+        "throughput_rps": 40704.7
+      }
+    ]
+  }
+}

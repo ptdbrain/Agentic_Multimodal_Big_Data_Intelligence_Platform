@@ -49,10 +49,15 @@ class PricePipeline:
     
     @staticmethod
     def run_pipeline(prices_source: List[Dict[str, Any]], save_silver: bool = True) -> dict:
-        """Full price ETL."""
+        """Full price ETL: Bronze -> Validate -> Clean -> Silver Parquet."""
         cleaned = PricePipeline.clean_prices(prices_source)
         valid, invalid = PricePipeline.validate_prices(cleaned)
         
+        if save_silver and valid:
+            import pandas as pd
+            from storage.storage_manager import storage
+            storage.write_silver_parquet('prices', pd.DataFrame(valid))
+
         return {
             'processed': len(prices_source),
             'valid': len(valid),
