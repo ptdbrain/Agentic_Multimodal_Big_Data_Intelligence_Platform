@@ -79,31 +79,74 @@ class WarehouseManager:
             df["date"] = df["date"].astype(str)
         
         rows_affected = 0
+        cursor = self._conn.cursor()
+        
+        # Discover table schema dynamically to avoid mismatch errors
+        try:
+            if self._engine_type == 'sqlite':
+                cursor.execute(f"PRAGMA table_info({table_name})")
+                table_cols = {r[1] for r in cursor.fetchall()}
+            else:
+                cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = %s", (table_name,))
+                table_cols = {r[0] for r in cursor.fetchall()}
+        except Exception:
+            table_cols = set()
+
+        if not table_cols:
+            try:
+                if self._engine_type == 'sqlite':
+                    df.head(0).to_sql(table_name, self._conn, if_exists='append', index=False)
+                    cursor.execute(f"PRAGMA table_info({table_name})")
+                    table_cols = {r[1] for r in cursor.fetchall()}
+                else:
+                    col_defs = []
+                    for col, dtype in df.dtypes.items():
+                        pg_type = "NUMERIC" if "float" in str(dtype) or "int" in str(dtype) else "TEXT"
+                        col_defs.append(f'"{col}" {pg_type}')
+                    if col_defs:
+                        cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(col_defs)})')
+                        self._conn.commit()
+                        cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = %s", (table_name,))
+                        table_cols = {r[0] for r in cursor.fetchall()}
+            except Exception as e:
+                logger.warning(f"Could not auto-create warehouse table {table_name}: {e}")
+
+        if table_cols:
+            columns = [c for c in df.columns if c in table_cols]
+        else:
+            columns = list(df.columns)
+
+        if not columns:
+            return 0
+
+        conflict_keys = [k for k in conflict_keys if k in columns]
         
         if self._engine_type == 'postgres':
             # Real PostgreSQL UPSERT using INSERT ... ON CONFLICT ... DO UPDATE
-            columns = list(df.columns)
-            update_cols = update_columns or [c for c in columns if c not in conflict_keys]
-            
-            placeholders = ", ".join(["%s"] * len(columns))
-            col_names = ", ".join(columns)
-            conflict_clause = ", ".join(conflict_keys)
-            
-            if update_cols:
-                update_clause = ", ".join([f"{c} = EXCLUDED.{c}" for c in update_cols])
-                sql = f"""
-                    INSERT INTO {table_name} ({col_names})
-                    VALUES ({placeholders})
-                    ON CONFLICT ({conflict_clause}) DO UPDATE SET {update_clause}
-                """
+            if conflict_keys:
+                update_cols = update_columns or [c for c in columns if c not in conflict_keys]
+                placeholders = ", ".join(["%s"] * len(columns))
+                col_names = ", ".join(columns)
+                conflict_clause = ", ".join(conflict_keys)
+                
+                if update_cols:
+                    update_clause = ", ".join([f"{c} = EXCLUDED.{c}" for c in update_cols])
+                    sql = f"""
+                        INSERT INTO {table_name} ({col_names})
+                        VALUES ({placeholders})
+                        ON CONFLICT ({conflict_clause}) DO UPDATE SET {update_clause}
+                    """
+                else:
+                    sql = f"""
+                        INSERT INTO {table_name} ({col_names})
+                        VALUES ({placeholders})
+                        ON CONFLICT ({conflict_clause}) DO NOTHING
+                    """
             else:
-                sql = f"""
-                    INSERT INTO {table_name} ({col_names})
-                    VALUES ({placeholders})
-                    ON CONFLICT ({conflict_clause}) DO NOTHING
-                """
+                placeholders = ", ".join(["%s"] * len(columns))
+                col_names = ", ".join(columns)
+                sql = f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders})"
             
-            cursor = self._conn.cursor()
             for _, row in df.iterrows():
                 cursor.execute(sql, tuple(row[c] for c in columns))
                 rows_affected += 1
@@ -111,17 +154,17 @@ class WarehouseManager:
             
         else:
             # SQLite: DELETE matching rows then INSERT
-            cursor = self._conn.cursor()
+            placeholders = ", ".join(["?"] * len(columns))
+            col_names = ", ".join(columns)
+            insert_sql = f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders})"
+
             for _, row in df.iterrows():
-                where_clause = " AND ".join([f"{k} = ?" for k in conflict_keys])
-                cursor.execute(f"DELETE FROM {table_name} WHERE {where_clause}",
-                             tuple(row[k] for k in conflict_keys))
+                if conflict_keys:
+                    where_clause = " AND ".join([f"{k} = ?" for k in conflict_keys])
+                    cursor.execute(f"DELETE FROM {table_name} WHERE {where_clause}",
+                                 tuple(row[k] for k in conflict_keys))
                 
-                columns = list(df.columns)
-                placeholders = ", ".join(["?"] * len(columns))
-                col_names = ", ".join(columns)
-                cursor.execute(f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders})",
-                             tuple(row[c] for c in columns))
+                cursor.execute(insert_sql, tuple(row[c] for c in columns))
                 rows_affected += 1
             self._conn.commit()
         

@@ -82,26 +82,11 @@ class RawConsumer:
         records: List[Dict[str, Any]],
         timestamp_field: Optional[str] = None
     ) -> Path:
-        if not records:
-            now = datetime.datetime.now(datetime.timezone.utc)
-        else:
-            now = self._resolve_datetime(records[0], timestamp_field=timestamp_field)
-
-        part_dir = (
-            self.bronze_dir
-            / topic
-            / f"year={now.year}"
-            / f"month={now.month:02d}"
-            / f"day={now.day:02d}"
-            / f"hour={now.hour:02d}"
-        )
-        part_dir.mkdir(parents=True, exist_ok=True)
-        filename = f"batch_{int(time.time() * 1000)}.json"
-        out_path = part_dir / filename
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(records, f, indent=2, ensure_ascii=False)
-        print(f"Bronze Ingestion: Saved {len(records)} raw records to {out_path}")
-        return out_path
+        from storage.storage_manager import storage
+        # Main Path: RawConsumer -> StorageManager -> MinIO Bronze
+        object_path = storage.write_bronze_json(topic, records, timestamp_field=timestamp_field)
+        local_path = (storage.base_dir / object_path).resolve()
+        return local_path
         
     def consume_to_bronze(self, topics: List[str], batch_size: int = 100, timeout_ms: int = 1000):
         if not self.consumer:

@@ -25,7 +25,20 @@ class StorageSettings:
     secret_key: str = get_env("MINIO_SECRET_KEY", "minioadmin")
     secure: bool = get_env("MINIO_SECURE", "false").lower() == "true"
     data_lake_bucket: str = get_env("DATA_LAKE_BUCKET", "sentinel-data")
+    backend: str = get_env("STORAGE_BACKEND", "minio")
     local_data_dir: Path = REPO_ROOT / get_env("LOCAL_DATA_DIR", "storage/datalake")
+
+    @property
+    def bucket_raw(self) -> str:
+        return self.data_lake_bucket
+
+    @property
+    def bucket_silver(self) -> str:
+        return self.data_lake_bucket
+
+    @property
+    def bucket_gold(self) -> str:
+        return self.data_lake_bucket
 
 @dataclass
 class DatabaseSettings:

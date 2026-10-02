@@ -44,11 +44,14 @@ def export_gold_to_db(
         ]
 
     for mart in target_marts:
-        df = storage.read_gold_parquet(mart)
-        if not df.empty:
-            keys = conflict_keys_map.get(mart, ["id"])
-            wh.upsert_dataframe(mart, df, conflict_keys=keys)
-            print(f"Exported {len(df)} rows to database table '{mart}'")
+        try:
+            df = storage.read_gold_parquet(mart)
+            if not df.empty:
+                keys = conflict_keys_map.get(mart, ["id"])
+                wh.upsert_dataframe(mart, df, conflict_keys=keys)
+                print(f"Exported {len(df)} rows to database table '{mart}'")
+        except Exception as e:
+            print(f"Warning: Failed exporting mart '{mart}': {e}")
 
     # 2. Export Silver Reference Tables
     tables_to_sync = silver_tables if silver_tables is not None else ["products"]

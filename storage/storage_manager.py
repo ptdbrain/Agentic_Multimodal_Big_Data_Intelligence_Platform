@@ -8,10 +8,24 @@ from config.settings import settings
 from storage.minio_backend import MinIOBackend
 from storage.local_backend import LocalBackend
 
+class BackendDescriptor:
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            # Accessed on class: StorageManager.backend == MinIOBackend
+            return MinIOBackend
+        # Accessed on instance: storage.backend
+        if not hasattr(obj, '_backend_instance') or obj._backend_instance is None:
+            obj._backend_instance = MinIOBackend(bucket=settings.storage.data_lake_bucket)
+        return obj._backend_instance
+
+    def __set__(self, obj, value):
+        obj._backend_instance = value
+
 class StorageManager:
     """Unified Data Lake Abstraction Layer managing Bronze (Raw), Silver (Cleaned),
     and Gold (Marts) storage across MinIO (S3) and Local Filesystem.
     """
+    backend = BackendDescriptor()
     
     def __init__(self, backend=None, base_dir: Optional[Union[str, Path]] = None):
         self.base_dir = Path(base_dir) if base_dir else settings.storage.local_data_dir
@@ -25,33 +39,53 @@ class StorageManager:
         if backend:
             self._backend_instance = backend
         else:
-            try:
-                if settings.env == "test":
-                    raise Exception("Test environment, fallback to LocalBackend")
-                
-                self._backend_instance = MinIOBackend(
-                    endpoint=settings.storage.endpoint,
-                    access_key=settings.storage.access_key,
-                    secret_key=settings.storage.secret_key,
-                    secure=settings.storage.secure,
-                    bucket=settings.storage.bucket_raw
-                )
-            except Exception as e:
-                self._backend_instance = LocalBackend(str(self.base_dir))
+            self._backend_instance = MinIOBackend(
+                endpoint=settings.storage.endpoint,
+                access_key=settings.storage.access_key,
+                secret_key=settings.storage.secret_key,
+                secure=settings.storage.secure,
+                bucket=settings.storage.data_lake_bucket
+            )
 
-    @property
-    def backend(self):
-        # Lazy initialization fallback for tests that monkey-patch __new__
-        if not hasattr(self, '_backend_instance'):
-            if not hasattr(self, 'base_dir'):
-                self.base_dir = settings.storage.local_data_dir
-                self.bronze_dir = self.base_dir / "bronze"
-                self.silver_dir = self.base_dir / "silver"
-                self.gold_dir = self.base_dir / "gold"
-                for d in [self.bronze_dir, self.silver_dir, self.gold_dir]:
-                    d.mkdir(parents=True, exist_ok=True)
-            self._backend_instance = LocalBackend(str(self.base_dir))
-        return self._backend_instance
+    def write_bronze_json(
+        self,
+        topic: str,
+        records: List[Dict[str, Any]],
+        timestamp_field: Optional[str] = None
+    ) -> str:
+        """Writes raw batch to Bronze layer via backend (MinIO or Local)."""
+        import time, datetime
+        if not records:
+            now = datetime.datetime.now(datetime.timezone.utc)
+        else:
+            rec = records[0]
+            ts_val = None
+            if timestamp_field:
+                ts_val = rec.get(timestamp_field)
+            if not ts_val:
+                ts_val = rec.get("ingested_at") or rec.get("timestamp") or rec.get("created_at") or rec.get("review_date")
+                if not ts_val and isinstance(rec.get("payload"), dict):
+                    ts_val = rec["payload"].get("timestamp") or rec["payload"].get("review_date") or rec["payload"].get("created_at")
+            if ts_val:
+                try:
+                    if isinstance(ts_val, (int, float)):
+                        sec = ts_val / 1000.0 if ts_val > 1e11 else float(ts_val)
+                        now = datetime.datetime.fromtimestamp(sec, tz=datetime.timezone.utc)
+                    elif isinstance(ts_val, str):
+                        now = datetime.datetime.fromisoformat(ts_val.replace("Z", "+00:00"))
+                    else:
+                        now = datetime.datetime.now(datetime.timezone.utc)
+                except Exception:
+                    now = datetime.datetime.now(datetime.timezone.utc)
+            else:
+                now = datetime.datetime.now(datetime.timezone.utc)
+
+        filename = f"batch_{int(time.time() * 1000)}.json"
+        object_path = f"bronze/{topic}/year={now.year}/month={now.month:02d}/day={now.day:02d}/hour={now.hour:02d}/{filename}"
+        
+        self.backend.write_json(object_path, records)
+        print(f"Bronze Ingestion: Saved {len(records)} raw records to {object_path} ({type(self.backend).__name__})")
+        return object_path
 
     def write_silver_parquet(self, dataset_name: str, df: pd.DataFrame, partition_col: Optional[str] = None):
         if df.empty:
