@@ -2,6 +2,7 @@ import sys
 import time
 import json
 import uuid
+import hashlib
 import argparse
 from datetime import datetime, timezone
 from pathlib import Path
@@ -48,11 +49,22 @@ class StreamProducer:
             raise RuntimeError(f"Failed to connect to Kafka at {self.bootstrap_servers}: {e}")
 
     def send_message(self, topic: str, key: Optional[str], value: dict, event_type: str = "EVENT", source: str = "stream_producer"):
+        event_time = (
+            value.get("timestamp") or 
+            value.get("review_date") or 
+            value.get("created_at") or 
+            datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        )
+        entity_key = key or value.get("product_id") or value.get("review_id") or value.get("price_id") or value.get("event_id") or "entity"
+        det_hash = hashlib.sha256(f"{source}|{entity_key}|{event_time}".encode("utf-8")).hexdigest()[:24]
+
         envelope = {
-            "event_id": f"evt_{uuid.uuid4()}",
+            "event_id": f"evt_{det_hash}",
             "event_type": event_type,
+            "schema_version": "1.0",
             "source": source,
-            "ingested_at": datetime.now(timezone.utc).isoformat(),
+            "event_time": str(event_time),
+            "ingested_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "payload": value
         }
         

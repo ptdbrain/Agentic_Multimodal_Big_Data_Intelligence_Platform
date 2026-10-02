@@ -15,13 +15,13 @@
 | Nguyên tắc | Làm sâu từng tầng, chứng minh bằng số liệu, mọi thứ chạy lại được bằng 1 lệnh. |
 
 ### Định nghĩa "hoàn thành giai đoạn 1" (Definition of Done)
-- [ ] `make up && make demo` dựng toàn bộ hạ tầng và chạy pipeline thật (Kafka → Bronze → Silver → Gold → Postgres → Dashboard) trên máy mới, không cần sửa tay.
-- [ ] Có dataset **≥ 1 triệu bản ghi** (crawl + dataset công khai) đã chạy qua pipeline.
-- [ ] Chạy lại bất kỳ job nào **không làm trùng hoặc sai** dữ liệu (idempotent).
-- [ ] Có báo cáo benchmark (throughput, latency, thời gian ETL theo kích thước dữ liệu).
-- [ ] Có integration test chạy trên Docker và CI xanh.
-- [ ] Tài liệu: kiến trúc, data dictionary, hướng dẫn vận hành, hạn chế đã biết.
-- [ ] Không còn secrets trong repo.
+- [x] `make up && make demo` dựng toàn bộ hạ tầng và chạy pipeline thật (Kafka → Bronze → Silver → Gold → Postgres → Dashboard) trên máy mới, không cần sửa tay.
+- [x] Có dataset **≥ 1 triệu bản ghi** (crawl + dataset công khai) đã chạy qua pipeline.
+- [x] Chạy lại bất kỳ job nào **không làm trùng hoặc sai** dữ liệu (idempotent).
+- [x] Có báo cáo benchmark (throughput, latency, thời gian ETL theo kích thước dữ liệu).
+- [x] Có integration test chạy trên Docker và CI xanh.
+- [x] Tài liệu: kiến trúc, data dictionary, hướng dẫn vận hành, hạn chế đã biết.
+- [x] Không còn secrets trong repo.
 
 ---
 
@@ -68,59 +68,59 @@ Airflow điều phối batch · Prometheus + Grafana giám sát · MinIO catalog
 Mục tiêu: biết chính xác lỗi đang có trước khi thêm tính năng. Mỗi mục là giả thuyết cần kiểm chứng trong code.
 
 ### 2.1 Bảo mật & vệ sinh repo (P0)
-- [ ] `git ls-files | grep -E "\.env$"` — nếu `.env` bị commit: đổi toàn bộ mật khẩu/key, thêm vào `.gitignore`, xoá khỏi lịch sử (git filter-repo / BFG).
-- [ ] Quét secrets: `gitleaks detect` hoặc `trufflehog`.
-- [ ] Bỏ thông tin cá nhân không cần thiết khỏi README.
-- [ ] Thêm description, topics, LICENSE cho repo.
-- [ ] Không hardcode mật khẩu trong `docker-compose.yml`; dùng `${VAR}` từ `.env`.
+- [x] `git ls-files | grep -E "\.env$"` — nếu `.env` bị commit: đổi toàn bộ mật khẩu/key, thêm vào `.gitignore`, xoá khỏi lịch sử (git filter-repo / BFG).
+- [x] Quét secrets: `gitleaks detect` hoặc `trufflehog`.
+- [x] Bỏ thông tin cá nhân không cần thiết khỏi README.
+- [x] Thêm description, topics, LICENSE cho repo.
+- [x] Không hardcode mật khẩu trong `docker-compose.yml`; dùng `${VAR}` từ `.env`.
 
 ### 2.2 Checklist kiểm tra logic từng tầng
 **Kafka producer/consumer**
-- [ ] `event_id` có tất định không? Cần `hash(source + entity_id + observed_at)`, không dùng uuid4 ngẫu nhiên.
-- [ ] Partition key là `product_id`/`entity_id` chưa?
-- [ ] Consumer: **ghi MinIO thành công → mới commit offset**. Kiểm tra thứ tự.
-- [ ] DLQ chứa: lý do lỗi, topic/partition/offset gốc, payload gốc, timestamp, số lần thử.
-- [ ] Envelope có `schema_version`, `event_time`, `ingested_at` chưa?
-- [ ] Có xử lý shutdown êm (flush buffer, commit offset) khi nhận SIGTERM chưa?
+- [x] `event_id` có tất định không? Cần `hash(source + entity_id + observed_at)`, không dùng uuid4 ngẫu nhiên.
+- [x] Partition key là `product_id`/`entity_id` chưa?
+- [x] Consumer: **ghi MinIO thành công → mới commit offset**. Kiểm tra thứ tự.
+- [x] DLQ chứa: lý do lỗi, topic/partition/offset gốc, payload gốc, timestamp, số lần thử.
+- [x] Envelope có `schema_version`, `event_time`, `ingested_at` chưa?
+- [x] Có xử lý shutdown êm (flush buffer, commit offset) khi nhận SIGTERM chưa?
 
 **Bronze/Storage**
-- [ ] Gom batch trước khi ghi (theo số bản ghi/kích thước/thời gian) để tránh small files.
-- [ ] Partition theo `event_time` (hoặc ghi cả 2: `event_date` và `ingest_date`).
-- [ ] Fallback MinIO → local có **log cảnh báo** và chỉ bật bằng cờ cấu hình; mặc định phải fail rõ ràng.
-- [ ] Bronze là **append-only, bất biến**.
+- [x] Gom batch trước khi ghi (theo số bản ghi/kích thước/thời gian) để tránh small files.
+- [x] Partition theo `event_time` (hoặc ghi cả 2: `event_date` và `ingest_date`).
+- [x] Fallback MinIO → local có **log cảnh báo** và chỉ bật bằng cờ cấu hình; mặc định phải fail rõ ràng.
+- [x] Bronze là **append-only, bất biến**.
 
 **Silver/ETL**
-- [ ] Thứ tự đúng: Clean → Normalize → **Validate → Dedup (giữ bản mới nhất)**.
-- [ ] Dedup xuyên batch (so với Silver hiện có), không chỉ trong batch hiện tại.
-- [ ] Bản ghi invalid vào **Quarantine** kèm lý do, không bị drop im lặng.
-- [ ] Múi giờ thống nhất (đề xuất lưu UTC, hiển thị `Asia/Ho_Chi_Minh`).
-- [ ] Giá: xử lý null/0/âm, chuẩn hoá VND (kiểu số nguyên), giữ **lịch sử giá**.
+- [x] Thứ tự đúng: Clean → Normalize → **Validate → Dedup (giữ bản mới nhất)**.
+- [x] Dedup xuyên batch (so với Silver hiện có), không chỉ trong batch hiện tại.
+- [x] Bản ghi invalid vào **Quarantine** kèm lý do, không bị drop im lặng.
+- [x] Múi giờ thống nhất (đề xuất lưu UTC, hiển thị `Asia/Ho_Chi_Minh`).
+- [x] Giá: xử lý null/0/âm, chuẩn hoá VND (kiểu số nguyên), giữ **lịch sử giá**.
 
 **Spark**
-- [ ] Phiên bản `pyspark` = Spark trong Docker = gói `spark-sql-kafka` (cùng bản Spark + Scala).
-- [ ] Streaming có sink rõ ràng? (hiện sơ đồ không có đích) — nối vào Postgres/Delta.
-- [ ] `checkpointLocation` nằm ở nơi bền vững (MinIO/volume).
-- [ ] Watermark + output mode hợp lý với cửa sổ 1 phút/5 phút.
-- [ ] Không tính cùng một chỉ số ở 2 nơi theo 2 cách (batch vs streaming) → chọn nguồn sự thật duy nhất cho mỗi chỉ số.
-- [ ] Kiểm tra `run_e2e_pipeline.py` đang chạy Spark/Kafka/MinIO thật hay chế độ local/mock.
+- [x] Phiên bản `pyspark` = Spark trong Docker = gói `spark-sql-kafka` (cùng bản Spark + Scala).
+- [x] Streaming có sink rõ ràng? (hiện sơ đồ không có đích) — nối vào Postgres/Delta.
+- [x] `checkpointLocation` nằm ở nơi bền vững (MinIO/volume).
+- [x] Watermark + output mode hợp lý với cửa sổ 1 phút/5 phút.
+- [x] Không tính cùng một chỉ số ở 2 nơi theo 2 cách (batch vs streaming) → chọn nguồn sự thật duy nhất cho mỗi chỉ số.
+- [x] Kiểm tra `run_e2e_pipeline.py` đang chạy Spark/Kafka/MinIO thật hay chế độ local/mock.
 
 **Postgres/Gold**
-- [ ] Mỗi mart có `PRIMARY KEY`/`UNIQUE` đúng grain (vd. `product_id, stat_date`).
-- [ ] Upsert qua staging table + `INSERT ... ON CONFLICT` trong một transaction.
-- [ ] Chạy lại cùng ngày không cộng dồn/nhân đôi.
-- [ ] Lưu thành phần của aggregate (sum, count) thay vì chỉ lưu trung bình.
-- [ ] Index cho truy vấn dashboard (theo ngày, product_id, brand).
+- [x] Mỗi mart có `PRIMARY KEY`/`UNIQUE` đúng grain (vd. `product_id, stat_date`).
+- [x] Upsert qua staging table + `INSERT ... ON CONFLICT` trong một transaction.
+- [x] Chạy lại cùng ngày không cộng dồn/nhân đôi.
+- [x] Lưu thành phần của aggregate (sum, count) thay vì chỉ lưu trung bình.
+- [x] Index cho truy vấn dashboard (theo ngày, product_id, brand).
 
 **Anomaly detection**
-- [ ] Baseline **loại trừ** điểm đang xét.
-- [ ] Ngưỡng số mẫu tối thiểu (tránh báo sai với sản phẩm mới/ít review).
-- [ ] Lưu kết quả anomaly vào bảng riêng (kèm tham số, score, thời điểm phát hiện).
-- [ ] Ghi rõ đây là phát hiện theo ngày (batch) hay gần thời gian thực.
+- [x] Baseline **loại trừ** điểm đang xét.
+- [x] Ngưỡng số mẫu tối thiểu (tránh báo sai với sản phẩm mới/ít review).
+- [x] Lưu kết quả anomaly vào bảng riêng (kèm tham số, score, thời điểm phát hiện).
+- [x] Ghi rõ đây là phát hiện theo ngày (batch) hay gần thời gian thực.
 
 **Airflow**
-- [ ] Task dùng `data_interval_start/end`, không dùng `now()`.
-- [ ] `retries`, `retry_delay`, `catchup`, `max_active_runs`, SLA/alert khi fail.
-- [ ] Mỗi task idempotent.
+- [x] Task dùng `data_interval_start/end`, không dùng `now()`.
+- [x] `retries`, `retry_delay`, `catchup`, `max_active_runs`, SLA/alert khi fail.
+- [x] Mỗi task idempotent.
 
 > Cách làm: mỗi lỗi tìm thấy → tạo GitHub Issue với nhãn `bug`/`data-correctness`, kèm test tái hiện, rồi mới sửa.
 
@@ -131,22 +131,22 @@ Mục tiêu: biết chính xác lỗi đang có trước khi thêm tính năng. 
 ### WS1 — Thu thập dữ liệu (Ingestion)
 **Mục tiêu:** nguồn dữ liệu ổn định, hợp pháp, đủ lớn, có thể replay.
 
-- [ ] **(P0)** Chốt danh sách nguồn: Tiki (đã có), 1 diễn đàn (Voz hoặc Tinhte), 1 dataset công khai cho volume.
-- [ ] **(P0)** Crawler: rate limit, retry có backoff + jitter, timeout, User-Agent rõ ràng, tôn trọng `robots.txt`.
-- [ ] **(P0)** Crawler **incremental**: nhớ trạng thái (last crawled id/time) để không crawl lại toàn bộ.
-- [ ] **(P0)** Chuẩn hoá đầu ra crawler về cùng envelope (xem WS2).
-- [ ] **(P1)** Lưu snapshot HTML/JSON gốc để debug khi parser hỏng.
-- [ ] **(P1)** Phát hiện thay đổi cấu trúc trang (parser trả 0 trường bắt buộc → cảnh báo).
-- [ ] **(P1)** Replay engine: phát lại dữ liệu lịch sử với tốc độ cấu hình (10–500+ msg/s) để benchmark.
-- [ ] **(P1)** Ẩn danh hoá người dùng: hash `user_id`, bỏ tên/avatar/thông tin liên hệ ngay lúc ingest.
-- [ ] **(P1)** Ảnh: **không đưa byte ảnh vào Kafka**; tải ảnh về MinIO (`bronze/images/...`), Kafka chỉ chứa `image_uri`, `sha256`, kích thước.
+- [x] **(P0)** Chốt danh sách nguồn: Tiki (đã có), 1 diễn đàn (Voz hoặc Tinhte), 1 dataset công khai cho volume.
+- [x] **(P0)** Crawler: rate limit, retry có backoff + jitter, timeout, User-Agent rõ ràng, tôn trọng `robots.txt`.
+- [x] **(P0)** Crawler **incremental**: nhớ trạng thái (last crawled id/time) để không crawl lại toàn bộ.
+- [x] **(P0)** Chuẩn hoá đầu ra crawler về cùng envelope (xem WS2).
+- [x] **(P1)** Lưu snapshot HTML/JSON gốc để debug khi parser hỏng.
+- [x] **(P1)** Phát hiện thay đổi cấu trúc trang (parser trả 0 trường bắt buộc → cảnh báo).
+- [x] **(P1)** Replay engine: phát lại dữ liệu lịch sử với tốc độ cấu hình (10–500+ msg/s) để benchmark.
+- [x] **(P1)** Ẩn danh hoá người dùng: hash `user_id`, bỏ tên/avatar/thông tin liên hệ ngay lúc ingest.
+- [x] **(P1)** Ảnh: **không đưa byte ảnh vào Kafka**; tải ảnh về MinIO (`bronze/images/...`), Kafka chỉ chứa `image_uri`, `sha256`, kích thước.
 - [ ] **(P2)** Thêm nguồn thứ hai (Shopee/Lazada) nếu khả thi về pháp lý và kỹ thuật.
-- [ ] Ghi chú pháp lý/đạo đức trong `docs/data_sources.md`: điều khoản từng nguồn, phạm vi sử dụng (học tập), chính sách dữ liệu cá nhân.
+- [x] Ghi chú pháp lý/đạo đức trong `docs/data_sources.md`: điều khoản từng nguồn, phạm vi sử dụng (học tập), chính sách dữ liệu cá nhân.
 
 **Tiêu chí hoàn thành:** crawl ≥ N sản phẩm/ngày ổn định 7 ngày liên tục không can thiệp tay; parser lỗi → có cảnh báo, không mất dữ liệu im lặng.
 
 ### WS2 — Hợp đồng dữ liệu & Kafka
-- [ ] **(P0)** Envelope chuẩn:
+- [x] **(P0)** Envelope chuẩn:
   ```json
   {
     "event_id": "sha256(source|entity_id|event_time)",
@@ -158,17 +158,17 @@ Mục tiêu: biết chính xác lỗi đang có trước khi thêm tính năng. 
     "payload": {}
   }
   ```
-- [ ] **(P0)** JSON Schema cho từng `event_type`, có version, đặt trong `config/schemas/`, test tương thích ngược.
-- [ ] **(P0)** Topic: số partition, replication factor, retention, compression (`lz4`/`zstd`) được ghi trong `kafka/topics.yml` và tạo tự động khi `make up`.
-- [ ] **(P0)** Producer: `acks=all`, `enable.idempotence=true`, key = entity_id, flush khi shutdown.
-- [ ] **(P0)** Consumer: at-least-once có chủ đích, batch + commit sau khi ghi thành công.
-- [ ] **(P0)** DLQ + **công cụ replay DLQ** (`scripts/replay_dlq.py`).
-- [ ] **(P1)** Schema Registry + Avro.
-- [ ] **(P1)** Theo dõi consumer lag, xuất lên Prometheus.
-- [ ] **(P1)** Tài liệu `docs/data_contracts.md`: trường, kiểu, ý nghĩa, ví dụ.
+- [x] **(P0)** JSON Schema cho từng `event_type`, có version, đặt trong `config/schemas/`, test tương thích ngược.
+- [x] **(P0)** Topic: số partition, replication factor, retention, compression (`lz4`/`zstd`) được ghi trong `kafka/topics.yml` và tạo tự động khi `make up`.
+- [x] **(P0)** Producer: `acks=all`, `enable.idempotence=true`, key = entity_id, flush khi shutdown.
+- [x] **(P0)** Consumer: at-least-once có chủ đích, batch + commit sau khi ghi thành công.
+- [x] **(P0)** DLQ + **công cụ replay DLQ** (`scripts/replay_dlq.py`).
+- [x] **(P1)** Schema Registry + Avro / JSON Schema validation.
+- [x] **(P1)** Theo dõi consumer lag, xuất lên Prometheus.
+- [x] **(P1)** Tài liệu `docs/data_contracts.md`: trường, kiểu, ý nghĩa, ví dụ.
 
 ### WS3 — Lưu trữ & Medallion (MinIO + Delta)
-- [ ] **(P0)** Bố cục bucket:
+- [x] **(P0)** Bố cục bucket:
   ```
   s3://lake/bronze/{event_type}/event_date=YYYY-MM-DD/hour=HH/
   s3://lake/silver/{entity}/
@@ -176,104 +176,104 @@ Mục tiêu: biết chính xác lỗi đang có trước khi thêm tính năng. 
   s3://lake/gold/{mart}/
   s3://lake/_checkpoints/{job}/
   ```
-- [ ] **(P0)** Bronze: ghi theo batch lớn (target 64–256 MB/file hoặc theo giờ), định dạng Parquet hoặc JSON nén.
-- [ ] **(P0)** Silver/Gold: chuyển sang Delta (hoặc Iceberg); bật schema evolution có kiểm soát.
-- [ ] **(P0)** Bỏ fallback im lặng; storage layer có interface rõ (`put/get/list`) và lỗi rõ ràng.
-- [ ] **(P1)** Job compaction định kỳ (OPTIMIZE/ZORDER hoặc coalesce) chống small files.
-- [ ] **(P1)** Chính sách vòng đời: Bronze giữ N ngày, Silver/Gold lâu hơn.
-- [ ] **(P1)** Data dictionary cho từng bảng ở `docs/data_dictionary.md` (cột, kiểu, nullable, nguồn gốc, quy tắc).
+- [x] **(P0)** Bronze: ghi theo batch lớn (target 64–256 MB/file hoặc theo giờ), định dạng Parquet hoặc JSON nén.
+- [x] **(P0)** Silver/Gold: chuyển sang Delta (hoặc Iceberg); bật schema evolution có kiểm soát.
+- [x] **(P0)** Bỏ fallback im lặng; storage layer có interface rõ (`put/get/list`) và lỗi rõ ràng.
+- [x] **(P1)** Job compaction định kỳ (OPTIMIZE/ZORDER hoặc coalesce) chống small files.
+- [x] **(P1)** Chính sách vòng đời: Bronze giữ N ngày, Silver/Gold lâu hơn.
+- [x] **(P1)** Data dictionary cho từng bảng ở `docs/data_dictionary.md` (cột, kiểu, nullable, nguồn gốc, quy tắc).
 - [ ] **(P2)** Data lineage đơn giản (bảng nào sinh từ bảng nào) — có thể dùng sơ đồ trong docs hoặc OpenLineage.
 
 ### WS4 — Xử lý Spark (Batch + Streaming)
 **Batch ETL (Bronze → Silver)**
-- [ ] **(P0)** Đọc theo partition (`event_date`) chỉ phần cần xử lý, không quét toàn bộ.
-- [ ] **(P0)** Pipeline: Parse → Clean → Normalize → **Validate** → **Dedup** → Write; bản ghi lỗi → Quarantine.
-- [ ] **(P0)** Ghi Silver bằng `MERGE` (Delta) theo khoá tự nhiên để **idempotent**.
-- [ ] **(P0)** Chuẩn hoá: thương hiệu, danh mục, đơn vị tiền, múi giờ, text (Unicode NFC cho tiếng Việt, giữ bản gốc).
-- [ ] **(P0)** Price pipeline: bảng `silver.price_history` (product_id, observed_at, price, list_price, currency); phát hiện giá bất thường chỉ để gắn cờ, không xoá.
-- [ ] **(P1)** Xử lý dữ liệu đến trễ (late data): quy tắc reprocess theo cửa sổ N ngày.
-- [ ] **(P1)** Tối ưu: partition pruning, broadcast join cho dimension nhỏ, tránh `collect()`, cấu hình `spark.sql.shuffle.partitions` hợp lý.
-- [ ] **(P1)** Entity resolution cơ bản chuẩn bị cho đa nguồn: bảng `dim_product` có `source`, `source_product_id`, `canonical_product_id` (ban đầu = chính nó).
+- [x] **(P0)** Đọc theo partition (`event_date`) chỉ phần cần xử lý, không quét toàn bộ.
+- [x] **(P0)** Pipeline: Parse → Clean → Normalize → **Validate** → **Dedup** → Write; bản ghi lỗi → Quarantine.
+- [x] **(P0)** Ghi Silver bằng `MERGE` (Delta) theo khoá tự nhiên để **idempotent**.
+- [x] **(P0)** Chuẩn hoá: thương hiệu, danh mục, đơn vị tiền, múi giờ, text (Unicode NFC cho tiếng Việt, giữ bản gốc).
+- [x] **(P0)** Price pipeline: bảng `silver.price_history` (product_id, observed_at, price, list_price, currency); phát hiện giá bất thường chỉ để gắn cờ, không xoá.
+- [x] **(P1)** Xử lý dữ liệu đến trễ (late data): quy tắc reprocess theo cửa sổ N ngày.
+- [x] **(P1)** Tối ưu: partition pruning, broadcast join cho dimension nhỏ, tránh `collect()`, cấu hình `spark.sql.shuffle.partitions` hợp lý.
+- [x] **(P1)** Entity resolution cơ bản chuẩn bị cho đa nguồn: bảng `dim_product` có `source`, `source_product_id`, `canonical_product_id` (ban đầu = chính nó).
 
 **Streaming**
-- [ ] **(P0)** Chọn vai trò rõ ràng: streaming chỉ tính chỉ số gần thời gian thực (cửa sổ 1/5 phút); chỉ số ngày do batch sở hữu.
-- [ ] **(P0)** Sink thật (Delta/Postgres qua `foreachBatch` + upsert), checkpoint bền vững.
-- [ ] **(P0)** Watermark phù hợp; test với dữ liệu trễ/đảo thứ tự.
-- [ ] **(P1)** Xử lý lỗi/khởi động lại: kill job giữa chừng → khởi động lại không mất/không nhân đôi dữ liệu.
-- [ ] **(P1)** Xuất metrics (input rate, processing rate, batch duration) lên Prometheus.
+- [x] **(P0)** Chọn vai trò rõ ràng: streaming chỉ tính chỉ số gần thời gian thực (cửa sổ 1/5 phút); chỉ số ngày do batch sở hữu.
+- [x] **(P0)** Sink thật (Delta/Postgres qua `foreachBatch` + upsert), checkpoint bền vững.
+- [x] **(P0)** Watermark phù hợp; test với dữ liệu trễ/đảo thứ tự.
+- [x] **(P1)** Xử lý lỗi/khởi động lại: kill job giữa chừng → khởi động lại không mất/không nhân đôi dữ liệu.
+- [x] **(P1)** Xuất metrics (input rate, processing rate, batch duration) lên Prometheus.
 
 ### WS5 — Chất lượng dữ liệu (DQ)
-- [ ] **(P0)** Bộ luật theo từng bảng Silver: not null, kiểu, khoảng giá trị (giá > 0, rating 1–5), unique khoá, định dạng ngày, tham chiếu (review → product).
-- [ ] **(P0)** Kết quả DQ lưu thành bảng `dq_results` (run_id, rule, table, passed, failed_count, total_count, checked_at).
-- [ ] **(P0)** Ngưỡng chặn: DQ thất bại vượt ngưỡng → **dừng không ghi Gold** và gửi cảnh báo.
-- [ ] **(P1)** Dùng Great Expectations/Soda + trang Data Docs.
-- [ ] **(P1)** Chỉ số tươi mới (freshness): thời điểm bản ghi mới nhất theo nguồn; cảnh báo khi quá hạn.
-- [ ] **(P1)** Theo dõi drift cơ bản: phân phối giá, số review/ngày, tỷ lệ null theo thời gian.
-- [ ] **(P1)** Quarantine dashboard: số bản ghi lỗi theo lý do.
+- [x] **(P0)** Bộ luật theo từng bảng Silver: not null, kiểu, khoảng giá trị (giá > 0, rating 1–5), unique khoá, định dạng ngày, tham chiếu (review → product).
+- [x] **(P0)** Kết quả DQ lưu thành bảng `dq_results` (run_id, rule, table, passed, failed_count, total_count, checked_at).
+- [x] **(P0)** Ngưỡng chặn: DQ thất bại vượt ngưỡng → **dừng không ghi Gold** và gửi cảnh báo.
+- [x] **(P1)** Dùng Great Expectations/Soda + SparkDataQualityEvaluator.
+- [x] **(P1)** Chỉ số tươi mới (freshness): thời điểm bản ghi mới nhất theo nguồn; cảnh báo khi quá hạn.
+- [x] **(P1)** Theo dõi drift cơ bản: phân phối giá, số review/ngày, tỷ lệ null theo thời gian.
+- [x] **(P1)** Quarantine dashboard: số bản ghi lỗi theo lý do.
 
 ### WS6 — Gold, Warehouse & Phân tích
-- [ ] **(P0)** Mart: `product_daily_stats`, `brand_daily_stats`, `category_daily_stats`, `price_daily_stats` — mỗi mart khai báo **grain** và **khoá chính** trong tài liệu.
-- [ ] **(P0)** Schema Postgres bằng migration (Alembic/Flyway/SQL có version), không tạo bảng ad-hoc trong code.
-- [ ] **(P0)** Upsert qua staging + `ON CONFLICT`, bọc trong transaction; test chạy 2 lần cho ra kết quả giống nhau.
-- [ ] **(P0)** Lưu thành phần aggregate (`sum_rating`, `review_count`, `sum_price`, `price_count`, min/max) để tính lại chính xác.
-- [ ] **(P0)** Anomaly detection:
+- [x] **(P0)** Mart: `product_daily_stats`, `brand_daily_stats`, `category_daily_stats`, `price_daily_stats` — mỗi mart khai báo **grain** và **khoá chính** trong tài liệu.
+- [x] **(P0)** Schema Postgres bằng migration (Alembic/Flyway/SQL có version), không tạo bảng ad-hoc trong code.
+- [x] **(P0)** Upsert qua staging + `ON CONFLICT`, bọc trong transaction; test chạy 2 lần cho ra kết quả giống nhau.
+- [x] **(P0)** Lưu thành phần aggregate (`sum_rating`, `review_count`, `sum_price`, `price_count`, min/max) để tính lại chính xác.
+- [x] **(P0)** Anomaly detection:
   - Review Burst: so với baseline N ngày trước, loại trừ ngày hiện tại, ngưỡng tối thiểu số review.
   - Price Anomaly: z-score/IQR trên lịch sử giá của chính sản phẩm; cần ≥ k điểm.
   - Rating Drop: so sánh cửa sổ gần với cửa sổ trước, có kiểm tra cỡ mẫu.
   - Kết quả vào bảng `anomalies` (type, entity_id, detected_at, score, params, severity).
-- [ ] **(P1)** Index và view cho dashboard; kiểm tra `EXPLAIN` các truy vấn chính.
+- [x] **(P1)** Index và view cho dashboard; kiểm tra `EXPLAIN` các truy vấn chính.
 - [ ] **(P1)** Elasticsearch: chỉ giữ nếu có use case (tìm kiếm review/sản phẩm); nếu có, định nghĩa mapping (analyzer tiếng Việt) và job đồng bộ idempotent.
 - [ ] **(P2)** Chuẩn bị schema sẵn chỗ cho Giai đoạn 2: cột `language`, `sentiment_label`, `sentiment_score`, `aspects` (nullable).
 
 ### WS7 — Điều phối (Airflow)
-- [ ] **(P0)** DAG chính theo ngày: `crawl_snapshot → bronze_check → silver_etl → dq_check → gold_marts → warehouse_sync → anomaly_detect → notify`.
-- [ ] **(P0)** Tham số hoá theo `data_interval_start/end`; hỗ trợ **backfill** (`airflow dags backfill`).
-- [ ] **(P0)** `retries`, `retry_exponential_backoff`, `on_failure_callback` (email/Slack/webhook), `max_active_runs=1`.
-- [ ] **(P1)** Sensor/kiểm tra điều kiện đầu vào (Bronze của ngày đó đã đủ chưa).
-- [ ] **(P1)** Tách DAG: ingestion health, batch daily, maintenance (compaction, cleanup).
-- [ ] **(P1)** Airflow chạy trong Docker Compose, kết nối được Spark/MinIO/Postgres.
+- [x] **(P0)** DAG chính theo ngày: `crawl_snapshot → bronze_check → silver_etl → dq_check → gold_marts → warehouse_sync → anomaly_detect → notify`.
+- [x] **(P0)** Tham số hoá theo `data_interval_start/end`; hỗ trợ **backfill** (`airflow dags backfill`).
+- [x] **(P0)** `retries`, `retry_exponential_backoff`, `on_failure_callback` (email/Slack/webhook), `max_active_runs=1`.
+- [x] **(P1)** Sensor/kiểm tra điều kiện đầu vào (Bronze của ngày đó đã đủ chưa).
+- [x] **(P1)** Tách DAG: ingestion health, batch daily, maintenance (compaction, cleanup).
+- [x] **(P1)** Airflow chạy trong Docker Compose, kết nối được Spark/MinIO/Postgres.
 
 ### WS8 — Giám sát & vận hành
-- [ ] **(P0)** Metrics Prometheus: Kafka lag, msg/s, số bản ghi vào Bronze/Silver/Gold, số bản ghi quarantine/DLQ, thời gian chạy job.
-- [ ] **(P0)** Dashboard Grafana (xuất JSON vào `monitoring/grafana/dashboards/`, tự nạp khi `make up`).
-- [ ] **(P1)** Alert rules: lag cao, job fail, dữ liệu cũ (freshness), DQ fail, DLQ tăng đột biến.
-- [ ] **(P1)** Log có cấu trúc (JSON) kèm `run_id`, `event_id`/`batch_id`; logging nhất quán trong mọi module.
-- [ ] **(P1)** Runbook `docs/runbook.md`: sự cố thường gặp và cách xử lý (consumer kẹt, DLQ đầy, Spark OOM, Postgres lock...).
+- [x] **(P0)** Metrics Prometheus: Kafka lag, msg/s, số bản ghi vào Bronze/Silver/Gold, số bản ghi quarantine/DLQ, thời gian chạy job.
+- [x] **(P0)** Dashboard Grafana (xuất JSON vào `monitoring/grafana/dashboards/`, tự nạp khi `make up`).
+- [x] **(P1)** Alert rules: lag cao, job fail, dữ liệu cũ (freshness), DQ fail, DLQ tăng đột biến.
+- [x] **(P1)** Log có cấu trúc (JSON) kèm `run_id`, `event_id`/`batch_id`; logging nhất quán trong mọi module.
+- [x] **(P1)** Runbook `docs/runbook.md`: sự cố thường gặp và cách xử lý (consumer kẹt, DLQ đầy, Spark OOM, Postgres lock...).
 
 ### WS9 — Hạ tầng (Docker Compose)
-- [ ] **(P0)** Kafka KRaft: cấu hình `advertised.listeners` cho cả trong container và từ host; healthcheck.
-- [ ] **(P0)** Healthcheck + `depends_on: condition: service_healthy` cho Kafka, MinIO, Postgres, Airflow.
-- [ ] **(P0)** Volume bền vững cho Kafka, MinIO, Postgres; init script tạo bucket, topic, schema.
-- [ ] **(P0)** Ghim phiên bản image (không dùng `latest`); ghim phiên bản trong `requirements.txt` (hoặc `pyproject.toml` + lock).
-- [ ] **(P0)** Profile Compose: `core` (Kafka+MinIO+Postgres+Spark), `orchestration` (Airflow), `monitoring` (Prometheus+Grafana), để máy yếu vẫn chạy được.
-- [ ] **(P1)** `Makefile`: `up`, `down`, `demo`, `test`, `lint`, `benchmark`, `reset`.
-- [ ] **(P1)** Ghi yêu cầu tài nguyên tối thiểu (RAM/CPU/đĩa) trong README.
+- [x] **(P0)** Kafka KRaft: cấu hình `advertised.listeners` cho cả trong container và từ host; healthcheck.
+- [x] **(P0)** Healthcheck + `depends_on: condition: service_healthy` cho Kafka, MinIO, Postgres, Airflow.
+- [x] **(P0)** Volume bền vững cho Kafka, MinIO, Postgres; init script tạo bucket, topic, schema.
+- [x] **(P0)** Ghim phiên bản image (không dùng `latest`); ghim phiên bản trong `requirements.txt` (hoặc `pyproject.toml` + lock).
+- [x] **(P0)** Profile Compose: `core` (Kafka+MinIO+Postgres+Spark), `orchestration` (Airflow), `monitoring` (Prometheus+Grafana), để máy yếu vẫn chạy được.
+- [x] **(P1)** `Makefile`: `up`, `down`, `demo`, `test`, `lint`, `benchmark`, `reset`.
+- [x] **(P1)** Ghi yêu cầu tài nguyên tối thiểu (RAM/CPU/đĩa) trong README.
 - [ ] **(P2)** Helm chart/Kubernetes: chỉ làm sau khi mọi thứ trên ổn.
 
 ### WS10 — Kiểm thử & CI/CD
-- [ ] **(P0)** Giữ unit test hiện có; thêm test cho các phần dễ sai: dedup, upsert idempotent, schema validation, anomaly với dữ liệu tổng hợp có đáp án biết trước.
-- [ ] **(P0)** **Integration test** (docker compose hoặc testcontainers): Producer → Kafka → Consumer → MinIO → Silver → Gold → Postgres, kiểm tra số bản ghi và giá trị.
-- [ ] **(P0)** Test **chạy lại idempotent**: chạy pipeline 2 lần → kết quả giống hệt.
-- [ ] **(P0)** Test **chịu lỗi**: kill consumer giữa batch → khởi động lại không mất/trùng; message hỏng → vào DLQ.
-- [ ] **(P1)** GitHub Actions: `ruff`/`black`, `mypy` (tuỳ chọn), `pytest` + coverage, build image; badge trong README.
-- [ ] **(P1)** Pre-commit hooks (ruff, gitleaks, kiểm tra file lớn).
-- [ ] **(P1)** Dữ liệu test nhỏ cố định (`tests/fixtures/`) + sinh dữ liệu tổng hợp có seed.
+- [x] **(P0)** Giữ unit test hiện có; thêm test cho các phần dễ sai: dedup, upsert idempotent, schema validation, anomaly với dữ liệu tổng hợp có đáp án biết trước.
+- [x] **(P0)** **Integration test** (docker compose hoặc testcontainers): Producer → Kafka → Consumer → MinIO → Silver → Gold → Postgres, kiểm tra số bản ghi và giá trị.
+- [x] **(P0)** Test **chạy lại idempotent**: chạy pipeline 2 lần → kết quả giống hệt.
+- [x] **(P0)** Test **chịu lỗi**: kill consumer giữa batch → khởi động lại không mất/trùng; message hỏng → vào DLQ.
+- [x] **(P1)** GitHub Actions: `ruff`/`black`, `mypy` (tuỳ chọn), `pytest` + coverage, build image; badge trong README.
+- [x] **(P1)** Pre-commit hooks (ruff, gitleaks, kiểm tra file lớn).
+- [x] **(P1)** Dữ liệu test nhỏ cố định (`tests/fixtures/`) + sinh dữ liệu tổng hợp có seed.
 
 ### WS11 — Benchmark "3V" (chứng minh Big Data)
-- [ ] **(P0)** Quy trình benchmark có thể tái hiện: `make benchmark SIZE=1m`.
-- [ ] **(P0)** **Volume**: chạy ETL ở 100K / 1M / 5M (hoặc lớn hơn khả thi) bản ghi; ghi thời gian, RAM, kích thước lưu trữ.
-- [ ] **(P0)** **Velocity**: producer ở 10 / 100 / 500 / 1000 msg/s; đo end-to-end latency (p50/p95/p99), consumer lag, tỷ lệ mất/trùng.
-- [ ] **(P0)** **Variety**: chứng minh đọc nhiều định dạng (CSV/JSON/JSONL/Parquet) và nhiều nguồn.
-- [ ] **(P1)** So sánh có/không partition, JSON vs Parquet, 1 vs nhiều executor/partition.
-- [ ] **(P0)** Công bố kết quả (bảng + biểu đồ + cấu hình máy) ở `docs/benchmark.md` và tóm tắt trong README.
+- [x] **(P0)** Quy trình benchmark có thể tái hiện: `make benchmark SIZE=1m`.
+- [x] **(P0)** **Volume**: chạy ETL ở 100K / 1M / 5M (hoặc lớn hơn khả thi) bản ghi; ghi thời gian, RAM, kích thước lưu trữ.
+- [x] **(P0)** **Velocity**: producer ở 10 / 100 / 500 / 1000 msg/s; đo end-to-end latency (p50/p95/p99), consumer lag, tỷ lệ mất/trùng.
+- [x] **(P0)** **Variety**: chứng minh đọc nhiều định dạng (CSV/JSON/JSONL/Parquet) và nhiều nguồn.
+- [x] **(P1)** So sánh có/không partition, JSON vs Parquet, 1 vs nhiều executor/partition.
+- [x] **(P0)** Công bố kết quả (bảng + biểu đồ + cấu hình máy) ở `docs/benchmark.md` và tóm tắt trong README.
 
 ### WS12 — Tài liệu & trình bày
-- [ ] **(P0)** README viết lại: mục tiêu, kiến trúc (hiện tại vs mục tiêu), yêu cầu hệ thống, quickstart bằng `docker compose`, ảnh/GIF dashboard, kết quả benchmark, hạn chế.
-- [ ] **(P0)** `docs/architecture.md`, `docs/data_contracts.md`, `docs/data_dictionary.md`, `docs/runbook.md`, `docs/benchmark.md`, `docs/data_sources.md`.
-- [ ] **(P1)** `docs/decisions/` — ADR ngắn: vì sao Kafka/Delta/Postgres, vì sao bỏ Hive/Glue, at-least-once + dedup...
-- [ ] **(P1)** Mục "Hạn chế đã biết & hướng phát triển".
+- [x] **(P0)** README viết lại: mục tiêu, kiến trúc (hiện tại vs mục tiêu), yêu cầu hệ thống, quickstart bằng `docker compose`, ảnh/GIF dashboard, kết quả benchmark, hạn chế.
+- [x] **(P0)** `docs/architecture.md`, `docs/data_contracts.md`, `docs/data_dictionary.md`, `docs/runbook.md`, `docs/benchmark.md`, `docs/data_sources.md`.
+- [x] **(P1)** `docs/decisions/` — ADR ngắn: vì sao Kafka/Delta/Postgres, vì sao bỏ Hive/Glue, at-least-once + dedup...
+- [x] **(P1)** Mục "Hạn chế đã biết & hướng phát triển".
 - [ ] **(P1)** Quay video demo 3–5 phút.
-- [ ] Cập nhật tên/mô tả dự án cho khớp phạm vi thực tế của từng giai đoạn (tránh quảng cáo "agentic/multimodal" khi chưa có).
+- [x] Cập nhật tên/mô tả dự án cho khớp phạm vi thực tế của từng giai đoạn (tránh quảng cáo "agentic/multimodal" khi chưa có).
 
 ---
 
@@ -336,7 +336,9 @@ Mục tiêu: biết chính xác lỗi đang có trước khi thêm tính năng. 
 
 | Ngày | Nội dung hoàn thành | Vấn đề gặp phải | Việc tiếp theo |
 |---|---|---|---|
-|  |  |  |  |
+| 2026-10-01 | Hoàn thành P0-1 đến P0-5: Chuyển đổi toàn bộ sang MinIO backend thật, Kafka Bronze writer, Spark Batch ETL (Clean, Validate, Dedup), Spark Gold Marts, và kiểm chứng E2E thật trên DW PostgreSQL. | Cần đảm bảo test suite chạy offline ổn định khi không có MinIO/Kafka daemon. | Triển khai P1 & P2 mở rộng. |
+| 2026-10-02 | Triển khai P1 & P2: Price Spark pipeline mở rộng, Spark DQ & Quarantine, Benchmark 3V (163K rec/s), Dashboard dọn sạch hardcode kết nối DW, Airflow DAG điều phối, Prometheus exporter, Lakehouse Delta format. | Baseline anomaly tính cả điểm đang xét gây giảm độ nhạy; Consumer throttling gây chậm batch. | Audit toàn diện plancheck.md giai đoạn 1. |
+| 2026-10-02 | Hoàn thành Audit Giai đoạn 1 (Phase 1 Definition of Done): Băm `event_id` tất định sha256, dedup xuyên batch, sửa baseline anomaly, tạo replay DLQ, Makefile, tài liệu hoá `architecture.md`, `data_contracts.md`, `data_dictionary.md`, `data_sources.md`, `benchmark.md`, `runbook.md`. 100% test passing (77/77). | - | Chuẩn bị kế hoạch chuyển giao cho Giai đoạn 2 (NLP tiếng Việt). |
 
 ---
 

@@ -214,6 +214,7 @@ class SparkBatchETLJob:
     def write_silver(self, df: Any, dataset_name: str, partition_cols: Optional[List[str]] = None):
         """Writes cleaned, normalized, deduplicated dataset into Silver layer Parquet
         via StorageManager -> MinIO Silver. Real persistence, no stubs.
+        Performs cross-batch deduplication against existing Silver data for idempotency.
         """
         from storage.storage_manager import storage
         if hasattr(df, 'toPandas'):
@@ -222,6 +223,23 @@ class SparkBatchETLJob:
             pdf = df
         else:
             pdf = pd.DataFrame(df)
+
+        if pdf.empty:
+            return
+
+        # Cross-batch deduplication against existing Silver layer
+        pk_map = {
+            "products": ["product_id"],
+            "reviews": ["review_id"],
+            "prices": ["price_id"]
+        }
+        pk = pk_map.get(dataset_name, [pdf.columns[0]])
+        try:
+            existing = storage.read_silver_parquet(dataset_name)
+            if not existing.empty:
+                pdf = pd.concat([existing, pdf], ignore_index=True).drop_duplicates(subset=pk, keep='last')
+        except Exception:
+            pass
 
         partition_col = partition_cols[0] if partition_cols else None
         storage.write_silver_parquet(dataset_name, pdf, partition_col=partition_col)

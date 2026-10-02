@@ -48,35 +48,40 @@ class ReviewBurstDetector:
         ).reset_index()
 
         for prod_id, group in hourly_counts.groupby(product_id_col):
-            counts = group["review_count"]
-            if len(counts) < min_history_points:
+            if len(group) < min_history_points:
                 continue
 
-            mean_vol = float(counts.mean())
-            std_vol = float(counts.std())
-            if std_vol == 0 or np.isnan(std_vol):
-                threshold = mean_vol * zero_std_multiplier
-            else:
-                threshold = mean_vol + (mult * std_vol)
+            for idx, row in group.iterrows():
+                # Baseline calculation strictly excludes the current point being evaluated (Plancheck item 115)
+                baseline_group = group.drop(idx)
+                baseline_counts = baseline_group["review_count"]
+                if len(baseline_counts) < 1:
+                    continue
+                mean_vol = float(baseline_counts.mean())
+                std_vol = float(baseline_counts.std()) if len(baseline_counts) > 1 else 0.0
 
-            cutoff = max(threshold, float(min_burst))
-            spikes = group[group["review_count"] >= cutoff]
-            for _, row in spikes.iterrows():
-                score = round(row["review_count"] / max(mean_vol, 1.0), 2)
-                is_bombing = row["avg_rating"] <= bomb_thresh
-                anom_type = "REVIEW_BOMBING" if is_bombing else "REVIEW_BURST"
-                desc = (
-                    f"Traffic surge: {row['review_count']} reviews in {w_hours}h "
-                    f"(baseline: {mean_vol:.1f}/h, Avg rating: {row['avg_rating']:.1f})"
-                )
-                anomalies.append({
-                    "entity_type": "PRODUCT",
-                    "entity_id": str(prod_id),
-                    "anomaly_type": anom_type,
-                    "score": score,
-                    "timestamp": str(row["hour_dt"]),
-                    "description": desc
-                })
+                if std_vol == 0 or np.isnan(std_vol):
+                    threshold = mean_vol * zero_std_multiplier
+                else:
+                    threshold = mean_vol + (mult * std_vol)
+
+                cutoff = max(threshold, float(min_burst))
+                if row["review_count"] >= cutoff:
+                    score = round(row["review_count"] / max(mean_vol, 1.0), 2)
+                    is_bombing = row["avg_rating"] <= bomb_thresh
+                    anom_type = "REVIEW_BOMBING" if is_bombing else "REVIEW_BURST"
+                    desc = (
+                        f"Traffic surge: {row['review_count']} reviews in {w_hours}h "
+                        f"(baseline: {mean_vol:.1f}/h, Avg rating: {row['avg_rating']:.1f})"
+                    )
+                    anomalies.append({
+                        "entity_type": "PRODUCT",
+                        "entity_id": str(prod_id),
+                        "anomaly_type": anom_type,
+                        "score": score,
+                        "timestamp": str(row["hour_dt"]),
+                        "description": desc
+                    })
 
         return anomalies
 

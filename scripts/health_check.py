@@ -5,7 +5,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config.settings import settings
 from kafka import KafkaConsumer
 from minio import Minio
-import psycopg2
 import requests
 
 def check_kafka():
@@ -13,8 +12,8 @@ def check_kafka():
     try:
         consumer = KafkaConsumer(
             bootstrap_servers=settings.kafka.bootstrap_servers,
-            request_timeout_ms=5000,
-            session_timeout_ms=5000
+            request_timeout_ms=1000,
+            session_timeout_ms=1000
         )
         topics = consumer.topics()
         print(f"Kafka is UP. Topics: {topics}")
@@ -42,6 +41,7 @@ def check_minio():
 def check_postgres():
     print("Checking PostgreSQL...")
     try:
+        import psycopg2
         conn = psycopg2.connect(
             host=settings.database.host,
             port=settings.database.port,
@@ -55,6 +55,9 @@ def check_postgres():
         conn.close()
         print("PostgreSQL is UP.")
         return True
+    except ModuleNotFoundError:
+        print("PostgreSQL driver (psycopg2) not installed in local environment. Skipping live check.")
+        return False
     except Exception as e:
         print(f"PostgreSQL is DOWN: {e}")
         return False
