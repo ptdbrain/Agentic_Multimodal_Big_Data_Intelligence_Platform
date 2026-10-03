@@ -1,10 +1,14 @@
-.PHONY: help up down demo test benchmark health dag metrics reset lint
+.PHONY: help up down demo simulate test benchmark health dag metrics reset lint
+
+VOLUME ?= 5000
+RATE ?= 0
 
 help:
 	@echo "SentinelAI Platform Management Commands:"
 	@echo "  make up         - Start all Docker infrastructure services"
 	@echo "  make down       - Stop all Docker infrastructure services"
 	@echo "  make demo       - Execute complete end-to-end data pipeline"
+	@echo "  make simulate   - Simulate pushing existing dataset with 3V (VOLUME=5000 RATE=0)"
 	@echo "  make test       - Run full pytest verification suite"
 	@echo "  make benchmark  - Run 3V Big Data benchmark suite"
 	@echo "  make health     - Run infrastructure connectivity health checks"
@@ -21,8 +25,14 @@ down:
 demo:
 	python scripts/run_e2e_pipeline.py
 
+simulate:
+	python scripts/simulate_dataset_ingestion.py --volume $(VOLUME) --rate $(RATE)
+
 test:
 	pytest -v
+
+acceptance-kafka:
+	python scripts/verify_kafka_bronze_acceptance.py
 
 benchmark:
 	python scripts/benchmark.py

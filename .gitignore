@@ -16,9 +16,14 @@ storage/datalake/bronze/*
 storage/datalake/silver/*
 storage/datalake/gold/*
 storage/datalake/quarantine/*
+storage/datalake/checkpoints/*
 !storage/datalake/bronze/.gitkeep
 !storage/datalake/silver/.gitkeep
 !storage/datalake/gold/.gitkeep
 !storage/datalake/quarantine/.gitkeep
 .idea/
 .vscode/
+storage/bronze/
+storage/minio_root/
+hadoop/jars/
+

@@ -5,8 +5,28 @@ from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+def _load_env_file():
+    env_file = REPO_ROOT / ".env"
+    if env_file.exists():
+        try:
+            with open(env_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip("'\"")
+                        if k not in os.environ:
+                            os.environ[k] = v
+        except Exception:
+            pass
+
+_load_env_file()
+
 def get_env(key: str, default: str) -> str:
     return os.environ.get(key, default)
+
+VALID_RUNTIME_MODES = ("integration", "production", "local", "test")
 
 @dataclass
 class KafkaSettings:
@@ -21,12 +41,25 @@ class KafkaSettings:
 @dataclass
 class StorageSettings:
     endpoint: str = get_env("MINIO_ENDPOINT", "localhost:9000")
+    endpoint_docker: str = get_env("MINIO_ENDPOINT_DOCKER", "minio:9000")
     access_key: str = get_env("MINIO_ACCESS_KEY", "minioadmin")
     secret_key: str = get_env("MINIO_SECRET_KEY", "minioadmin")
     secure: bool = get_env("MINIO_SECURE", "false").lower() == "true"
     data_lake_bucket: str = get_env("DATA_LAKE_BUCKET", "sentinel-data")
-    backend: str = get_env("STORAGE_BACKEND", "minio")
+    backend: str = get_env("STORAGE_BACKEND", "minio").lower()
+    enable_local_mirror: bool = get_env("MINIO_LOCAL_MIRROR", "false").lower() == "true"
     local_data_dir: Path = REPO_ROOT / get_env("LOCAL_DATA_DIR", "storage/datalake")
+
+    def get_s3_endpoint(self) -> str:
+        """Returns the appropriate MinIO endpoint based on execution environment (host vs Docker)."""
+        is_docker = (
+            os.path.exists("/.dockerenv")
+            or os.environ.get("RUNNING_IN_DOCKER", "false").lower() == "true"
+            or os.environ.get("SPARK_MASTER", "").startswith("spark://")
+        )
+        if is_docker:
+            return self.endpoint_docker
+        return self.endpoint
 
     @property
     def bucket_raw(self) -> str:
@@ -40,6 +73,27 @@ class StorageSettings:
     def bucket_gold(self) -> str:
         return self.data_lake_bucket
 
+    def resolve_backend_mode(self, explicit_mode: Optional[str] = None) -> str:
+        """Resolves storage backend strictly without implicit fallback.
+        Returns 'minio' for integration/production, or 'local' only when explicitly declared.
+        """
+        if explicit_mode is not None:
+            mode_clean = explicit_mode.strip().lower()
+            if mode_clean in ("local", "test"):
+                return "local"
+            if mode_clean in ("integration", "production", "minio"):
+                return "minio"
+            raise ValueError(f"Unsupported storage mode '{explicit_mode}'. Must be 'integration', 'minio', 'local', or 'test'.")
+
+        env_runtime = os.environ.get("RUNTIME_MODE", "").strip().lower()
+        env_backend = os.environ.get("STORAGE_BACKEND", self.backend).strip().lower()
+
+        if env_runtime in ("integration", "production"):
+            return "minio"
+        if env_runtime in ("local", "test") or env_backend == "local":
+            return "local"
+        return "minio"
+
 @dataclass
 class DatabaseSettings:
     host: str = get_env("POSTGRES_HOST", "localhost")
@@ -47,7 +101,38 @@ class DatabaseSettings:
     user: str = get_env("POSTGRES_USER", "sentinel")
     password: str = get_env("POSTGRES_PASSWORD", "sentinelpass")
     database: str = get_env("POSTGRES_DB", "sentinel_dw")
+    engine: str = get_env("DB_ENGINE", "postgres").lower()
     sqlite_path: Path = REPO_ROOT / get_env("SQLITE_DB_PATH", "database/sentinel.db")
+
+    def resolve_db_engine(
+        self,
+        explicit_mode: Optional[str] = None,
+        use_postgres: Optional[bool] = None
+    ) -> str:
+        """Resolves database engine strictly without implicit fallback.
+        Returns 'postgres' for integration/production, or 'sqlite' only when explicitly declared.
+        """
+        if use_postgres is True:
+            return "postgres"
+        if use_postgres is False:
+            return "sqlite"
+
+        if explicit_mode is not None:
+            mode_clean = explicit_mode.strip().lower()
+            if mode_clean in ("local", "test", "sqlite"):
+                return "sqlite"
+            if mode_clean in ("integration", "production", "postgres"):
+                return "postgres"
+            raise ValueError(f"Unsupported database mode '{explicit_mode}'. Must be 'integration', 'postgres', 'local', 'test', or 'sqlite'.")
+
+        env_runtime = os.environ.get("RUNTIME_MODE", "").strip().lower()
+        env_engine = os.environ.get("DB_ENGINE", self.engine).strip().lower()
+
+        if env_runtime in ("integration", "production"):
+            return "postgres"
+        if env_runtime in ("local", "test") or env_engine == "sqlite":
+            return "sqlite"
+        return "postgres"
 
 @dataclass
 class AnalyticsSettings:
@@ -109,6 +194,7 @@ class CrawlerSettings:
 class Settings:
     app_name: str = "SentinelAI"
     env: str = get_env("ENV", "development")
+    runtime_mode: str = get_env("RUNTIME_MODE", "integration").lower()
     repo_root: Path = REPO_ROOT
     kafka: KafkaSettings = field(default_factory=KafkaSettings)
     storage: StorageSettings = field(default_factory=StorageSettings)
@@ -120,6 +206,32 @@ class Settings:
     search: SearchSettings = field(default_factory=SearchSettings)
     crawler: CrawlerSettings = field(default_factory=CrawlerSettings)
 
+    @property
+    def is_integration_mode(self) -> bool:
+        mode = os.environ.get("RUNTIME_MODE", self.runtime_mode).strip().lower()
+        return mode in ("integration", "production")
+
+    @property
+    def is_local_mode(self) -> bool:
+        mode = os.environ.get("RUNTIME_MODE", self.runtime_mode).strip().lower()
+        return mode in ("local", "test")
+
+    def set_runtime_mode(self, mode: str) -> None:
+        """Explicitly configures runtime mode ('integration' vs 'local'/'test')."""
+        mode_clean = mode.strip().lower()
+        if mode_clean not in VALID_RUNTIME_MODES:
+            raise ValueError(f"Invalid runtime_mode '{mode}'. Allowed: {VALID_RUNTIME_MODES}")
+        os.environ["RUNTIME_MODE"] = mode_clean
+        self.runtime_mode = mode_clean
+        if mode_clean in ("local", "test"):
+            os.environ["STORAGE_BACKEND"] = "local"
+            os.environ["DB_ENGINE"] = "sqlite"
+            self.storage.backend = "local"
+            self.database.engine = "sqlite"
+        else:
+            os.environ["STORAGE_BACKEND"] = "minio"
+            os.environ["DB_ENGINE"] = "postgres"
+            self.storage.backend = "minio"
+            self.database.engine = "postgres"
+
 settings = Settings()
-
-
