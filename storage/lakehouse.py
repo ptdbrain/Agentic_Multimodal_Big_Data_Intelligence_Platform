@@ -51,7 +51,7 @@ class LakehouseTable:
                 try:
                     commit_data = self.storage.backend.read_json(f)
                     history.append(commit_data)
-                except Exception:
+                except FileNotFoundError:
                     pass
         return history
 
@@ -144,7 +144,7 @@ class LakehouseTable:
             data_file = commit_info.get("data_file")
             if data_file:
                 return self.storage.backend.read_parquet(data_file)
-        except Exception:
+        except FileNotFoundError:
             pass
 
         return pd.DataFrame()
