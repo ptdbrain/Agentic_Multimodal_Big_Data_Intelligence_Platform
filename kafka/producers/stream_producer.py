@@ -48,7 +48,17 @@ class StreamProducer:
             # Raise exception if Kafka is unavailable in production
             raise RuntimeError(f"Failed to connect to Kafka at {self.bootstrap_servers}: {e}")
 
-    def send_message(self, topic: str, key: Optional[str], value: dict, event_type: str = "EVENT", source: str = "stream_producer"):
+    def send_message(
+        self,
+        topic: str,
+        key: Optional[str],
+        value: dict,
+        event_type: str = "EVENT",
+        source: str = "stream_producer",
+        wait_for_delivery: bool = True,
+        timeout_sec: float = 5.0
+    ) -> Tuple[Dict[str, Any], Any]:
+        """Wraps payload in canonical envelope, sends to Kafka, and checks delivery result."""
         event_time = (
             value.get("timestamp") or 
             value.get("review_date") or 
@@ -69,16 +79,37 @@ class StreamProducer:
         }
         
         if self.enable_offline_buffer:
-            self.virtual_queue.append({"topic": topic, "key": key, "value": envelope, "sent_at": time.time()})
-            return
+            offset = len(self.virtual_queue)
+            delivery_record = {
+                "topic": topic,
+                "key": key,
+                "value": envelope,
+                "partition": 0,
+                "offset": offset,
+                "sent_at": time.time(),
+                "status": "BUFFERED"
+            }
+            self.virtual_queue.append(delivery_record)
+            return envelope, delivery_record
 
-        if self.producer:
-            try:
-                self.producer.send(topic, key=key, value=envelope)
-            except Exception as e:
-                raise RuntimeError(f"Failed to send message to Kafka topic {topic}: {e}")
-        else:
-            raise RuntimeError("Kafka producer is not initialized and offline buffer is disabled")
+        if not self.producer:
+            raise RuntimeError("Kafka producer is not initialized and offline buffer is disabled.")
+
+        try:
+            future = self.producer.send(topic, key=key, value=envelope)
+            if wait_for_delivery:
+                metadata = future.get(timeout=timeout_sec)
+                delivery_info = {
+                    "status": "DELIVERED",
+                    "topic": metadata.topic,
+                    "partition": metadata.partition,
+                    "offset": metadata.offset,
+                    "event_id": envelope["event_id"]
+                }
+                return envelope, delivery_info
+            return envelope, future
+        except Exception as e:
+            raise RuntimeError(f"Delivery verification failed for Kafka topic '{topic}': {e}")
 
     def produce_batch(
         self,
@@ -87,27 +118,48 @@ class StreamProducer:
         rate: Optional[float] = None,
         key_field: Optional[str] = None,
         event_type: str = "EVENT",
-        source: str = "stream_producer"
+        source: str = "stream_producer",
+        timeout_sec: float = 15.0
     ) -> Tuple[int, float]:
+        """Produces a batch of records to Kafka with delivery verification across all messages."""
         target_rate = rate if rate is not None else settings.ingestion.rate_limit_rps
         interval = 1.0 / target_rate if target_rate > 0 else 0
         sent = 0
         t0 = time.time()
+        pending_futures = []
 
         for rec in records:
             if key_field:
                 key = rec.get(key_field)
             else:
-                # Default logic: Use product_id for reviews and products, or other ids
-                key = rec.get("product_id") or rec.get("review_id") or rec.get("event_id") or rec.get("id")
-            
-            self.send_message(topic, key=str(key) if key else None, value=rec, event_type=event_type, source=source)
+                key = rec.get("product_id") or rec.get("review_id") or rec.get("event_id") or rec.get("id") or rec.get("price_id")
+
+            # When rate limit is enabled, wait per message; otherwise pipeline sends asynchronously then verify
+            wait_now = (interval > 0) or self.enable_offline_buffer
+            _, delivery_result = self.send_message(
+                topic,
+                key=str(key) if key is not None else None,
+                value=rec,
+                event_type=event_type,
+                source=source,
+                wait_for_delivery=wait_now,
+                timeout_sec=timeout_sec
+            )
+            if not wait_now and hasattr(delivery_result, "get"):
+                pending_futures.append(delivery_result)
+
             sent += 1
             if interval > 0:
                 time.sleep(interval)
 
-        if self.producer:
+        # Flush and verify delivery of all asynchronously dispatched messages
+        if self.producer and pending_futures:
             self.producer.flush()
+            for fut in pending_futures:
+                try:
+                    fut.get(timeout=timeout_sec)
+                except Exception as e:
+                    raise RuntimeError(f"Batch delivery verification failed on topic '{topic}': {e}")
 
         duration = max(time.time() - t0, 0.001)
         actual_rate = sent / duration
@@ -116,6 +168,14 @@ class StreamProducer:
 
     def clear_virtual_queue(self):
         self.virtual_queue.clear()
+
+    def close(self):
+        if self.producer is not None:
+            try:
+                self.producer.flush()
+                self.producer.close()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":
