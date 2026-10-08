@@ -101,3 +101,22 @@ CREATE TABLE IF NOT EXISTS price_daily_stats (
 );
 
 CREATE INDEX IF NOT EXISTS idx_price_daily_date ON price_daily_stats(date);
+
+CREATE TABLE IF NOT EXISTS reviews (
+    review_id VARCHAR(100) PRIMARY KEY,
+    product_id VARCHAR(100) NOT NULL,
+    user_id VARCHAR(100),
+    rating NUMERIC(3, 2),
+    review_title TEXT,
+    review_text TEXT,
+    review_date DATE,
+    sentiment VARCHAR(20),
+    verified_purchase BOOLEAN,
+    helpful_count INTEGER DEFAULT 0,
+    source VARCHAR(100),
+    ingested_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_reviews_product_id ON reviews(product_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_date ON reviews(review_date);
+
