@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
-from dashboard.utils import load_reviews_data, load_catalog_data, create_kpi_card
+from dashboard.utils import load_reviews_data, load_catalog_data, create_kpi_card, render_sidebar_source
 from spark.quality.metrics import DataQualityEvaluator
 from spark.quality.rules import RuleRegistry, REVIEW_QUALITY_RULES, PRODUCT_QUALITY_RULES
 
 st.set_page_config(page_title="Data Quality & Lineage", page_icon="🛡️", layout="wide")
 st.title("🛡️ Data Quality Scorecard & End-to-End Lineage")
+
+render_sidebar_source()
 
 revs = load_reviews_data()
 prods = load_catalog_data()

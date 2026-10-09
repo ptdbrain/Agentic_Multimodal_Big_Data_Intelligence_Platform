@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from dashboard.utils import load_catalog_data, load_reviews_data
+from dashboard.utils import load_catalog_data, load_reviews_data, render_sidebar_source
 from analytics.descriptive.stats import DescriptiveStats
 
-st.set_page_config(page_title="Product Analytics", page_icon="\U0001f4f1", layout="wide")
-st.title("\U0001f4f1 Product Analytics Explorer")
+st.set_page_config(page_title="Product Analytics", page_icon="📱", layout="wide")
+st.title("📱 Product Analytics Explorer")
+
+render_sidebar_source()
 
 prods = load_catalog_data()
 revs = load_reviews_data()

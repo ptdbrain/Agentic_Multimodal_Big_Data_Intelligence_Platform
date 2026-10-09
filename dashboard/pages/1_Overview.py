@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from dashboard.utils import create_kpi_card
+from dashboard.utils import create_kpi_card, render_sidebar_source
 from dashboard.db_connector import DashboardDB
 
 st.set_page_config(page_title="Executive Overview", page_icon="📊", layout="wide")
 st.title("📊 Executive Overview")
+
+render_sidebar_source()
 
 # Load verified analytical data from PostgreSQL DW / Gold Marts
 db = DashboardDB()

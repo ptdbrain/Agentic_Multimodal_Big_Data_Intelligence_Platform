@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from dashboard.utils import load_reviews_data
+from dashboard.utils import load_reviews_data, render_sidebar_source
 from analytics.trend.trends import TrendAnalyzer
 
 st.set_page_config(page_title="Trend Analytics", page_icon="📈", layout="wide")
 st.title("📈 Temporal & Trend Analytics")
+
+render_sidebar_source()
 
 revs = load_reviews_data()
 

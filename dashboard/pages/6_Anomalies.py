@@ -1,9 +1,12 @@
 import streamlit as st
 import pandas as pd
 from dashboard.db_connector import DashboardDB
+from dashboard.utils import render_sidebar_source
 
 st.set_page_config(page_title="Anomaly Center", page_icon="🚨", layout="wide")
 st.title("🚨 Anomaly Center & Incident Intelligence")
+
+render_sidebar_source()
 
 st.markdown("""
 Pre-computed analytical anomaly incidents served directly from **PostgreSQL DW (`anomaly_events`)** / **Gold Layer**:

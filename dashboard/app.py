@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from dashboard.utils import create_kpi_card
+from dashboard.utils import create_kpi_card, render_sidebar_source
 from dashboard.db_connector import DashboardDB
 
 st.set_page_config(
@@ -13,13 +13,12 @@ st.set_page_config(
 st.title("⚡ SentinelAI Platform")
 st.subheader("Data Foundation & Analytics Dashboard (Phase 1)")
 
-st.markdown("""
-Welcome to **SentinelAI**, a distributed Big Data ingestion, Data Lake storage, distributed processing,
-and anomaly intelligence platform built for multimodal consumer technology analytics.
-""")
+# Render active data warehouse source prominently
+render_sidebar_source()
 
-# Load baseline stats
+# Load baseline stats strictly from warehouse
 db = DashboardDB()
+st.caption(f"Active Warehouse Source: `{db.get_active_source_label()}`")
 kpis = db.get_kpi_summary()
 
 col1, col2, col3, col4 = st.columns(4)

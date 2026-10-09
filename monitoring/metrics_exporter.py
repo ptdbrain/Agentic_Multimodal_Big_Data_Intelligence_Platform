@@ -5,7 +5,7 @@ Supports Prometheus exposition format and JSON health telemetry.
 import time
 import sys
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
@@ -19,9 +19,9 @@ class SentinelMetricsExporter:
     """Collects multi-tier platform telemetry and exports Prometheus text format."""
     
     @classmethod
-    def collect_all_metrics(cls) -> Dict[str, Any]:
+    def collect_all_metrics(cls, mode: Optional[str] = None) -> Dict[str, Any]:
         """Gathers system health and processing metrics."""
-        db = DashboardDB()
+        db = DashboardDB(mode=mode)
         lake_stats = storage.get_storage_stats()
         kpis = db.get_kpi_summary()
         dq_df = db.get_data_quality_metrics()
@@ -51,9 +51,9 @@ class SentinelMetricsExporter:
         }
 
     @classmethod
-    def generate_prometheus_metrics(cls) -> str:
+    def generate_prometheus_metrics(cls, mode: Optional[str] = None) -> str:
         """Renders standard Prometheus exposition format."""
-        data = cls.collect_all_metrics()
+        data = cls.collect_all_metrics(mode=mode)
         lake = data["datalake"]
         wh = data["warehouse"]
 

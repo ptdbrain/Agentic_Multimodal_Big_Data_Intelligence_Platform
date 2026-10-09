@@ -2,12 +2,14 @@ import streamlit as st
 import time
 import pandas as pd
 import plotly.graph_objects as go
-from dashboard.utils import get_datalake_metrics
+from dashboard.utils import get_datalake_metrics, render_sidebar_source
 from dashboard.db_connector import DashboardDB
 from storage.storage_manager import storage
 
 st.set_page_config(page_title="Data Pipeline & Velocity", page_icon="🚀", layout="wide")
 st.title("🚀 Data Pipeline & Storage Observability")
+
+render_sidebar_source()
 
 st.markdown("""
 Infrastructure monitoring of Data Lake storage footprint (Bronze, Silver, Gold), Data Quality scorecards, and batch/stream processing throughput.

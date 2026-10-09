@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from dashboard.utils import load_reviews_data
+from dashboard.utils import load_reviews_data, render_sidebar_source
 
 st.set_page_config(page_title="Review Analytics", page_icon="💬", layout="wide")
 st.title("💬 Review Analytics & Feedback Intelligence")
+
+render_sidebar_source()
 
 revs = load_reviews_data()
 
