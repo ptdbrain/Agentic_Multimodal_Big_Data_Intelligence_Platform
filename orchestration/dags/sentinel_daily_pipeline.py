@@ -1,7 +1,11 @@
 """Apache Airflow DAG: sentinel_daily_pipeline
-Production Big Data Orchestration DAG:
-Data Collection -> Kafka Publish -> MinIO Bronze -> Spark Batch ETL -> Data Quality -> Spark Gold Marts -> DW UPSERT -> Metrics Recording
-Supports native Apache Airflow environments and standalone CLI task execution.
+Canonical Production Big Data Orchestration DAG synchronized with scripts/run_e2e_pipeline.py:
+  Stage 1: Source / Dataset / Crawler
+  Stage 2: Kafka Producer -> Kafka -> RawConsumer
+  Stage 3: MinIO Bronze Verification
+  Stage 4: Spark Batch -> Silver / Quarantine / DQ
+  Stage 5: Spark Gold Marts & Anomaly Events
+  Stage 6: PostgreSQL Warehouse -> Dashboard Verification
 """
 import sys
 import time
@@ -13,6 +17,18 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from config.settings import settings
+from storage.storage_manager import storage
+from scripts.run_e2e_pipeline import (
+    configure_pipeline_mode,
+    stage_1_ingest_sources,
+    stage_2_kafka_produce_and_consume,
+    stage_3_verify_bronze,
+    stage_4_spark_batch_silver_dq,
+    stage_5_spark_gold_marts,
+    stage_6_warehouse_and_dashboard,
+)
+
 # Simulation-friendly Airflow DAG definition
 try:
     from airflow import DAG
@@ -20,6 +36,7 @@ try:
     HAS_AIRFLOW = True
 except ImportError:
     HAS_AIRFLOW = False
+
     class DAG:
         def __init__(self, dag_id: str, default_args: dict, schedule_interval: str, catchup: bool = False):
             self.dag_id = dag_id
@@ -35,8 +52,10 @@ except ImportError:
             self.dag = dag
             if dag:
                 dag.tasks.append(self)
+
         def __rshift__(self, other):
             return other
+
 
 default_args = {
     'owner': 'sentinel_data_engineering',
@@ -54,103 +73,91 @@ dag = DAG(
     catchup=False
 )
 
+# Shared execution state across sequential tasks within a run
+_DAG_RUN_STATE: Dict[str, Any] = {}
+
+
 def task_start(**context):
     print(">>> [DAG: sentinel_daily_pipeline] Stage 0: Initializing pipeline execution context")
-    return {"status": "INITIALIZED", "start_time": time.time()}
+    effective_mode = configure_pipeline_mode(settings.runtime_mode)
+    _DAG_RUN_STATE.clear()
+    _DAG_RUN_STATE["effective_mode"] = effective_mode
+    return {"status": "INITIALIZED", "mode": effective_mode, "start_time": time.time()}
+
 
 def task_collect_and_publish(**context):
-    """Collects raw data and publishes canonical envelopes to Kafka."""
-    print(">>> [DAG] Stage 1: Collecting data & streaming to Kafka")
-    from ingestion.file_loader.loader import FileLoader
-    from kafka.producers.stream_producer import StreamProducer
-    from config.settings import settings
+    """Canonical Stages 1-3: Ingest sources -> Kafka Producer -> RawConsumer -> Verify MinIO Bronze."""
+    effective_mode = _DAG_RUN_STATE.get("effective_mode") or settings.runtime_mode
+    s1 = stage_1_ingest_sources()
+    s2 = stage_2_kafka_produce_and_consume(
+        products_raw=s1["products_raw"],
+        reviews_raw=s1["reviews_raw"],
+        prices_raw=s1["prices_raw"],
+        effective_mode=effective_mode
+    )
+    s3 = stage_3_verify_bronze(consume_result=s2, effective_mode=effective_mode)
+    _DAG_RUN_STATE["batches_by_topic"] = s3["batches_by_topic"]
+    _DAG_RUN_STATE["include_prices"] = bool(s1["prices_raw"])
+    return {
+        "products_count": len(s1["products_raw"]),
+        "reviews_count": len(s1["reviews_raw"]),
+        "prices_count": len(s1["prices_raw"]),
+        "bronze_batches": s3["batches_by_topic"]
+    }
 
-    producer = StreamProducer(enable_offline_buffer=True)
-    sample_dir = REPO_ROOT / "data" / "sample"
-    
-    prods = FileLoader.load_records(sample_dir / "products.json")
-    revs = FileLoader.load_records(sample_dir / "reviews.json")
-    prices = FileLoader.load_records(sample_dir / "prices.json") if (sample_dir / "prices.json").exists() else []
-
-    producer.produce_batch(settings.kafka.topic_products, prods, rate=0, event_type="NEW_PRODUCT")
-    producer.produce_batch(settings.kafka.topic_reviews, revs, rate=0, event_type="NEW_REVIEW")
-    if prices:
-        producer.produce_batch(settings.kafka.topic_prices, prices, rate=0, event_type="PRICE_UPDATE")
-
-    print(f"Ingested and published: {len(prods)} products, {len(revs)} reviews, {len(prices)} prices.")
-    return {"products_count": len(prods), "reviews_count": len(revs), "prices_count": len(prices)}
 
 def task_spark_batch(**context):
-    """Consumes to MinIO Bronze and executes Spark Batch ETL (Bronze -> Silver)."""
-    print(">>> [DAG] Stage 2: Consuming to MinIO Bronze & Spark Batch ETL")
-    from ingestion.file_loader.loader import FileLoader
-    from kafka.consumers.raw_consumer import RawConsumer
-    from spark.batch.spark_etl_job import SparkBatchETLJob
-    from config.settings import settings
+    """Canonical Stage 4: Spark Batch ETL reading directly from Bronze storage -> Silver / Quarantine / DQ."""
+    batches_by_topic = _DAG_RUN_STATE.get("batches_by_topic")
+    include_prices = _DAG_RUN_STATE.get("include_prices", True)
+    s4 = stage_4_spark_batch_silver_dq(
+        batches_by_topic=batches_by_topic,
+        include_prices=include_prices
+    )
+    _DAG_RUN_STATE["s4"] = s4
+    return s4["etl_res"]
 
-    sample_dir = REPO_ROOT / "data" / "sample"
-    prods = FileLoader.load_records(sample_dir / "products.json")
-    revs = FileLoader.load_records(sample_dir / "reviews.json")
-    prices = FileLoader.load_records(sample_dir / "prices.json") if (sample_dir / "prices.json").exists() else []
-
-    consumer = RawConsumer()
-    consumer.save_raw_batch(settings.kafka.topic_products, prods)
-    consumer.save_raw_batch(settings.kafka.topic_reviews, revs)
-    if prices:
-        consumer.save_raw_batch(settings.kafka.topic_prices, prices)
-
-    job = SparkBatchETLJob()
-    etl_res = job.run_pipeline(prods, revs, prices_source=prices)
-    print(f"Spark Batch ETL completed. Silver products: {etl_res['products_processed']}, reviews: {etl_res['reviews_processed']}")
-    return etl_res
 
 def task_data_quality(**context):
-    """Validates Data Quality scorecards and verifies quarantine."""
-    print(">>> [DAG] Stage 3: Data Quality Evaluation & Quarantine Check")
-    from storage.storage_manager import storage
-    from spark.quality.spark_dq import SparkDataQualityEvaluator
-    
+    """Verifies Data Quality scorecards persisted in Gold layer by Stage 4."""
+    print(">>> [DAG] Verifying Data Quality Scorecards in Gold Layer")
     dq_df = storage.read_gold_parquet("data_quality_metrics")
-    print(f"Persisted DQ scorecard records: {len(dq_df)}")
+    if dq_df.empty or not dq_df["batch_id"].is_unique:
+        raise RuntimeError("DAG Data Quality check failed: invalid or duplicate DQ metrics in Gold.")
+    print(f"Verified DQ scorecard records: {len(dq_df)}")
     return {"dq_records": len(dq_df)}
 
+
 def task_gold_analytics(**context):
-    """Builds all Gold Analytical Marts via SparkGoldBuilder."""
-    print(">>> [DAG] Stage 4: Building Gold Analytical Marts via SparkGoldBuilder")
-    from storage.storage_manager import storage
-    from spark.analytics.gold_builder import SparkGoldBuilder
-
-    df_prods = storage.read_silver_parquet("products")
-    df_revs = storage.read_silver_parquet("reviews")
-    df_prices = storage.read_silver_parquet("prices")
-
-    gold_builder = SparkGoldBuilder()
-    marts = gold_builder.build_all(
-        silver_reviews=df_revs,
-        silver_products=df_prods,
-        silver_prices=df_prices,
-        save_gold=True
+    """Canonical Stage 5: Builds all Gold Analytical Marts & Anomaly Events via SparkGoldBuilder."""
+    s4 = _DAG_RUN_STATE.get("s4", {})
+    s5 = stage_5_spark_gold_marts(
+        df_prods=s4.get("df_prods"),
+        df_revs=s4.get("df_revs"),
+        df_prices=s4.get("df_prices")
     )
-    print(f"Spark Gold built {len(marts)} marts: {list(marts.keys())}")
-    return {"marts": list(marts.keys())}
+    return {"marts": list(s5["marts"].keys()), "anomalies_count": s5["anomalies_count"]}
+
 
 def task_warehouse_upsert(**context):
-    """Exports Gold Analytical Marts to PostgreSQL Warehouse via UPSERT."""
-    print(">>> [DAG] Stage 5: Exporting Gold Marts to PostgreSQL DW")
-    from database.export_gold import export_gold_to_db
-    export_gold_to_db()
-    print("PostgreSQL Warehouse synchronization completed successfully.")
+    """Canonical Stage 6: Exports Gold Analytical Marts to Warehouse via UPSERT and verifies DashboardDB."""
+    effective_mode = _DAG_RUN_STATE.get("effective_mode") or settings.runtime_mode
+    s6 = stage_6_warehouse_and_dashboard(effective_mode=effective_mode)
+    return s6
+
 
 def task_finish(**context):
-    """Records pipeline metrics into DW."""
-    print(">>> [DAG] Stage 6: Recording Pipeline Metrics & Finalizing")
+    """Records idempotent pipeline execution telemetry into Warehouse."""
+    print(">>> [DAG] Recording Pipeline Metrics & Finalizing")
     import pandas as pd
     from database.warehouse import WarehouseManager
-    
+
+    effective_mode = _DAG_RUN_STATE.get("effective_mode") or settings.runtime_mode
+    is_integration = effective_mode in ("integration", "production")
+    wh = WarehouseManager(use_postgres=is_integration, mode=effective_mode)
     try:
-        wh = WarehouseManager()
         run_record = pd.DataFrame([{
-            'metric_id': f"run_{int(time.time())}",
+            'metric_id': 'dag_sentinel_daily_latest',
             'stage': 'dag_sentinel_daily',
             'metric_name': 'execution_success',
             'metric_value': 1.0,
@@ -158,9 +165,10 @@ def task_finish(**context):
             'timestamp': datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         }])
         wh.upsert_dataframe('pipeline_metrics', run_record, conflict_keys=['metric_id'])
-    except Exception as e:
-        print(f"Warning: could not write pipeline_metrics: {e}")
+    finally:
+        wh.close()
     print(">>> Pipeline DAG execution finished successfully.")
+
 
 # Define Tasks
 start = PythonOperator(task_id='start', python_callable=task_start, dag=dag)
@@ -174,17 +182,30 @@ finish = PythonOperator(task_id='finish', python_callable=task_finish, dag=dag)
 # Pipeline Dependencies
 start >> collect >> spark_batch >> data_quality >> gold_analytics >> warehouse_upsert >> finish
 
-def run_dag_standalone():
-    """Executes the complete DAG sequentially in standalone CLI mode."""
-    print(f"Executing Airflow DAG: {dag.dag_id} (Standalone Runner)")
-    t_start = task_start()
-    t_col = task_collect_and_publish()
-    t_batch = task_spark_batch()
-    t_dq = task_data_quality()
-    t_gold = task_gold_analytics()
+
+def run_dag_standalone(mode: str = None):
+    """Executes the complete canonical DAG sequentially in standalone CLI mode."""
+    if mode is not None:
+        settings.set_runtime_mode(mode)
+        storage.set_mode(mode)
+    print(f"Executing Airflow DAG: {dag.dag_id} (Standalone Runner, mode={settings.runtime_mode})")
+    task_start()
+    task_collect_and_publish()
+    task_spark_batch()
+    task_data_quality()
+    task_gold_analytics()
     task_warehouse_upsert()
     task_finish()
     print(f"Airflow DAG '{dag.dag_id}' finished with status: SUCCESS")
 
+
 if __name__ == "__main__":
-    run_dag_standalone()
+    import argparse
+    parser = argparse.ArgumentParser(description="SentinelAI Standalone DAG Runner")
+    parser.add_argument("--mode", choices=["integration", "local", "test"], default=None)
+    args = parser.parse_args()
+    try:
+        run_dag_standalone(mode=args.mode)
+    except Exception as exc:
+        print(f"\n[DAG FAILED] {exc}", file=sys.stderr)
+        sys.exit(1)

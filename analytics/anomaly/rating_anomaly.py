@@ -1,3 +1,4 @@
+import hashlib
 import pandas as pd
 from typing import List, Dict, Any, Optional
 from config.settings import settings
@@ -57,12 +58,16 @@ class RatingAnomalyDetector:
                 base_r = float(row["baseline_rating"])
                 curr_r = float(row["avg_rating"])
                 delta_r = float(row["rating_delta"])
+                ts_str = str(row["date"])
+                raw_key = f"PRODUCT|{prod_id}|RATING_DROP|{ts_str}"
+                event_id = f"anom_{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()[:20]}"
                 anomalies.append({
+                    "event_id": event_id,
                     "entity_type": "PRODUCT",
                     "entity_id": str(prod_id),
                     "anomaly_type": "RATING_DROP",
                     "score": round(delta_r, 2),
-                    "timestamp": str(row["date"]),
+                    "timestamp": ts_str,
                     "description": (
                         f"Rating drop from {w_days}-day baseline {base_r:.2f} "
                         f"to {curr_r:.2f} (delta: -{delta_r:.2f}, {int(row['count'])} reviews)"

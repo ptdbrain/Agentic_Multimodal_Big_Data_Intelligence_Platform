@@ -1,3 +1,4 @@
+import hashlib
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any, Optional
@@ -70,16 +71,20 @@ class ReviewBurstDetector:
                     score = round(row["review_count"] / max(mean_vol, 1.0), 2)
                     is_bombing = row["avg_rating"] <= bomb_thresh
                     anom_type = "REVIEW_BOMBING" if is_bombing else "REVIEW_BURST"
+                    ts_str = str(row["hour_dt"])
                     desc = (
                         f"Traffic surge: {row['review_count']} reviews in {w_hours}h "
                         f"(baseline: {mean_vol:.1f}/h, Avg rating: {row['avg_rating']:.1f})"
                     )
+                    raw_key = f"PRODUCT|{prod_id}|{anom_type}|{ts_str}"
+                    event_id = f"anom_{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()[:20]}"
                     anomalies.append({
+                        "event_id": event_id,
                         "entity_type": "PRODUCT",
                         "entity_id": str(prod_id),
                         "anomaly_type": anom_type,
                         "score": score,
-                        "timestamp": str(row["hour_dt"]),
+                        "timestamp": ts_str,
                         "description": desc
                     })
 

@@ -1,3 +1,4 @@
+import hashlib
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any, Optional
@@ -47,7 +48,10 @@ class PriceAnomalyDetector:
             for idx, row in outliers.iterrows():
                 z_val = round(float((row[price_col] - mean) / std), 2)
                 ts_str = str(row[timestamp_col]) if timestamp_col in row else ""
+                raw_key = f"PRODUCT|{prod_id}|PRICE_ANOMALY|{ts_str}|{row[price_col]}"
+                event_id = f"anom_{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()[:20]}"
                 anomalies.append({
+                    "event_id": event_id,
                     "entity_type": "PRODUCT",
                     "entity_id": str(prod_id),
                     "anomaly_type": "PRICE_ANOMALY",
@@ -97,7 +101,10 @@ class PriceAnomalyDetector:
             outliers = group[(prices < lower_bound) | (prices > upper_bound)]
             for idx, row in outliers.iterrows():
                 ts_str = str(row[timestamp_col]) if timestamp_col in row else ""
+                raw_key = f"PRODUCT|{prod_id}|PRICE_IQR_OUTLIER|{ts_str}|{row[price_col]}"
+                event_id = f"anom_{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()[:20]}"
                 anomalies.append({
+                    "event_id": event_id,
                     "entity_type": "PRODUCT",
                     "entity_id": str(prod_id),
                     "anomaly_type": "PRICE_IQR_OUTLIER",

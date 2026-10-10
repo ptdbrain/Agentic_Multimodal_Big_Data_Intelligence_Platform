@@ -1,85 +1,86 @@
-"""SentinelAI Bootstrap Script
-One-command script to initialize and run the entire pipeline end-to-end.
+"""SentinelAI Bootstrap Script.
+One-command script to initialize sample datasets (if missing) and execute
+the canonical 6-stage End-to-End pipeline via scripts/run_e2e_pipeline.py.
 """
 import sys
-import time
+import json
+import argparse
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-def main():
-    print("=" * 60)
-    print("  SENTINELAI PIPELINE BOOTSTRAP")
-    print("=" * 60)
-    
-    # 1. Provision Kafka Topics
-    print("\n[1/7] Provisioning Kafka topics...")
-    try:
-        from kafka.topics.topic_manager import provision_topics
-        provision_topics()
-    except Exception as e:
-        print(f"Topic provisioning skipped: {e}")
-    
-    # 2. MinIO Buckets / Storage Directories
-    print("\n[2/7] Initializing Storage / MinIO buckets...")
-    from storage.storage_manager import storage
-    print(f"Data Lake root / bucket ready: {storage.base_dir}")
-    
-    # 3. PostgreSQL / SQLite Schema
-    print("\n[3/7] Initializing database schema...")
-    try:
-        from database.warehouse import WarehouseManager
-        wm = WarehouseManager()
-        wm.initialize_schema()
-        print(f"Database schema initialized ({wm._engine_type}).")
-    except Exception as e:
-        print(f"Database initialization failed: {e}")
-    time.sleep(1)
-    
-    # 4. Generate Sample Data
-    print("\n[4/7] Generating sample data...")
-    from data.generator import generate_products, generate_reviews
-    import json
-    
-    products = generate_products()
-    reviews = generate_reviews(products, count=500)
-    
+from scripts.run_e2e_pipeline import run_end_to_end
+
+
+def ensure_sample_datasets(regenerate: bool = False) -> Path:
+    """Ensures canonical sample datasets exist in data/sample without overwriting deterministic data unless requested."""
     sample_dir = REPO_ROOT / "data" / "sample"
     sample_dir.mkdir(parents=True, exist_ok=True)
-    
-    with open(sample_dir / "products.json", "w") as f:
-        json.dump(products, f)
-    with open(sample_dir / "reviews.json", "w") as f:
-        json.dump(reviews, f)
-    print("Sample data generated.")
-    
-    # 5. Run Spark Batch ETL
-    print("\n[5/7] Running Spark Batch ETL...")
+
+    prods_file = sample_dir / "products.json"
+    revs_file = sample_dir / "reviews.json"
+    prices_file = sample_dir / "prices.json"
+
+    if regenerate or not prods_file.exists() or not revs_file.exists():
+        from data.generator import generate_products, generate_reviews, generate_prices
+        products = generate_products()
+        reviews = generate_reviews(products, count=500)
+        with open(prods_file, "w", encoding="utf-8") as f:
+            json.dump(products, f, ensure_ascii=False, indent=2)
+        with open(revs_file, "w", encoding="utf-8") as f:
+            json.dump(reviews, f, ensure_ascii=False, indent=2)
+        if hasattr(sys.modules["data.generator"], "generate_prices") and (regenerate or not prices_file.exists()):
+            prices = generate_prices(products)
+            with open(prices_file, "w", encoding="utf-8") as f:
+                json.dump(prices, f, ensure_ascii=False, indent=2)
+        print(f"[Bootstrap] Generated sample datasets in {sample_dir}")
+    else:
+        print(f"[Bootstrap] Using existing sample datasets in {sample_dir}")
+
+    return sample_dir
+
+
+def main():
+    parser = argparse.ArgumentParser(description="SentinelAI Pipeline Bootstrap")
+    parser.add_argument(
+        "--mode",
+        choices=["integration", "local", "test"],
+        default=None,
+        help="Execution mode: 'integration' (default) or 'local'/'test'"
+    )
+    parser.add_argument(
+        "--regenerate-sample",
+        action="store_true",
+        help="Regenerate synthetic sample data before running the pipeline"
+    )
+    args = parser.parse_args()
+
+    print("=" * 60)
+    print("  SENTINELAI PIPELINE BOOTSTRAP (CANONICAL E2E PATH)")
+    print("=" * 60)
+
+    sample_dir = ensure_sample_datasets(regenerate=args.regenerate_sample)
+
     try:
-        from spark.batch.spark_etl_job import SparkBatchETLJob
-        etl = SparkBatchETLJob()
-        etl.run_pipeline(str(sample_dir / "products.json"), str(sample_dir / "reviews.json"))
-    except Exception as e:
-        print(f"Spark unavailable, falling back to Pandas ETL... {e}")
-        from spark.batch.batch_etl_job import BatchETLJob
-        BatchETLJob.run_pipeline(str(sample_dir / "products.json"), str(sample_dir / "reviews.json"))
-    
-    # 6. Build Gold Marts
-    print("\n[6/7] Building Gold analytical marts...")
-    from spark.etl.gold_aggregator import GoldAggregator
-    GoldAggregator.build_gold_marts()
-    
-    # 7. Export to Warehouse
-    print("\n[7/7] Exporting Gold marts to PostgreSQL...")
-    from database.export_gold import export_gold_to_db
-    export_gold_to_db()
-    
+        ok = run_end_to_end(
+            products_path=str(sample_dir / "products.json"),
+            reviews_path=str(sample_dir / "reviews.json"),
+            prices_path=str(sample_dir / "prices.json"),
+            mode=args.mode
+        )
+        if not ok:
+            sys.exit(1)
+    except Exception as exc:
+        print(f"\n[BOOTSTRAP FAILED] {exc}", file=sys.stderr)
+        sys.exit(1)
+
     print("\n" + "=" * 60)
     print("  BOOTSTRAP COMPLETE! You can now start the dashboard:")
     print("  streamlit run dashboard/app.py")
     print("=" * 60)
+
 
 if __name__ == "__main__":
     main()
