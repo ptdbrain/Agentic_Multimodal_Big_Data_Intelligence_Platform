@@ -14,8 +14,13 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-STORAGE_ROOT = Path(__file__).resolve().parent.parent / "storage" / "minio_root"
-STORAGE_ROOT.mkdir(parents=True, exist_ok=True)
+_RAW_STORAGE_ROOT = Path(__file__).resolve().parent.parent / "storage" / "minio_root"
+_RAW_STORAGE_ROOT.mkdir(parents=True, exist_ok=True)
+STORAGE_ROOT = (
+    Path("\\\\?\\" + str(_RAW_STORAGE_ROOT))
+    if os.name == "nt" and not str(_RAW_STORAGE_ROOT).startswith("\\\\?\\")
+    else _RAW_STORAGE_ROOT
+)
 
 
 class S3RequestHandler(BaseHTTPRequestHandler):
@@ -318,9 +323,11 @@ class S3RequestHandler(BaseHTTPRequestHandler):
 
         target_file = bucket_dir / obj_key
         target_file.parent.mkdir(parents=True, exist_ok=True)
-        if "partNumber" in params and int(params.get("partNumber", [1])[0]) > 1:
-            with open(target_file, "ab") as f:
-                f.write(data)
+        if "partNumber" in params and "uploadId" in params:
+            part_num = int(params.get("partNumber", ["1"])[0])
+            upload_id = params.get("uploadId", ["default"])[0]
+            part_file = target_file.parent / f".mp_{upload_id}_{part_num:05d}"
+            part_file.write_bytes(data)
         else:
             target_file.write_bytes(data)
 
@@ -384,6 +391,15 @@ class S3RequestHandler(BaseHTTPRequestHandler):
 
         # 3. Complete multipart upload (?uploadId=...)
         if "uploadId" in params:
+            upload_id = params.get("uploadId", ["default"])[0]
+            target_file = bucket_dir / obj_key
+            target_file.parent.mkdir(parents=True, exist_ok=True)
+            part_files = sorted(target_file.parent.glob(f".mp_{upload_id}_*"))
+            if part_files:
+                with open(target_file, "wb") as out_f:
+                    for pf in part_files:
+                        out_f.write(pf.read_bytes())
+                        pf.unlink(missing_ok=True)
             root = ET.Element("CompleteMultipartUploadResult", {"xmlns": "http://s3.amazonaws.com/doc/2006-03-01/"})
             ET.SubElement(root, "Location").text = f"http://127.0.0.1:9000/{bucket}/{obj_key}"
             ET.SubElement(root, "Bucket").text = bucket
@@ -419,7 +435,8 @@ class S3RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def log_message(self, format, *args):
-        print(f"[S3Server] {self.command} {self.path} - {format % args}", flush=True)
+        if os.getenv("S3_SERVER_VERBOSE", "0") == "1":
+            print(f"[S3Server] {self.command} {self.path} - {format % args}", flush=True)
 
 
 def run_s3_server(port: int = 9000):

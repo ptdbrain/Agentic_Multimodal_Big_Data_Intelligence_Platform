@@ -15,12 +15,20 @@ class RawConsumer:
     partitioned by year=YYYY/month=MM/day=DD/hour=HH (event-time preferred, processing-time fallback).
     """
     
-    def __init__(self, bronze_dir: Optional[Path] = None, bootstrap_servers: Optional[str] = None):
+    def __init__(
+        self,
+        bronze_dir: Optional[Path] = None,
+        bootstrap_servers: Optional[str] = None,
+        group_id: str = "sentinel-bronze-writer",
+        auto_offset_reset: str = "earliest",
+    ):
         self._custom_bronze_dir = Path(bronze_dir) if bronze_dir is not None else None
         self.bronze_dir = self._custom_bronze_dir or (settings.storage.local_data_dir / "bronze")
         if self._custom_bronze_dir is not None:
             self.bronze_dir.mkdir(parents=True, exist_ok=True)
         self.bootstrap_servers = bootstrap_servers or settings.kafka.bootstrap_servers
+        self.group_id = group_id
+        self.auto_offset_reset = auto_offset_reset
         self.consumer = None
 
     def _init_consumer(self, topics: List[str]):
@@ -31,12 +39,12 @@ class RawConsumer:
         self.consumer = KafkaConsumer(
             *topics,
             bootstrap_servers=self.bootstrap_servers,
-            group_id="sentinel-bronze-writer",
+            group_id=self.group_id,
             enable_auto_commit=False,
             max_poll_records=5000,
             value_deserializer=lambda x: json.loads(x.decode('utf-8')) if x else None,
             key_deserializer=lambda x: x.decode('utf-8') if x else None,
-            auto_offset_reset='earliest'
+            auto_offset_reset=self.auto_offset_reset,
         )
         try:
             self.consumer.topics()

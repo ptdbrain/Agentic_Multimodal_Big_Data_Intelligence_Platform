@@ -219,6 +219,25 @@ class SparkBatchETLJob:
                 )
             if "verified_purchase" in cols:
                 df = df.withColumn("verified_purchase", F.col("verified_purchase").cast(BooleanType()))
+            if "user_id" in cols:
+                uid_trimmed = F.trim(F.col("user_id").cast(StringType()))
+                df = df.withColumn(
+                    "user_id",
+                    F.when(
+                        uid_trimmed.isNull() | (uid_trimmed == "") | uid_trimmed.isin("None", "null", "nan"),
+                        F.lit("anon_redacted"),
+                    )
+                    .when(
+                        uid_trimmed.rlike(r"^anon_[0-9a-f]{16}$|^anon_redacted$"),
+                        uid_trimmed,
+                    )
+                    .otherwise(
+                        F.concat(
+                            F.lit("anon_"),
+                            F.substring(F.sha2(F.concat(F.lit("sentinel-pii-v1:"), uid_trimmed), 256), 1, 16),
+                        )
+                    ),
+                )
             if "review_date" in cols:
                 raw_ok = _raw_present("review_date")
                 casted_ts = F.to_timestamp(F.col("review_date").cast(StringType()))
@@ -388,7 +407,10 @@ class SparkBatchETLJob:
         self,
         dataset_name: str,
         bronze_source: Union[str, Path, List[Dict[str, Any]]],
-        partition_cols: Optional[List[str]] = None
+        partition_cols: Optional[List[str]] = None,
+        silver_subpath: Optional[str] = None,
+        quarantine_subpath: Optional[str] = None,
+        replace_existing_silver: bool = False,
     ) -> Dict[str, Any]:
         """Runs the complete Bronze -> Silver ETL pipeline for a single dataset.
         Includes S3A read, envelope extraction, field-level null statistics,
@@ -449,9 +471,11 @@ class SparkBatchETLJob:
         )
 
         # 5. Save Quarantine if any invalid records exist
-        quarantine_path = SparkSessionFactory.resolve_storage_path(f"quarantine/{dataset_name}", layer="silver")
+        q_rel_path = quarantine_subpath or f"quarantine/{dataset_name}"
+        quarantine_path = SparkSessionFactory.resolve_storage_path(q_rel_path, layer="silver")
         if quarantine_count > 0:
-            invalid_df.write.mode("append").parquet(quarantine_path)
+            q_mode = "overwrite" if replace_existing_silver else "append"
+            invalid_df.write.mode(q_mode).parquet(quarantine_path)
             print(f"[Spark ETL] Routed {quarantine_count} bad records to quarantine: {quarantine_path}")
 
         # 6. Intra-batch Deduplication
@@ -460,9 +484,16 @@ class SparkBatchETLJob:
         intra_dedup_dropped = valid_count - intra_valid_count
 
         # 7. Cross-batch Deduplication against existing Silver Parquet
-        silver_path = SparkSessionFactory.resolve_storage_path(dataset_name, layer="silver")
+        s_rel_path = silver_subpath or dataset_name
+        silver_path = SparkSessionFactory.resolve_storage_path(s_rel_path, layer="silver")
         final_silver_df = self._cross_batch_dedup_and_write(
-            intra_dedup_df, dataset_name, silver_path, pk, order_col, partition_cols
+            intra_dedup_df,
+            dataset_name,
+            silver_path,
+            pk,
+            order_col,
+            partition_cols,
+            replace_existing=replace_existing_silver,
         )
         silver_written_count = final_silver_df.count()
 
@@ -486,6 +517,8 @@ class SparkBatchETLJob:
             "cast_error_count": cast_error_count,
             "reconciled": (input_count == valid_count + quarantine_count),
             "dq_score": dq_score,
+            "silver_path": silver_path,
+            "quarantine_path": quarantine_path,
             "silver_df": final_silver_df,
             "quarantine_df": invalid_df
         }
@@ -497,25 +530,43 @@ class SparkBatchETLJob:
         silver_path: str,
         pk: str,
         order_col: str,
-        partition_cols: Optional[List[str]] = None
+        partition_cols: Optional[List[str]] = None,
+        replace_existing: bool = False,
     ) -> DataFrame:
         """Consolidates new batch with existing Silver Parquet via Spark union and window deduplication,
         then writes the reconciled dataset to Silver Parquet.
         """
         combined_df = new_batch_df
 
-        # Check if existing Silver Parquet exists
-        try:
-            existing_df = self.spark.read.parquet(silver_path)
-            if existing_df.count() > 0:
-                # Eagerly checkpoint existing_df locally to sever the read dependency before overwriting silver_path
-                existing_materialized = existing_df.localCheckpoint(eager=True)
-                combined_df = existing_materialized.unionByName(new_batch_df, allowMissingColumns=True)
-                # Deduplicate across old + new batches
-                combined_df = self.deduplicate(combined_df, [pk], order_col=order_col)
-        except Exception:
-            # First batch or path does not exist yet
-            pass
+        # Check if existing Silver Parquet exists (skip when replace_existing=True)
+        if not replace_existing:
+            try:
+                existing_df = self.spark.read.parquet(silver_path)
+                if existing_df.count() > 0:
+                    if dataset_name == "reviews" and "user_id" in existing_df.columns:
+                        uid_trimmed = F.trim(F.col("user_id").cast(StringType()))
+                        existing_df = existing_df.withColumn(
+                            "user_id",
+                            F.when(
+                                uid_trimmed.isNull() | (uid_trimmed == "") | uid_trimmed.isin("None", "null", "nan"),
+                                F.lit("anon_redacted"),
+                            )
+                            .when(
+                                uid_trimmed.rlike(r"^anon_[0-9a-f]{16}$|^anon_redacted$"),
+                                uid_trimmed,
+                            )
+                            .otherwise(
+                                F.concat(
+                                    F.lit("anon_"),
+                                    F.substring(F.sha2(F.concat(F.lit("sentinel-pii-v1:"), uid_trimmed), 256), 1, 16),
+                                )
+                            ),
+                        )
+                    existing_materialized = existing_df.localCheckpoint(eager=True)
+                    combined_df = existing_materialized.unionByName(new_batch_df, allowMissingColumns=True)
+                    combined_df = self.deduplicate(combined_df, [pk], order_col=order_col)
+            except Exception:
+                pass
 
         # Write Parquet directly via Spark DataFrame
         writer = combined_df.write.mode("overwrite")
