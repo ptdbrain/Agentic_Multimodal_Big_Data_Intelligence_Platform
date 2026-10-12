@@ -1,4 +1,4 @@
-.PHONY: help up down demo simulate test benchmark health dag metrics reset lint
+.PHONY: help up down demo simulate test test-unit acceptance-kafka benchmark health dag metrics reset lint
 
 VOLUME ?= 5000
 RATE ?= 0
@@ -10,6 +10,8 @@ help:
 	@echo "  make demo       - Execute complete end-to-end data pipeline"
 	@echo "  make simulate   - Simulate pushing existing dataset with 3V (VOLUME=5000 RATE=0)"
 	@echo "  make test       - Run full pytest verification suite"
+	@echo "  make test-unit  - Run isolated unit test suite (pytest -m unit -v)"
+	@echo "  make lint       - Run syntax compilation and ruff static analysis"
 	@echo "  make benchmark  - Run 3V Big Data benchmark suite"
 	@echo "  make health     - Run infrastructure connectivity health checks"
 	@echo "  make dag        - Run Airflow pipeline DAG standalone"
@@ -28,8 +30,15 @@ demo:
 simulate:
 	python scripts/simulate_dataset_ingestion.py --volume $(VOLUME) --rate $(RATE)
 
+lint:
+	python -m compileall -q .
+	ruff check .
+
 test:
 	pytest -v
+
+test-unit:
+	pytest -m unit -v
 
 acceptance-kafka:
 	python scripts/verify_kafka_bronze_acceptance.py
@@ -48,3 +57,4 @@ metrics:
 
 reset:
 	python -c "import shutil, pathlib; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('storage/datalake').glob('*') if p.is_dir() and p.name != 'quarantine']; print('Data Lake tiers reset.')"
+

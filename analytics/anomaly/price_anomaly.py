@@ -37,28 +37,42 @@ class PriceAnomalyDetector:
             if len(prices) < min_pts:
                 continue
 
-            mean = prices.mean()
-            std = prices.std()
-            if std == 0 or np.isnan(std):
-                continue
+            for idx, row in group.iterrows():
+                # Baseline calculation strictly excludes the current candidate point being evaluated
+                baseline_prices = prices.drop(idx)
+                if len(baseline_prices) < 2:
+                    continue
 
-            z_scores = (prices - mean) / std
-            outliers = group[np.abs(z_scores) >= thresh]
+                base_mean = float(baseline_prices.mean())
+                base_std = float(baseline_prices.std())
+                candidate_price = float(row[price_col])
 
-            for idx, row in outliers.iterrows():
-                z_val = round(float((row[price_col] - mean) / std), 2)
-                ts_str = str(row[timestamp_col]) if timestamp_col in row else ""
-                raw_key = f"PRODUCT|{prod_id}|PRICE_ANOMALY|{ts_str}|{row[price_col]}"
-                event_id = f"anom_{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()[:20]}"
-                anomalies.append({
-                    "event_id": event_id,
-                    "entity_type": "PRODUCT",
-                    "entity_id": str(prod_id),
-                    "anomaly_type": "PRICE_ANOMALY",
-                    "score": abs(z_val),
-                    "timestamp": ts_str,
-                    "description": f"Price outlier: {row[price_col]:,.0f} {curr} (baseline: {mean:,.0f}, Z-Score: {z_val})"
-                })
+                if base_std == 0 or np.isnan(base_std):
+                    # When all baseline prices are identical, any significant deviation is an outlier
+                    if base_mean > 0 and abs(candidate_price - base_mean) / base_mean >= 0.10:
+                        z_raw = (candidate_price - base_mean) / max(base_mean * 0.01, 1e-9)
+                    else:
+                        continue
+                else:
+                    z_raw = (candidate_price - base_mean) / base_std
+
+                if abs(z_raw) >= thresh:
+                    z_val = round(float(z_raw), 2)
+                    ts_str = str(row[timestamp_col]) if timestamp_col in row else ""
+                    raw_key = f"PRODUCT|{prod_id}|PRICE_ANOMALY|{ts_str}|{row[price_col]}"
+                    event_id = f"anom_{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()[:20]}"
+                    anomalies.append({
+                        "event_id": event_id,
+                        "entity_type": "PRODUCT",
+                        "entity_id": str(prod_id),
+                        "anomaly_type": "PRICE_ANOMALY",
+                        "score": abs(z_val),
+                        "baseline_mean": round(base_mean, 2),
+                        "baseline_std": round(0.0 if np.isnan(base_std) else base_std, 2),
+                        "observed_price": round(candidate_price, 2),
+                        "timestamp": ts_str,
+                        "description": f"Price outlier: {row[price_col]:,.0f} {curr} (baseline: {base_mean:,.0f}, Z-Score: {z_val})"
+                    })
 
         return anomalies
 
@@ -89,29 +103,42 @@ class PriceAnomalyDetector:
             if len(prices) < min_pts:
                 continue
 
-            q25 = prices.quantile(0.25)
-            q75 = prices.quantile(0.75)
-            iqr = q75 - q25
-            if iqr == 0 or np.isnan(iqr):
-                continue
+            for idx, row in group.iterrows():
+                # Baseline calculation strictly excludes the current candidate point being evaluated
+                baseline_prices = prices.drop(idx)
+                if len(baseline_prices) < 2:
+                    continue
 
-            lower_bound = q25 - (factor * iqr)
-            upper_bound = q75 + (factor * iqr)
+                q25 = float(baseline_prices.quantile(0.25))
+                q75 = float(baseline_prices.quantile(0.75))
+                iqr = q75 - q25
+                base_median = float(baseline_prices.median())
+                candidate_price = float(row[price_col])
 
-            outliers = group[(prices < lower_bound) | (prices > upper_bound)]
-            for idx, row in outliers.iterrows():
-                ts_str = str(row[timestamp_col]) if timestamp_col in row else ""
-                raw_key = f"PRODUCT|{prod_id}|PRICE_IQR_OUTLIER|{ts_str}|{row[price_col]}"
-                event_id = f"anom_{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()[:20]}"
-                anomalies.append({
-                    "event_id": event_id,
-                    "entity_type": "PRODUCT",
-                    "entity_id": str(prod_id),
-                    "anomaly_type": "PRICE_IQR_OUTLIER",
-                    "score": round(abs(row[price_col] - prices.median()) / iqr, 2),
-                    "timestamp": ts_str,
-                    "description": f"Price outside IQR bounds [{lower_bound:,.0f}, {upper_bound:,.0f}]: {row[price_col]:,.0f} {curr}"
-                })
+                if iqr == 0 or np.isnan(iqr):
+                    continue
+
+                lower_bound = q25 - (factor * iqr)
+                upper_bound = q75 + (factor * iqr)
+
+                if candidate_price < lower_bound or candidate_price > upper_bound:
+                    ts_str = str(row[timestamp_col]) if timestamp_col in row else ""
+                    raw_key = f"PRODUCT|{prod_id}|PRICE_IQR_OUTLIER|{ts_str}|{row[price_col]}"
+                    event_id = f"anom_{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()[:20]}"
+                    anomalies.append({
+                        "event_id": event_id,
+                        "entity_type": "PRODUCT",
+                        "entity_id": str(prod_id),
+                        "anomaly_type": "PRICE_IQR_OUTLIER",
+                        "score": round(abs(candidate_price - base_median) / iqr, 2),
+                        "baseline_median": round(base_median, 2),
+                        "lower_bound": round(lower_bound, 2),
+                        "upper_bound": round(upper_bound, 2),
+                        "observed_price": round(candidate_price, 2),
+                        "timestamp": ts_str,
+                        "description": f"Price outside IQR bounds [{lower_bound:,.0f}, {upper_bound:,.0f}]: {row[price_col]:,.0f} {curr}"
+                    })
 
         return anomalies
+
 

@@ -84,6 +84,8 @@ class ReviewBurstDetector:
                         "entity_id": str(prod_id),
                         "anomaly_type": anom_type,
                         "score": score,
+                        "baseline_volume": round(mean_vol, 4),
+                        "current_volume": int(row["review_count"]),
                         "timestamp": ts_str,
                         "description": desc
                     })

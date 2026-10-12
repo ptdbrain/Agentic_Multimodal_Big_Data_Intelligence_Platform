@@ -4,15 +4,24 @@
   "type": "object",
   "properties": {
     "event_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
+    },
+    "schema_version": {
+      "type": "string",
+      "enum": [
+        "1.0"
+      ]
     },
     "event_type": {
       "type": "string",
       "enum": [
         "NEW_REVIEW",
+        "NEW_PRODUCT",
         "PRICE_UPDATE",
         "RATING_UPDATE",
-        "PRODUCT_UPDATE"
+        "PRODUCT_UPDATE",
+        "EVENT"
       ]
     },
     "product_id": {

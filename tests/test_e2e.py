@@ -24,6 +24,8 @@ from storage.storage_manager import StorageManager
 from scripts.health_check import verify_integration_health
 from config.settings import settings
 
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture(autouse=True)
 def reset_default_integration_mode():
@@ -35,6 +37,7 @@ def reset_default_integration_mode():
     storage.set_mode("integration")
 
 
+@pytest.mark.unit
 def test_default_mode_is_strict_integration():
     """Verify default configuration is locked to integration mode with real MinIOBackend and no local mirror."""
     assert settings.runtime_mode == "integration"
@@ -584,6 +587,7 @@ def test_streaming_late_data_malformed_types_dedup_and_restart():
     assert run_streaming_dq_acceptance(mode="local") is True
 
 
+@pytest.mark.unit
 def test_pii_anonymization_and_user_id_hashing_at_ingest():
     """Verify raw user_id / customer_id and PII fields are hashed or removed immediately at ingest."""
     import json
@@ -675,56 +679,69 @@ def test_real_benchmark_execution_and_report_consistency():
     import json
     from scripts.benchmark import run_all_benchmarks
 
-    res = run_all_benchmarks(
-        mode="local",
-        seed=42,
-        volume_sizes=[50, 100],
-        velocity_rates=[50],
-        variety_count=40,
-        dirty_ratio=0.05,
-        duplicate_ratio=0.02,
-    )
+    report_files = [
+        REPO_ROOT / "docs" / "reports" / "benchmark_3v.json",
+        REPO_ROOT / "docs" / "reports" / "benchmark_report.md",
+        REPO_ROOT / "docs" / "reports" / "3v_evidence.md",
+        REPO_ROOT / "docs" / "benchmark.md",
+    ]
+    backups = {p: p.read_bytes() for p in report_files if p.exists()}
 
-    assert len(res["volume"]) == 2
-    for v in res["volume"]:
-        assert v["seed"] > 0
-        assert v["records_input"] in (50, 100)
-        assert v["valid_count"] > 0
-        assert v["quarantine_count"] > 0
-        assert v["duration_sec"] > 0
-        assert v["throughput_rps"] > 0
-        assert v["bronze_bytes"] > 0
-        assert v["silver_bytes"] > 0
-        assert v["quarantine_bytes"] > 0
+    try:
+        res = run_all_benchmarks(
+            mode="local",
+            seed=42,
+            volume_sizes=[50, 100],
+            velocity_rates=[50],
+            variety_count=40,
+            dirty_ratio=0.05,
+            duplicate_ratio=0.02,
+        )
 
-    assert len(res["velocity"]) == 1
-    vel = res["velocity"][0]
-    assert vel["messages_sent"] >= 100
-    assert vel["messages_consumed"] == vel["messages_sent"]
-    assert vel["valid_count"] + vel["quarantine_dlq_count"] == vel["messages_consumed"]
-    assert vel["bronze_bytes"] > 0
+        assert len(res["volume"]) == 2
+        for v in res["volume"]:
+            assert v["seed"] > 0
+            assert v["records_input"] in (50, 100)
+            assert v["valid_count"] > 0
+            assert v["quarantine_count"] > 0
+            assert v["duration_sec"] > 0
+            assert v["throughput_rps"] > 0
+            assert v["bronze_bytes"] > 0
+            assert v["silver_bytes"] > 0
+            assert v["quarantine_bytes"] > 0
 
-    assert len(res["variety"]) == 6
-    formats = {r["format"] for r in res["variety"]}
-    assert {"JSON", "JSONL", "CSV", "TSV", "Parquet", "HTML_JSONLD_Crawler"} == formats
-    for r in res["variety"]:
-        assert r["valid_count"] > 0
-        assert r["quarantine_count"] > 0
-        assert r["silver_bytes"] > 0
-        assert r["pii_anonymized"] is True
+        assert len(res["velocity"]) == 1
+        vel = res["velocity"][0]
+        assert vel["messages_sent"] >= 100
+        assert vel["messages_consumed"] == vel["messages_sent"]
+        assert vel["valid_count"] + vel["quarantine_dlq_count"] == vel["messages_consumed"]
+        assert vel["bronze_bytes"] > 0
 
-    # Verify generated report files match JSON output and do not advertise unrun 1,000,000-record metrics
-    json_report = json.loads((REPO_ROOT / "docs" / "reports" / "benchmark_3v.json").read_text(encoding="utf-8"))
-    md_report = (REPO_ROOT / "docs" / "reports" / "benchmark_report.md").read_text(encoding="utf-8")
-    doc_bench = (REPO_ROOT / "docs" / "benchmark.md").read_text(encoding="utf-8")
+        assert len(res["variety"]) == 6
+        formats = {r["format"] for r in res["variety"]}
+        assert {"JSON", "JSONL", "CSV", "TSV", "Parquet", "HTML_JSONLD_Crawler"} == formats
+        for r in res["variety"]:
+            assert r["valid_count"] > 0
+            assert r["quarantine_count"] > 0
+            assert r["silver_bytes"] > 0
+            assert r["pii_anonymized"] is True
 
-    assert json_report["timestamp"] == res["timestamp"]
-    assert res["timestamp"] in md_report
-    assert res["timestamp"] in doc_bench
-    assert "1,000,000" not in md_report
-    assert "1,000,000" not in doc_bench
+        # Verify generated report files match JSON output and do not advertise unrun 1,000,000-record metrics
+        json_report = json.loads((REPO_ROOT / "docs" / "reports" / "benchmark_3v.json").read_text(encoding="utf-8"))
+        md_report = (REPO_ROOT / "docs" / "reports" / "benchmark_report.md").read_text(encoding="utf-8")
+        doc_bench = (REPO_ROOT / "docs" / "benchmark.md").read_text(encoding="utf-8")
+
+        assert json_report["timestamp"] == res["timestamp"]
+        assert res["timestamp"] in md_report
+        assert res["timestamp"] in doc_bench
+        assert "1,000,000" not in md_report
+        assert "1,000,000" not in doc_bench
+    finally:
+        for p, data in backups.items():
+            p.write_bytes(data)
 
 
+@pytest.mark.unit
 def test_github_actions_ci_workflow_valid():
     """Verify .github/workflows/ci.yml exists, is valid YAML, and defines lint, unit-tests, and integration-tests jobs."""
     import yaml
@@ -737,6 +754,7 @@ def test_github_actions_ci_workflow_valid():
     assert "lint" in jobs
     assert "unit-tests" in jobs
     assert "integration-tests" in jobs
+
 
 
 

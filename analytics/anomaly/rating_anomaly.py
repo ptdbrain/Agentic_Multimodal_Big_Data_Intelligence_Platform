@@ -67,6 +67,8 @@ class RatingAnomalyDetector:
                     "entity_id": str(prod_id),
                     "anomaly_type": "RATING_DROP",
                     "score": round(delta_r, 2),
+                    "baseline_rating": round(base_r, 4),
+                    "current_rating": round(curr_r, 4),
                     "timestamp": ts_str,
                     "description": (
                         f"Rating drop from {w_days}-day baseline {base_r:.2f} "

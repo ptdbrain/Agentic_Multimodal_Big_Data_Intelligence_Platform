@@ -27,15 +27,11 @@ jobs:
 
       - name: Verify Python Syntax & Bytecode Compilation
         run: |
-          python -m compileall -q config data ingestion kafka storage spark analytics database dashboard orchestration scripts tests
-
-      - name: Run Flake8 Critical Checks
-        run: |
-          flake8 config data ingestion kafka storage spark analytics database dashboard orchestration scripts tests --count --select=E9,F63,F7,F82 --show-source --statistics
+          python -m compileall -q .
 
       - name: Run Ruff Linter
         run: |
-          ruff check config data ingestion kafka storage spark analytics database dashboard orchestration scripts tests --select E9,F63,F7,F82
+          ruff check .
 
   unit-tests:
     name: 2. Unit & Local Pipeline Tests
@@ -44,12 +40,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Set up Java 17 for Apache Spark
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -62,18 +52,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Start Standalone S3 Server for Storage Contract Tests
+      - name: Run Isolated Unit Test Suite (Gate 1)
         run: |
-          nohup python scripts/standalone_s3_server.py > /tmp/s3_server.log 2>&1 &
-          sleep 2
-
-      - name: Run Pytest Unit & Local Test Suite
-        env:
-          MINIO_ENDPOINT: localhost:9000
-          PYSPARK_PYTHON: python
-          PYSPARK_DRIVER_PYTHON: python
-        run: |
-          pytest -v
+          pytest -m unit -v
 
   integration-tests:
     name: 3. End-to-End Integration & 3V Benchmark Tests

@@ -23,9 +23,28 @@ class SchemaValidator:
             cls._schemas[schema_name] = schema
             return schema
     
+    SUPPORTED_SCHEMA_VERSIONS = {"1.0"}
+
     @classmethod  
-    def validate_record(cls, record: dict, schema_name: str) -> Tuple[bool, List[str]]:
-        """Validate a single record. Returns (is_valid, list_of_errors)."""
+    def validate_record(
+        cls,
+        record: dict,
+        schema_name: str,
+        expected_version: str = "1.0",
+    ) -> Tuple[bool, List[str]]:
+        """Validate a single record against JSON schema and schema_version.
+        Returns (is_valid, list_of_errors).
+        """
+        if not isinstance(record, dict):
+            return False, ["Record must be a JSON object"]
+
+        if "schema_version" in record:
+            ver = record.get("schema_version")
+            if not isinstance(ver, str) or ver != expected_version or ver not in cls.SUPPORTED_SCHEMA_VERSIONS:
+                return False, [
+                    f"Unsupported schema_version '{ver}' for '{schema_name}' (expected '{expected_version}')"
+                ]
+
         schema = cls.load_schema(schema_name)
         try:
             validate(instance=record, schema=schema)

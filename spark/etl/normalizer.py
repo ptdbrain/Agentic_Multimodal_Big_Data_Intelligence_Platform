@@ -100,6 +100,92 @@ class EntityNormalizer:
                 return 0.0
         return 0.0
 
+    CURRENCY_ALIASES = {
+        "vnd": "VND",
+        "vnđ": "VND",
+        "đ": "VND",
+        "₫": "VND",
+        "dong": "VND",
+        "usd": "USD",
+        "$": "USD",
+        "us$": "USD",
+        "dollar": "USD",
+        "eur": "EUR",
+        "€": "EUR",
+        "euro": "EUR",
+        "gbp": "GBP",
+        "£": "GBP",
+        "jpy": "JPY",
+        "¥": "JPY",
+    }
+
+    @staticmethod
+    def normalize_currency(raw_currency: Any, default_currency: Optional[str] = None) -> str:
+        """Normalizes currency symbols/codes (e.g. 'vnđ', '₫', '$', 'usd') to ISO 4217 codes."""
+        fallback = default_currency or settings.analytics.default_currency
+        if raw_currency is None:
+            return fallback
+        cleaned = str(raw_currency).strip().lower()
+        if not cleaned:
+            return fallback
+        if cleaned in EntityNormalizer.CURRENCY_ALIASES:
+            return EntityNormalizer.CURRENCY_ALIASES[cleaned]
+        upper = cleaned.upper()
+        if len(upper) == 3 and upper.isalpha():
+            return upper
+        return fallback
+
+    @staticmethod
+    def normalize_timestamp(raw_ts: Any) -> Optional[str]:
+        """Normalizes Unix epoch (seconds or ms), date strings, and ISO-8601 strings with offsets
+        into canonical UTC ISO-8601 format ('YYYY-MM-DDTHH:MM:SSZ'). Returns None if unparseable.
+        """
+        import datetime
+
+        if raw_ts is None:
+            return None
+        if isinstance(raw_ts, datetime.datetime):
+            dt = raw_ts
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=datetime.timezone.utc)
+            else:
+                dt = dt.astimezone(datetime.timezone.utc)
+            return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        if isinstance(raw_ts, datetime.date):
+            return f"{raw_ts.isoformat()}T00:00:00Z"
+        if isinstance(raw_ts, (int, float)) and not isinstance(raw_ts, bool):
+            try:
+                sec = float(raw_ts) / 1000.0 if abs(float(raw_ts)) > 1e11 else float(raw_ts)
+                dt = datetime.datetime.fromtimestamp(sec, tz=datetime.timezone.utc)
+                return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except (ValueError, OSError, OverflowError):
+                return None
+        if isinstance(raw_ts, str):
+            s = raw_ts.strip()
+            if not s:
+                return None
+            # Numeric string epoch
+            if re.fullmatch(r"\d+(\.\d+)?", s):
+                return EntityNormalizer.normalize_timestamp(float(s))
+            # Standardize slash dates YYYY/MM/DD
+            s_norm = re.sub(r"^(\d{4})/(\d{2})/(\d{2})", r"\1-\2-\3", s)
+            try:
+                dt = datetime.datetime.fromisoformat(s_norm.replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=datetime.timezone.utc)
+                else:
+                    dt = dt.astimezone(datetime.timezone.utc)
+                return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except ValueError:
+                for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%d/%m/%Y %H:%M:%S", "%d/%m/%Y"):
+                    try:
+                        dt = datetime.datetime.strptime(s, fmt).replace(tzinfo=datetime.timezone.utc)
+                        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+                    except ValueError:
+                        continue
+                return None
+        return None
+
     @staticmethod
     def normalize_product(
         product: Dict[str, Any],
@@ -111,6 +197,12 @@ class EntityNormalizer:
         item["brand"] = EntityNormalizer.normalize_brand(item.get("brand", ""), custom_map=brand_map)
         item["category"] = EntityNormalizer.normalize_category(item.get("category", ""), custom_map=category_map)
         item["price"] = EntityNormalizer.normalize_price(item.get("price", 0))
-        item["currency"] = item.get("currency") or default_currency or settings.analytics.default_currency
+        item["currency"] = EntityNormalizer.normalize_currency(item.get("currency"), default_currency=default_currency)
+        for ts_field in ("created_at", "updated_at", "timestamp"):
+            if ts_field in item and item[ts_field] is not None:
+                norm_ts = EntityNormalizer.normalize_timestamp(item[ts_field])
+                if norm_ts is not None:
+                    item[ts_field] = norm_ts
         return item
+
 

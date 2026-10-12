@@ -65,7 +65,8 @@ class StreamProducer:
             value.get("created_at") or 
             datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         )
-        entity_key = key or value.get("product_id") or value.get("review_id") or value.get("price_id") or value.get("event_id") or "entity"
+        entity_key = key or value.get("product_id") or value.get("review_id") or value.get("price_id") or value.get("event_id") or value.get("id") or "entity"
+        resolved_key = str(key) if key is not None else str(entity_key)
         det_hash = hashlib.sha256(f"{source}|{entity_key}|{event_time}".encode("utf-8")).hexdigest()[:24]
 
         envelope = {
@@ -82,7 +83,7 @@ class StreamProducer:
             offset = len(self.virtual_queue)
             delivery_record = {
                 "topic": topic,
-                "key": key,
+                "key": resolved_key,
                 "value": envelope,
                 "partition": 0,
                 "offset": offset,
@@ -96,7 +97,7 @@ class StreamProducer:
             raise RuntimeError("Kafka producer is not initialized and offline buffer is disabled.")
 
         try:
-            future = self.producer.send(topic, key=key, value=envelope)
+            future = self.producer.send(topic, key=resolved_key, value=envelope)
             if wait_for_delivery:
                 metadata = future.get(timeout=timeout_sec)
                 delivery_info = {

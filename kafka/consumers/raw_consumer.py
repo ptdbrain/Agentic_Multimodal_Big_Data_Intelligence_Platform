@@ -87,6 +87,8 @@ class RawConsumer:
                 pass
         return datetime.datetime.now(datetime.timezone.utc)
 
+    SUPPORTED_SCHEMA_VERSIONS = {"1.0"}
+
     def validate_envelope(self, payload: Any) -> Tuple[bool, List[str]]:
         if not isinstance(payload, dict):
             return False, ["Payload is not a dictionary"]
@@ -94,8 +96,20 @@ class RawConsumer:
         errors = []
         required_fields = ["event_id", "event_type", "source", "ingested_at", "payload"]
         for field in required_fields:
-            if field not in payload:
+            if field not in payload or payload[field] is None:
                 errors.append(f"Missing required envelope field: {field}")
+
+        for str_field in ("event_id", "event_type", "source", "ingested_at"):
+            if str_field in payload and payload[str_field] is not None and not isinstance(payload[str_field], str):
+                errors.append(f"Envelope field '{str_field}' must be string, got {type(payload[str_field]).__name__}")
+
+        if "payload" in payload and payload["payload"] is not None and not isinstance(payload["payload"], dict):
+            errors.append(f"Envelope 'payload' must be a dict, got {type(payload['payload']).__name__}")
+
+        if "schema_version" in payload:
+            ver = payload.get("schema_version")
+            if not isinstance(ver, str) or ver not in self.SUPPORTED_SCHEMA_VERSIONS:
+                errors.append(f"Unsupported envelope schema_version: '{ver}'")
                 
         return len(errors) == 0, errors
 

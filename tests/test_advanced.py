@@ -11,6 +11,8 @@ import numpy as np
 import pytest
 from datetime import datetime, timedelta
 
+pytestmark = pytest.mark.unit
+
 # ============================================================
 # 1. Window Aggregations Tests
 # ============================================================
@@ -239,6 +241,88 @@ class TestExportGoldToDB:
         conn.close()
         assert count == 0
 
+    def test_warehouse_upsert_twice_no_duplicate_business_records(self):
+        """Verifies that upserting the same business keys twice into WarehouseManager
+        updates existing records in place and never creates duplicate business rows.
+        """
+        from pathlib import Path
+        from config.settings import settings
+        from database.warehouse import WarehouseManager
+
+        prev_sqlite_path = settings.database.sqlite_path
+        settings.database.sqlite_path = Path(self.db_path)
+        wh = WarehouseManager(use_postgres=False, mode="test")
+        try:
+            wh.initialize_schema()
+
+            batch_v1 = pd.DataFrame([
+                {
+                    "date": "2026-09-25",
+                    "product_id": "p1",
+                    "review_count": 10,
+                    "avg_rating": 4.2,
+                    "rating_std": 0.4,
+                    "positive_ratio": 0.8,
+                    "negative_ratio": 0.1,
+                    "min_price": 19000000.0,
+                    "max_price": 20000000.0,
+                    "avg_price": 19500000.0,
+                },
+                {
+                    "date": "2026-09-25",
+                    "product_id": "p2",
+                    "review_count": 5,
+                    "avg_rating": 3.8,
+                    "rating_std": 0.5,
+                    "positive_ratio": 0.6,
+                    "negative_ratio": 0.2,
+                    "min_price": 15000000.0,
+                    "max_price": 15000000.0,
+                    "avg_price": 15000000.0,
+                },
+            ])
+            wh.upsert_dataframe("product_daily_stats", batch_v1, conflict_keys=["date", "product_id"])
+
+            # Second upsert with identical business keys (date, product_id) and updated metrics
+            batch_v2 = pd.DataFrame([
+                {
+                    "date": "2026-09-25",
+                    "product_id": "p1",
+                    "review_count": 14,
+                    "avg_rating": 4.6,
+                    "rating_std": 0.3,
+                    "positive_ratio": 0.85,
+                    "negative_ratio": 0.05,
+                    "min_price": 19000000.0,
+                    "max_price": 20000000.0,
+                    "avg_price": 19500000.0,
+                },
+                {
+                    "date": "2026-09-25",
+                    "product_id": "p2",
+                    "review_count": 5,
+                    "avg_rating": 3.8,
+                    "rating_std": 0.5,
+                    "positive_ratio": 0.6,
+                    "negative_ratio": 0.2,
+                    "min_price": 15000000.0,
+                    "max_price": 15000000.0,
+                    "avg_price": 15000000.0,
+                },
+            ])
+            wh.upsert_dataframe("product_daily_stats", batch_v2, conflict_keys=["date", "product_id"])
+
+            df_res = wh.query(
+                "SELECT date, product_id, review_count, avg_rating FROM product_daily_stats ORDER BY product_id"
+            )
+            assert len(df_res) == 2
+            p1_row = df_res[df_res["product_id"] == "p1"].iloc[0]
+            assert int(p1_row["review_count"]) == 14
+            assert round(float(p1_row["avg_rating"]), 2) == 4.6
+        finally:
+            wh.close()
+            settings.database.sqlite_path = prev_sqlite_path
+
 
 # ============================================================
 # 6. Review Burst Detector Tests
@@ -247,7 +331,9 @@ from analytics.anomaly.review_burst import ReviewBurstDetector
 
 class TestReviewBurstDetector:
     def test_detect_burst_spike(self):
-        """Generate a product with a massive review spike in one hour."""
+        """Generate a product with a massive review spike in one hour and verify
+        that the baseline volume strictly excludes the burst hour being evaluated.
+        """
         base_date = datetime(2026, 9, 20, 10, 0, 0)
         reviews = []
         rid = 0
@@ -270,8 +356,11 @@ class TestReviewBurstDetector:
             })
         df = pd.DataFrame(reviews)
         anomalies = ReviewBurstDetector.detect_bursts(df, window_hours=1, threshold_multiplier=2.0)
-        assert len(anomalies) >= 1
+        assert len(anomalies) == 1
         assert anomalies[0]["entity_id"] == "p1"
+        assert anomalies[0]["current_volume"] == 20
+        # Baseline of the 10 normal hours is strictly 3.0 (excludes the 20-review spike hour)
+        assert anomalies[0]["baseline_volume"] == 3.0
 
     def test_detect_empty_reviews(self):
         df = pd.DataFrame(columns=["review_id", "product_id", "rating", "review_date"])
@@ -286,7 +375,9 @@ from analytics.anomaly.rating_anomaly import RatingAnomalyDetector
 
 class TestRatingAnomalyDetector:
     def test_detect_rating_drop(self):
-        """Create a product with stable high ratings then sudden drop."""
+        """Create a product with stable high ratings then sudden drop and verify
+        that the rolling baseline strictly excludes the drop day being evaluated.
+        """
         reviews = []
         rid = 0
         base = datetime(2026, 9, 1)
@@ -309,8 +400,12 @@ class TestRatingAnomalyDetector:
             })
         df = pd.DataFrame(reviews)
         anomalies = RatingAnomalyDetector.detect_rating_drops(df, drop_threshold=0.5)
-        assert len(anomalies) >= 1
+        assert len(anomalies) == 1
         assert anomalies[0]["anomaly_type"] == "RATING_DROP"
+        # Rolling baseline shifted by 1 day is strictly 5.0 (excludes Day 11's 1.0 rating)
+        assert anomalies[0]["baseline_rating"] == 5.0
+        assert anomalies[0]["current_rating"] == 1.0
+        assert anomalies[0]["score"] == 4.0
 
     def test_detect_no_drop_stable(self):
         reviews = []
