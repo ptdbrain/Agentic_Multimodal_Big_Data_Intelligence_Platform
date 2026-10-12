@@ -584,3 +584,159 @@ def test_streaming_late_data_malformed_types_dedup_and_restart():
     assert run_streaming_dq_acceptance(mode="local") is True
 
 
+def test_pii_anonymization_and_user_id_hashing_at_ingest():
+    """Verify raw user_id / customer_id and PII fields are hashed or removed immediately at ingest."""
+    import json
+    from ingestion.privacy import anonymize_user_id, is_anonymized_user_id, sanitize_record_pii
+    from ingestion.file_loader.loader import FileLoader
+    from ingestion.crawler.tiki import TikiCrawler
+    from ingestion.crawler.mock import MockEcommerceCrawler
+    from data.generator import generate_products, generate_reviews
+
+    temp_dir = Path(tempfile.mkdtemp(prefix="test_pii_ingest_"))
+    try:
+        # 1. Deterministic SHA-256 hashing & idempotency
+        hashed_1 = anonymize_user_id("raw_user_998877")
+        hashed_2 = anonymize_user_id("raw_user_998877")
+        assert hashed_1 == hashed_2
+        assert hashed_1 != "raw_user_998877"
+        assert is_anonymized_user_id(hashed_1) is True
+        assert anonymize_user_id(hashed_1) == hashed_1
+        assert anonymize_user_id("raw_user_998877", remove=True) == "anon_redacted"
+
+        # 2. Record sanitization strips email/customer_name/phone and hashes user_id
+        raw_rec = {
+            "review_id": "r_pii_1",
+            "product_id": "p1",
+            "customer_id": "cust_555",
+            "customer_name": "Nguyen Van A",
+            "email": "nguyenvana@gmail.com",
+            "phone": "0901234567",
+            "rating": 5.0,
+            "review_text": "Good",
+        }
+        clean_rec = sanitize_record_pii(raw_rec)
+        assert is_anonymized_user_id(clean_rec["user_id"]) is True
+        assert "customer_id" not in clean_rec
+        assert "customer_name" not in clean_rec
+        assert "email" not in clean_rec
+        assert "phone" not in clean_rec
+
+        # 3. FileLoader hashes user_id and strips PII immediately on load
+        raw_file = temp_dir / "raw_reviews.json"
+        raw_file.write_text(json.dumps([raw_rec]), encoding="utf-8")
+        loaded = FileLoader.load_records(raw_file)
+        assert len(loaded) == 1
+        assert is_anonymized_user_id(loaded[0]["user_id"]) is True
+        assert "email" not in loaded[0]
+        assert "customer_name" not in loaded[0]
+
+        # 4. Crawlers & generator emit only anonymized user_ids
+        tiki_rev = TikiCrawler().standardize_review({"id": 10, "product_id": 20, "customer_id": "tiki_raw_42", "rating": 5, "title": "T", "content": "C"})
+        assert is_anonymized_user_id(tiki_rev["user_id"]) is True
+
+        mock_crawl = MockEcommerceCrawler(seed=42).crawl_category("laptop", max_products=2, reviews_per_product=3)
+        assert len(mock_crawl["reviews"]) == 6
+        assert all(is_anonymized_user_id(r["user_id"]) and "customer_email" not in r for r in mock_crawl["reviews"])
+
+        gen_revs = generate_reviews(generate_products(seed=42), count=25, inject_anomalies=False, seed=42)
+        assert all(is_anonymized_user_id(r["user_id"]) for r in gen_revs)
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def test_e2e_pipeline_with_crawler_and_public_dataset():
+    """Verify canonical 6-stage E2E pipeline runs end-to-end with both Crawler and Public Dataset sources."""
+    from ingestion.privacy import is_anonymized_user_id
+
+    assert run_end_to_end(
+        mode="local",
+        source_type="public_dataset",
+    ) is True
+    df_revs_pub = storage.read_silver_parquet("reviews")
+    assert not df_revs_pub.empty
+    assert all(is_anonymized_user_id(uid) for uid in df_revs_pub["user_id"].dropna())
+
+    assert run_end_to_end(
+        mode="local",
+        source_type="crawler",
+        crawler_platform="mock",
+        crawler_query="iphone 15",
+        crawler_max_products=3,
+        crawler_reviews_per_product=5,
+    ) is True
+    df_revs_crawl = storage.read_silver_parquet("reviews")
+    assert not df_revs_crawl.empty
+    assert all(is_anonymized_user_id(uid) for uid in df_revs_crawl["user_id"].dropna())
+
+
+def test_real_benchmark_execution_and_report_consistency():
+    """Verify benchmark.py executes Volume, Velocity, and Variety on the pipeline and generates matching reports without fake 1M claims."""
+    import json
+    from scripts.benchmark import run_all_benchmarks
+
+    res = run_all_benchmarks(
+        mode="local",
+        seed=42,
+        volume_sizes=[50, 100],
+        velocity_rates=[50],
+        variety_count=40,
+        dirty_ratio=0.05,
+        duplicate_ratio=0.02,
+    )
+
+    assert len(res["volume"]) == 2
+    for v in res["volume"]:
+        assert v["seed"] > 0
+        assert v["records_input"] in (50, 100)
+        assert v["valid_count"] > 0
+        assert v["quarantine_count"] > 0
+        assert v["duration_sec"] > 0
+        assert v["throughput_rps"] > 0
+        assert v["bronze_bytes"] > 0
+        assert v["silver_bytes"] > 0
+        assert v["quarantine_bytes"] > 0
+
+    assert len(res["velocity"]) == 1
+    vel = res["velocity"][0]
+    assert vel["messages_sent"] >= 100
+    assert vel["messages_consumed"] == vel["messages_sent"]
+    assert vel["valid_count"] + vel["quarantine_dlq_count"] == vel["messages_consumed"]
+    assert vel["bronze_bytes"] > 0
+
+    assert len(res["variety"]) == 6
+    formats = {r["format"] for r in res["variety"]}
+    assert {"JSON", "JSONL", "CSV", "TSV", "Parquet", "HTML_JSONLD_Crawler"} == formats
+    for r in res["variety"]:
+        assert r["valid_count"] > 0
+        assert r["quarantine_count"] > 0
+        assert r["silver_bytes"] > 0
+        assert r["pii_anonymized"] is True
+
+    # Verify generated report files match JSON output and do not advertise unrun 1,000,000-record metrics
+    json_report = json.loads((REPO_ROOT / "docs" / "reports" / "benchmark_3v.json").read_text(encoding="utf-8"))
+    md_report = (REPO_ROOT / "docs" / "reports" / "benchmark_report.md").read_text(encoding="utf-8")
+    doc_bench = (REPO_ROOT / "docs" / "benchmark.md").read_text(encoding="utf-8")
+
+    assert json_report["timestamp"] == res["timestamp"]
+    assert res["timestamp"] in md_report
+    assert res["timestamp"] in doc_bench
+    assert "1,000,000" not in md_report
+    assert "1,000,000" not in doc_bench
+
+
+def test_github_actions_ci_workflow_valid():
+    """Verify .github/workflows/ci.yml exists, is valid YAML, and defines lint, unit-tests, and integration-tests jobs."""
+    import yaml
+
+    ci_path = REPO_ROOT / ".github" / "workflows" / "ci.yml"
+    assert ci_path.exists()
+    ci_data = yaml.safe_load(ci_path.read_text(encoding="utf-8"))
+    assert "jobs" in ci_data
+    jobs = ci_data["jobs"]
+    assert "lint" in jobs
+    assert "unit-tests" in jobs
+    assert "integration-tests" in jobs
+
+
+
