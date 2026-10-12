@@ -64,18 +64,22 @@ NEGATIVE_FEEDBACK_EN = [
 
 from typing import List, Dict, Any, Optional
 from config.settings import settings
+from ingestion.privacy import anonymize_user_id
 
 def generate_products(
     metadata: Optional[List[Dict[str, Any]]] = None,
     reference_date: Optional[datetime.datetime] = None,
-    currency: Optional[str] = None
+    currency: Optional[str] = None,
+    seed: Optional[int] = None,
+    dirty_ratio: float = 0.0,
 ) -> List[Dict[str, Any]]:
+    rng = random.Random(seed) if seed is not None else random
     products = []
     now = reference_date or datetime.datetime(2026, 9, 24, 8, 0, 0)
     meta_list = metadata or PRODUCTS_METADATA
     curr = currency or settings.analytics.default_currency
 
-    for p in meta_list:
+    for idx, p in enumerate(meta_list):
         prod = {
             "product_id": p["id"],
             "product_name": p["name"],
@@ -84,8 +88,8 @@ def generate_products(
             "subcategory": p.get("subcategory", "Premium Tech"),
             "price": float(p["base_price"]),
             "currency": curr,
-            "rating": round(random.uniform(4.1, 4.9), 1),
-            "review_count": random.randint(150, 4500),
+            "rating": round(rng.uniform(4.1, 4.9), 1),
+            "review_count": rng.randint(150, 4500),
             "seller": f"{p['brand']} Official Store",
             "product_url": f"https://shop.sentinel.ai/p/{p['id']}",
             "image_url": f"https://assets.sentinel.ai/images/{p['id']}.jpg",
@@ -94,6 +98,27 @@ def generate_products(
             "updated_at": now.isoformat().replace("+00:00", "Z")
         }
         products.append(prod)
+
+    if dirty_ratio > 0.0:
+        dirty_count = max(1, int(round(len(products) * dirty_ratio)))
+        for d in range(dirty_count):
+            products.append({
+                "product_id": f"bad_prod_{d+1:03d}",
+                "product_name": "" if d % 2 == 0 else f"Invalid Price Product {d+1}",
+                "brand": "Unknown",
+                "category": "Smartphone",
+                "subcategory": "Test",
+                "price": -150000.0 if d % 2 == 1 else 10000000.0,
+                "currency": curr,
+                "rating": 4.5,
+                "review_count": 0,
+                "seller": "Test Store",
+                "product_url": "https://shop.sentinel.ai/p/bad",
+                "image_url": "",
+                "source": "catalog_sync",
+                "created_at": now.isoformat().replace("+00:00", "Z"),
+                "updated_at": now.isoformat().replace("+00:00", "Z"),
+            })
     return products
 
 def generate_reviews(
@@ -102,29 +127,41 @@ def generate_reviews(
     inject_anomalies: bool = True,
     start_date: Optional[datetime.datetime] = None,
     burst_product_id: Optional[str] = None,
-    burst_count: int = 60
+    burst_count: int = 60,
+    seed: Optional[int] = None,
+    dirty_ratio: float = 0.0,
+    duplicate_ratio: float = 0.0,
+    remove_user_id: bool = False,
 ) -> List[Dict[str, Any]]:
+    rng = random.Random(seed) if seed is not None else random
     reviews = []
     base_start = start_date or datetime.datetime(2026, 8, 20, 0, 0, 0)
-    target_burst_prod = burst_product_id or ("iphone_15" if any(p["product_id"] == "iphone_15" for p in products) else products[0]["product_id"])
-    
-    for i in range(count):
-        prod = random.choice(products)
-        delta_seconds = random.randint(0, 35 * 86400)
+    valid_prods = [p for p in products if p.get("price", 0) > 0 and p.get("product_name")] or products
+    target_burst_prod = burst_product_id or (
+        "iphone_15" if any(p["product_id"] == "iphone_15" for p in valid_prods) else valid_prods[0]["product_id"]
+    )
+
+    dirty_target = int(round(count * max(0.0, min(0.5, dirty_ratio))))
+    dup_target = int(round(count * max(0.0, min(0.4, duplicate_ratio))))
+    clean_base_count = max(1, count - dirty_target - dup_target)
+
+    for i in range(clean_base_count):
+        prod = rng.choice(valid_prods)
+        delta_seconds = rng.randint(0, 35 * 86400)
         review_time = base_start + datetime.timedelta(seconds=delta_seconds)
         
-        is_vi = random.random() < 0.65
+        is_vi = rng.random() < 0.65
         lang = "vi" if is_vi else "en"
         
         # Rating bias towards 4 and 5 stars
-        rating_roll = random.random()
+        rating_roll = rng.random()
         if rating_roll < 0.60:
             rating = 5.0
-            text = random.choice(POSITIVE_FEEDBACK_VI if is_vi else POSITIVE_FEEDBACK_EN)
+            text = rng.choice(POSITIVE_FEEDBACK_VI if is_vi else POSITIVE_FEEDBACK_EN)
             title = "Rất hài lòng" if is_vi else "Great purchase"
         elif rating_roll < 0.85:
             rating = 4.0
-            text = random.choice(POSITIVE_FEEDBACK_VI if is_vi else POSITIVE_FEEDBACK_EN)
+            text = rng.choice(POSITIVE_FEEDBACK_VI if is_vi else POSITIVE_FEEDBACK_EN)
             title = "Tốt trong tầm giá" if is_vi else "Good overall"
         elif rating_roll < 0.93:
             rating = 3.0
@@ -132,43 +169,69 @@ def generate_reviews(
             title = "Tạm ổn" if is_vi else "Average"
         elif rating_roll < 0.97:
             rating = 2.0
-            text = random.choice(NEGATIVE_FEEDBACK_VI if is_vi else NEGATIVE_FEEDBACK_EN)
+            text = rng.choice(NEGATIVE_FEEDBACK_VI if is_vi else NEGATIVE_FEEDBACK_EN)
             title = "Khá thất vọng" if is_vi else "Disappointed"
         else:
             rating = 1.0
-            text = random.choice(NEGATIVE_FEEDBACK_VI if is_vi else NEGATIVE_FEEDBACK_EN)
+            text = rng.choice(NEGATIVE_FEEDBACK_VI if is_vi else NEGATIVE_FEEDBACK_EN)
             title = "Không hài lòng" if is_vi else "Poor quality"
 
+        raw_uid = f"usr_{rng.randint(1000, 9999)}"
         review = {
             "review_id": f"rv_{i+1:06d}",
             "product_id": prod["product_id"],
-            "user_id": f"usr_{random.randint(1000, 9999)}",
+            "user_id": anonymize_user_id(raw_uid, remove=remove_user_id),
             "rating": rating,
             "review_title": title,
             "review_text": text,
             "review_date": review_time.isoformat().replace("+00:00", "Z"),
-            "verified_purchase": random.random() < 0.88,
-            "helpful_count": random.randint(0, 45),
-            "source": random.choice(["web_crawler", "mobile_app", "partner_api"]),
+            "verified_purchase": rng.random() < 0.88,
+            "helpful_count": rng.randint(0, 45),
+            "source": rng.choice(["web_crawler", "mobile_app", "partner_api"]),
             "language": lang,
             "created_at": review_time.isoformat().replace("+00:00", "Z")
         }
         reviews.append(review)
 
-    # Inject specific anomaly
+    # Inject duplicate reviews (same review_id) when duplicate_ratio > 0
+    for d in range(dup_target):
+        src_rev = dict(reviews[d % len(reviews)])
+        reviews.append(src_rev)
+
+    # Inject malformed/quarantine reviews when dirty_ratio > 0
+    for q in range(dirty_target):
+        prod = valid_prods[q % len(valid_prods)]
+        review_time = base_start + datetime.timedelta(days=10, seconds=q * 60)
+        invalid_mode = q % 3
+        reviews.append({
+            "review_id": f"rv_dirty_{q+1:06d}",
+            "product_id": prod["product_id"],
+            "user_id": anonymize_user_id(f"usr_dirty_{q+1}", remove=remove_user_id),
+            "rating": 9.5 if invalid_mode == 0 else (-1.0 if invalid_mode == 1 else 4.0),
+            "review_title": "Dirty record",
+            "review_text": "" if invalid_mode == 2 else "Out of bounds rating test record",
+            "review_date": review_time.isoformat().replace("+00:00", "Z"),
+            "verified_purchase": False,
+            "helpful_count": 0,
+            "source": "web_crawler",
+            "language": "en",
+            "created_at": review_time.isoformat().replace("+00:00", "Z"),
+        })
+
+    # Inject specific burst anomaly
     if inject_anomalies and target_burst_prod:
         burst_time = base_start + datetime.timedelta(days=31, hours=14)
         for b in range(burst_count):
             reviews.append({
                 "review_id": f"rv_burst_{b+1:03d}",
                 "product_id": target_burst_prod,
-                "user_id": f"usr_burst_{b+1}",
+                "user_id": anonymize_user_id(f"usr_burst_{b+1}", remove=remove_user_id),
                 "rating": 1.0 if b % 2 == 0 else 2.0,
                 "review_title": "Lỗi màn hình sau update",
                 "review_text": "Sau bản cập nhật iOS mới màn hình bị chớp xanh và nóng ran!",
                 "review_date": (burst_time + datetime.timedelta(minutes=b)).isoformat().replace("+00:00", "Z"),
                 "verified_purchase": True,
-                "helpful_count": random.randint(10, 80),
+                "helpful_count": rng.randint(10, 80),
                 "source": "mobile_app",
                 "language": "vi",
                 "created_at": (burst_time + datetime.timedelta(minutes=b)).isoformat().replace("+00:00", "Z")
@@ -180,8 +243,10 @@ def generate_price_history(
     products: List[Dict[str, Any]],
     days_history: int = 35,
     start_date: Optional[datetime.datetime] = None,
-    currency: Optional[str] = None
+    currency: Optional[str] = None,
+    seed: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
+    rng = random.Random(seed) if seed is not None else random
     prices = []
     base_start = start_date or datetime.datetime(2026, 8, 20, 0, 0, 0)
     curr = currency or settings.analytics.default_currency
@@ -189,9 +254,11 @@ def generate_price_history(
     
     for prod in products:
         base = prod["price"]
+        if base <= 0:
+            continue
         for day in range(days_history):
             cur_time = base_start + datetime.timedelta(days=day, hours=10)
-            fluctuation = random.uniform(-0.03, 0.03)
+            fluctuation = rng.uniform(-0.03, 0.03)
             current_price = round(base * (1.0 + fluctuation), -4)
             
             # Anomaly injection for first product or galaxy_s24_ultra: sudden glitch drop
@@ -215,21 +282,23 @@ def generate_price_history(
 def generate_streaming_events(
     products: List[Dict[str, Any]],
     count: int = 500,
-    base_time: Optional[datetime.datetime] = None
+    base_time: Optional[datetime.datetime] = None,
+    seed: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
+    rng = random.Random(seed) if seed is not None else random
     events = []
     start_t = base_time or datetime.datetime(2026, 9, 24, 12, 0, 0)
     for i in range(count):
-        prod = random.choice(products)
+        prod = rng.choice(products)
         event_time = start_t + datetime.timedelta(seconds=i * 2)
-        event_type = random.choice(["NEW_REVIEW", "PRICE_UPDATE", "RATING_UPDATE"])
+        event_type = rng.choice(["NEW_REVIEW", "PRICE_UPDATE", "RATING_UPDATE"])
         
         if event_type == "NEW_REVIEW":
-            payload = {"rating": random.choice([4.0, 5.0, 5.0, 3.0]), "review_id": f"rv_stream_{i:04d}"}
+            payload = {"rating": rng.choice([4.0, 5.0, 5.0, 3.0]), "review_id": f"rv_stream_{i:04d}"}
         elif event_type == "PRICE_UPDATE":
-            payload = {"old_price": prod["price"], "new_price": round(prod["price"] * random.uniform(0.95, 1.05), -4)}
+            payload = {"old_price": prod["price"], "new_price": round(prod["price"] * rng.uniform(0.95, 1.05), -4)}
         else:
-            payload = {"old_rating": prod.get("rating", 4.5), "new_rating": round(random.uniform(4.0, 5.0), 1)}
+            payload = {"old_rating": prod.get("rating", 4.5), "new_rating": round(rng.uniform(4.0, 5.0), 1)}
 
         events.append({
             "event_id": f"evt_{i+1:06d}",
@@ -242,9 +311,9 @@ def generate_streaming_events(
     return events
 
 if __name__ == "__main__":
-    prods = generate_products()
-    revs = generate_reviews(prods, count=1000)
-    prs = generate_price_history(prods)
-    evts = generate_streaming_events(prods, count=300)
+    prods = generate_products(seed=42)
+    revs = generate_reviews(prods, count=1000, seed=42)
+    prs = generate_price_history(prods, seed=42)
+    evts = generate_streaming_events(prods, count=300, seed=42)
     print(f"Generated {len(prods)} products, {len(revs)} reviews, {len(prs)} price points, {len(evts)} events.")
 
