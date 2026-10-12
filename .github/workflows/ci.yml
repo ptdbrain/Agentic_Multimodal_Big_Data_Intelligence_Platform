@@ -1,0 +1,190 @@
+name: SentinelAI Big Data CI Pipeline
+
+on:
+  push:
+    branches: [ main, master, "refactor/**" ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: 1. Lint & Static Syntax Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Linter Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff flake8 pyyaml
+
+      - name: Verify Python Syntax & Bytecode Compilation
+        run: |
+          python -m compileall -q config data ingestion kafka storage spark analytics database dashboard orchestration scripts tests
+
+      - name: Run Flake8 Critical Checks
+        run: |
+          flake8 config data ingestion kafka storage spark analytics database dashboard orchestration scripts tests --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run Ruff Linter
+        run: |
+          ruff check config data ingestion kafka storage spark analytics database dashboard orchestration scripts tests --select E9,F63,F7,F82
+
+  unit-tests:
+    name: 2. Unit & Local Pipeline Tests
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 for Apache Spark
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start Standalone S3 Server for Storage Contract Tests
+        run: |
+          nohup python scripts/standalone_s3_server.py > /tmp/s3_server.log 2>&1 &
+          sleep 2
+
+      - name: Run Pytest Unit & Local Test Suite
+        env:
+          MINIO_ENDPOINT: localhost:9000
+          PYSPARK_PYTHON: python
+          PYSPARK_DRIVER_PYTHON: python
+        run: |
+          pytest -v
+
+  integration-tests:
+    name: 3. End-to-End Integration & 3V Benchmark Tests
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: sentinel
+          POSTGRES_PASSWORD: sentinel_password
+          POSTGRES_DB: sentinel_dw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      kafka:
+        image: apache/kafka:3.7.0
+        env:
+          KAFKA_NODE_ID: 1
+          KAFKA_PROCESS_ROLES: broker,controller
+          KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+          KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+        ports:
+          - 9092:9092
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 for Apache Spark
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start S3-Compatible MinIO Object Storage Server
+        run: |
+          nohup python scripts/standalone_s3_server.py > /tmp/s3_server.log 2>&1 &
+          sleep 3
+
+      - name: Verify All Integration Services (Kafka, MinIO S3, PostgreSQL, Spark)
+        env:
+          RUNTIME_MODE: integration
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          MINIO_ENDPOINT: localhost:9000
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: sentinel_dw
+          POSTGRES_USER: sentinel
+          POSTGRES_PASSWORD: sentinel_password
+        run: |
+          python scripts/health_check.py
+
+      - name: Run Canonical E2E Pipeline (Dataset, Public Dataset & Crawler Modes)
+        env:
+          RUNTIME_MODE: integration
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          MINIO_ENDPOINT: localhost:9000
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: sentinel_dw
+          POSTGRES_USER: sentinel
+          POSTGRES_PASSWORD: sentinel_password
+        run: |
+          python scripts/run_e2e_pipeline.py --mode integration --source-type dataset
+          python scripts/run_e2e_pipeline.py --mode integration --source-type public_dataset
+          python scripts/run_e2e_pipeline.py --mode integration --source-type crawler --crawler-platform tiki --crawler-max-products 3 --crawler-reviews-per-prod 5
+
+      - name: Run Streaming & Advanced DQ Acceptance Verification
+        env:
+          RUNTIME_MODE: integration
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          MINIO_ENDPOINT: localhost:9000
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: sentinel_dw
+          POSTGRES_USER: sentinel
+          POSTGRES_PASSWORD: sentinel_password
+        run: |
+          python scripts/verify_streaming_dq_acceptance.py
+
+      - name: Run Real 3V Benchmark Suite
+        env:
+          RUNTIME_MODE: integration
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          MINIO_ENDPOINT: localhost:9000
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: sentinel_dw
+          POSTGRES_USER: sentinel
+          POSTGRES_PASSWORD: sentinel_password
+        run: |
+          python scripts/benchmark.py --mode integration --seed 42 --volume-sizes 100,1000 --velocity-rates 50,200 --variety-count 100
