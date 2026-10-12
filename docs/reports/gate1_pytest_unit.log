@@ -1,0 +1,99 @@
+Gate 1 Verification Log
+Checked Commit: c9ddbbee53dfd3a5e9c1d1ca37887a73c7991cca (c9ddbbe)
+Timestamp: 2026-10-12 10:38:20 UTC
+
+--- [1/3] python -m compileall -q . ---
+EXIT_CODE=0
+
+--- [2/3] ruff check . ---
+All checks passed!
+
+--- [3/3] pytest -m unit -v ---
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\Admin\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\TaiLieuHocTap\big data
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.10.0, langsmith-0.7.31
+collecting ... collected 104 items / 27 deselected / 77 selected
+
+tests/test_advanced.py::TestWindowAggregator::test_tumbling_window_basic PASSED [  1%]
+tests/test_advanced.py::TestWindowAggregator::test_tumbling_window_5min PASSED [  2%]
+tests/test_advanced.py::TestWindowAggregator::test_tumbling_window_empty PASSED [  3%]
+tests/test_advanced.py::TestWindowAggregator::test_tumbling_window_invalid_timestamp PASSED [  5%]
+tests/test_advanced.py::TestWindowAggregator::test_tumbling_window_no_rating PASSED [  6%]
+tests/test_advanced.py::TestStreamingJob::test_process_single_batch PASSED [  7%]
+tests/test_advanced.py::TestStreamingJob::test_process_multiple_batches_accumulates PASSED [  9%]
+tests/test_advanced.py::TestStreamingJob::test_process_empty_batch PASSED [ 10%]
+tests/test_advanced.py::TestStreamingJob::test_process_no_rating PASSED  [ 11%]
+tests/test_advanced.py::TestStorageManager::test_write_and_read_silver PASSED [ 12%]
+tests/test_advanced.py::TestStorageManager::test_read_nonexistent_silver_returns_empty PASSED [ 14%]
+tests/test_advanced.py::TestStorageManager::test_write_and_read_gold PASSED [ 15%]
+tests/test_advanced.py::TestStorageManager::test_read_nonexistent_gold_returns_empty PASSED [ 16%]
+tests/test_advanced.py::TestStorageManager::test_directory_structure_created PASSED [ 18%]
+tests/test_advanced.py::TestSearchIndexer::test_search_by_keyword PASSED [ 19%]
+tests/test_advanced.py::TestSearchIndexer::test_search_by_title PASSED   [ 20%]
+tests/test_advanced.py::TestSearchIndexer::test_search_with_min_rating PASSED [ 22%]
+tests/test_advanced.py::TestSearchIndexer::test_search_with_limit PASSED [ 23%]
+tests/test_advanced.py::TestSearchIndexer::test_search_empty_index PASSED [ 24%]
+tests/test_advanced.py::TestSearchIndexer::test_search_no_match PASSED   [ 25%]
+tests/test_advanced.py::TestExportGoldToDB::test_export_creates_tables PASSED [ 27%]
+tests/test_advanced.py::TestExportGoldToDB::test_export_replace_existing PASSED [ 28%]
+tests/test_advanced.py::TestExportGoldToDB::test_export_empty_dataframe PASSED [ 29%]
+tests/test_advanced.py::TestExportGoldToDB::test_warehouse_upsert_twice_no_duplicate_business_records PASSED [ 31%]
+tests/test_advanced.py::TestReviewBurstDetector::test_detect_burst_spike PASSED [ 32%]
+tests/test_advanced.py::TestReviewBurstDetector::test_detect_empty_reviews PASSED [ 33%]
+tests/test_advanced.py::TestRatingAnomalyDetector::test_detect_rating_drop PASSED [ 35%]
+tests/test_advanced.py::TestRatingAnomalyDetector::test_detect_no_drop_stable PASSED [ 36%]
+tests/test_advanced.py::TestRatingAnomalyDetector::test_detect_empty_reviews PASSED [ 37%]
+tests/test_advanced.py::TestPriceTracker::test_price_trajectory PASSED   [ 38%]
+tests/test_advanced.py::TestPriceTracker::test_price_trajectory_unknown_product PASSED [ 40%]
+tests/test_advanced.py::TestPriceTracker::test_price_trajectory_empty PASSED [ 41%]
+tests/test_advanced.py::TestPriceTracker::test_price_volatility PASSED   [ 42%]
+tests/test_advanced.py::TestPriceTracker::test_price_volatility_empty PASSED [ 44%]
+tests/test_advanced.py::TestEntityNormalizerDynamic::test_normalize_price_international_formats PASSED [ 45%]
+tests/test_advanced.py::TestEntityNormalizerDynamic::test_normalize_brand_custom_map PASSED [ 46%]
+tests/test_advanced.py::TestEntityNormalizerDynamic::test_normalize_category_custom_map PASSED [ 48%]
+tests/test_advanced.py::TestDataCleanerRobustness::test_clean_reviews_string_ratings PASSED [ 49%]
+tests/test_advanced.py::TestDataCleanerRobustness::test_clean_products_robustness PASSED [ 50%]
+tests/test_advanced.py::TestGenericDeduplicator::test_deduplicate_arbitrary_records PASSED [ 51%]
+tests/test_advanced.py::TestRuleRegistryAndMetrics::test_custom_rule_and_per_rule_eval PASSED [ 53%]
+tests/test_advanced.py::TestFileLoaderDiversity::test_load_jsonl PASSED  [ 54%]
+tests/test_advanced.py::TestFileLoaderDiversity::test_load_tsv PASSED    [ 55%]
+tests/test_advanced.py::TestStreamProducerVirtualQueue::test_offline_virtual_queue_buffering PASSED [ 57%]
+tests/test_advanced.py::TestComparativeAnalyticsDynamic::test_compare_by_arbitrary_dimension PASSED [ 58%]
+tests/test_advanced.py::TestCrawlerEcosystem::test_crawler_registry_discovery_and_registration PASSED [ 59%]
+tests/test_advanced.py::TestCrawlerEcosystem::test_tiki_product_and_review_standardization PASSED [ 61%]
+tests/test_advanced.py::TestCrawlerEcosystem::test_universal_scraper_json_ld_extraction PASSED [ 62%]
+tests/test_analytics.py::test_descriptive_stats PASSED                   [ 63%]
+tests/test_analytics.py::test_comparative_analytics PASSED               [ 64%]
+tests/test_analytics.py::test_trends_analyzer PASSED                     [ 66%]
+tests/test_analytics.py::test_price_anomaly_detector PASSED              [ 67%]
+tests/test_analytics.py::test_gold_analytics_known_aggregation_results PASSED [ 68%]
+tests/test_data_quality.py::test_data_quality_rules PASSED               [ 70%]
+tests/test_data_quality.py::test_data_quality_evaluator PASSED           [ 71%]
+tests/test_data_quality.py::test_dq_counts_nulls_duplicates_and_multi_error_row_counted_once PASSED [ 72%]
+tests/test_e2e.py::test_default_mode_is_strict_integration PASSED        [ 74%]
+tests/test_e2e.py::test_pii_anonymization_and_user_id_hashing_at_ingest PASSED [ 75%]
+tests/test_e2e.py::test_github_actions_ci_workflow_valid PASSED          [ 76%]
+tests/test_ingestion.py::test_file_loader_csv_json_parquet PASSED        [ 77%]
+tests/test_ingestion.py::test_api_collector_pagination PASSED            [ 79%]
+tests/test_ingestion.py::test_web_crawler_scrape PASSED                  [ 80%]
+tests/test_ingestion.py::test_raw_consumer_partitioning PASSED           [ 81%]
+tests/test_ingestion.py::test_producer_envelope_structure_event_id_and_partition_key_rules PASSED [ 83%]
+tests/test_schemas.py::test_registry_schemas_exist PASSED                [ 84%]
+tests/test_schemas.py::test_valid_product_validation PASSED              [ 85%]
+tests/test_schemas.py::test_invalid_review_missing_text PASSED           [ 87%]
+tests/test_schemas.py::test_contract_missing_required_fields_all_entities PASSED [ 88%]
+tests/test_schemas.py::test_contract_wrong_field_types_detected PASSED   [ 89%]
+tests/test_schemas.py::test_contract_wrong_schema_version_detected PASSED [ 90%]
+tests/test_spark_etl.py::test_clean_reviews PASSED                       [ 92%]
+tests/test_spark_etl.py::test_validate_reviews_rejects_out_of_range_without_clamping PASSED [ 93%]
+tests/test_spark_etl.py::test_normalize_brand PASSED                     [ 94%]
+tests/test_spark_etl.py::test_normalize_price PASSED                     [ 96%]
+tests/test_spark_etl.py::test_normalize_currency_and_timestamp PASSED    [ 97%]
+tests/test_spark_etl.py::test_deduplicate_reviews PASSED                 [ 98%]
+tests/test_spark_etl.py::test_deduplicate_retains_latest_record_by_timestamp_and_tiebreaker PASSED [100%]
+
+====================== 77 passed, 27 deselected in 2.15s ======================
