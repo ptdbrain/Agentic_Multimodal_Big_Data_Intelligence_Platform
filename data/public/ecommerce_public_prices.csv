@@ -1,0 +1,41 @@
+price_id,product_id,price,currency,seller,timestamp,source
+pub_pr_0001,pub_ip15pm,29490000.0,VND,Tiki Trading,2026-09-01T08:00:00Z,public_ecommerce_dataset
+pub_pr_0002,pub_ip15pm,29195100.0,VND,Tiki Trading,2026-09-02T08:00:00Z,public_ecommerce_dataset
+pub_pr_0003,pub_ip15pm,28900200.0,VND,Tiki Trading,2026-09-03T08:00:00Z,public_ecommerce_dataset
+pub_pr_0004,pub_ip15pm,29490000.0,VND,Tiki Trading,2026-09-04T08:00:00Z,public_ecommerce_dataset
+pub_pr_0005,pub_ip15pm,29195100.0,VND,Tiki Trading,2026-09-05T08:00:00Z,public_ecommerce_dataset
+pub_pr_0006,pub_ip15pm,28900200.0,VND,Tiki Trading,2026-09-06T08:00:00Z,public_ecommerce_dataset
+pub_pr_0007,pub_ip15pm,29490000.0,VND,Tiki Trading,2026-09-07T08:00:00Z,public_ecommerce_dataset
+pub_pr_0008,pub_ip15pm,29195100.0,VND,Tiki Trading,2026-09-08T08:00:00Z,public_ecommerce_dataset
+pub_pr_0009,pub_ip15pm,28900200.0,VND,Tiki Trading,2026-09-09T08:00:00Z,public_ecommerce_dataset
+pub_pr_0010,pub_ip15pm,29490000.0,VND,Tiki Trading,2026-09-10T08:00:00Z,public_ecommerce_dataset
+pub_pr_0011,pub_s24u,27990000.0,VND,Samsung Flagship,2026-09-01T08:00:00Z,public_ecommerce_dataset
+pub_pr_0012,pub_s24u,27710100.0,VND,Samsung Flagship,2026-09-02T08:00:00Z,public_ecommerce_dataset
+pub_pr_0013,pub_s24u,27430200.0,VND,Samsung Flagship,2026-09-03T08:00:00Z,public_ecommerce_dataset
+pub_pr_0014,pub_s24u,27990000.0,VND,Samsung Flagship,2026-09-04T08:00:00Z,public_ecommerce_dataset
+pub_pr_0015,pub_s24u,27710100.0,VND,Samsung Flagship,2026-09-05T08:00:00Z,public_ecommerce_dataset
+pub_pr_0016,pub_s24u,27430200.0,VND,Samsung Flagship,2026-09-06T08:00:00Z,public_ecommerce_dataset
+pub_pr_0017,pub_s24u,27990000.0,VND,Samsung Flagship,2026-09-07T08:00:00Z,public_ecommerce_dataset
+pub_pr_0018,pub_s24u,27710100.0,VND,Samsung Flagship,2026-09-08T08:00:00Z,public_ecommerce_dataset
+pub_pr_0019,pub_s24u,27430200.0,VND,Samsung Flagship,2026-09-09T08:00:00Z,public_ecommerce_dataset
+pub_pr_0020,pub_s24u,27990000.0,VND,Samsung Flagship,2026-09-10T08:00:00Z,public_ecommerce_dataset
+pub_pr_0021,pub_mba_m3,26890000.0,VND,Apple Flagship Store,2026-09-01T08:00:00Z,public_ecommerce_dataset
+pub_pr_0022,pub_mba_m3,26621100.0,VND,Apple Flagship Store,2026-09-02T08:00:00Z,public_ecommerce_dataset
+pub_pr_0023,pub_mba_m3,26352200.0,VND,Apple Flagship Store,2026-09-03T08:00:00Z,public_ecommerce_dataset
+pub_pr_0024,pub_mba_m3,26890000.0,VND,Apple Flagship Store,2026-09-04T08:00:00Z,public_ecommerce_dataset
+pub_pr_0025,pub_mba_m3,26621100.0,VND,Apple Flagship Store,2026-09-05T08:00:00Z,public_ecommerce_dataset
+pub_pr_0026,pub_mba_m3,26352200.0,VND,Apple Flagship Store,2026-09-06T08:00:00Z,public_ecommerce_dataset
+pub_pr_0027,pub_mba_m3,26890000.0,VND,Apple Flagship Store,2026-09-07T08:00:00Z,public_ecommerce_dataset
+pub_pr_0028,pub_mba_m3,26621100.0,VND,Apple Flagship Store,2026-09-08T08:00:00Z,public_ecommerce_dataset
+pub_pr_0029,pub_mba_m3,26352200.0,VND,Apple Flagship Store,2026-09-09T08:00:00Z,public_ecommerce_dataset
+pub_pr_0030,pub_mba_m3,26890000.0,VND,Apple Flagship Store,2026-09-10T08:00:00Z,public_ecommerce_dataset
+pub_pr_0031,pub_wh1000xm5,7490000.0,VND,Sony Center,2026-09-01T08:00:00Z,public_ecommerce_dataset
+pub_pr_0032,pub_wh1000xm5,7415100.0,VND,Sony Center,2026-09-02T08:00:00Z,public_ecommerce_dataset
+pub_pr_0033,pub_wh1000xm5,7340200.0,VND,Sony Center,2026-09-03T08:00:00Z,public_ecommerce_dataset
+pub_pr_0034,pub_wh1000xm5,7490000.0,VND,Sony Center,2026-09-04T08:00:00Z,public_ecommerce_dataset
+pub_pr_0035,pub_wh1000xm5,7415100.0,VND,Sony Center,2026-09-05T08:00:00Z,public_ecommerce_dataset
+pub_pr_0036,pub_wh1000xm5,7340200.0,VND,Sony Center,2026-09-06T08:00:00Z,public_ecommerce_dataset
+pub_pr_0037,pub_wh1000xm5,7490000.0,VND,Sony Center,2026-09-07T08:00:00Z,public_ecommerce_dataset
+pub_pr_0038,pub_wh1000xm5,7415100.0,VND,Sony Center,2026-09-08T08:00:00Z,public_ecommerce_dataset
+pub_pr_0039,pub_wh1000xm5,7340200.0,VND,Sony Center,2026-09-09T08:00:00Z,public_ecommerce_dataset
+pub_pr_0040,pub_wh1000xm5,7490000.0,VND,Sony Center,2026-09-10T08:00:00Z,public_ecommerce_dataset

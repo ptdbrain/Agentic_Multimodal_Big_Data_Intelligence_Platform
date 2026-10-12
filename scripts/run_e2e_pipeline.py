@@ -28,6 +28,8 @@ from storage.storage_manager import storage
 from storage.minio_backend import MinIOBackend
 from storage.local_backend import LocalBackend
 from ingestion.file_loader.loader import FileLoader
+from ingestion.crawler.registry import CrawlerRegistry
+from ingestion.privacy import sanitize_records_pii, is_anonymized_user_id, _RAW_PII_FIELDS
 from kafka.topics.topic_manager import TopicManager
 from kafka.producers.stream_producer import StreamProducer
 from kafka.consumers.raw_consumer import RawConsumer
@@ -66,24 +68,76 @@ def configure_pipeline_mode(mode: Optional[str] = None) -> str:
 def stage_1_ingest_sources(
     products_path: Optional[str] = None,
     reviews_path: Optional[str] = None,
-    prices_path: Optional[str] = None
+    prices_path: Optional[str] = None,
+    source_type: str = "dataset",
+    crawler_platform: str = "tiki",
+    crawler_query: str = "iphone 15",
+    crawler_max_products: int = 5,
+    crawler_reviews_per_product: int = 10,
+    remove_user_id: bool = False,
 ) -> Dict[str, Any]:
-    """Stage 1: Source / Dataset / Crawler ingestion with count and content verification."""
-    print("\n[Stage 1/6] Source / Dataset / Crawler Ingestion...")
-    sample_prods_path = Path(products_path or (REPO_ROOT / "data" / "sample" / "products.json"))
-    sample_revs_path = Path(reviews_path or (REPO_ROOT / "data" / "sample" / "reviews.json"))
-    sample_prices_path = Path(prices_path or (REPO_ROOT / "data" / "sample" / "prices.json"))
+    """Stage 1: Source / Dataset / Crawler ingestion with PII anonymization and content verification."""
+    resolved_source_type = (source_type or "dataset").strip().lower()
+    print(f"\n[Stage 1/6] Source / Dataset / Crawler Ingestion (source_type={resolved_source_type})...")
 
-    if not sample_prods_path.exists() or not sample_revs_path.exists():
-        raise RuntimeError(
-            f"Stage 1 failed: Required source files missing ({sample_prods_path}, {sample_revs_path})."
+    if resolved_source_type == "crawler":
+        crawler = CrawlerRegistry.get(crawler_platform, remove_user_id=remove_user_id)
+        crawl_res = crawler.crawl_category(
+            query=crawler_query,
+            max_products=crawler_max_products,
+            reviews_per_product=crawler_reviews_per_product,
         )
+        products_raw = crawl_res.get("products", [])
+        reviews_raw = crawl_res.get("reviews", [])
+        prices_raw = crawl_res.get("prices", [])
+        src_prods_ref = f"crawler://{crawler_platform}/{crawler_query}/products"
+        src_revs_ref = f"crawler://{crawler_platform}/{crawler_query}/reviews"
+        src_prices_ref = f"crawler://{crawler_platform}/{crawler_query}/prices"
+    elif resolved_source_type == "public_dataset":
+        pub_dir = REPO_ROOT / "data" / "public"
+        sample_prods_path = Path(products_path or (pub_dir / "ecommerce_public_products.json"))
+        sample_revs_path = Path(reviews_path or (pub_dir / "ecommerce_public_reviews.jsonl"))
+        sample_prices_path = Path(prices_path or (pub_dir / "ecommerce_public_prices.csv"))
+        if not sample_prods_path.exists() or not sample_revs_path.exists():
+            raise RuntimeError(
+                f"Stage 1 failed: Public dataset files missing ({sample_prods_path}, {sample_revs_path})."
+            )
+        products_raw = FileLoader.load_records(sample_prods_path, anonymize_pii=True, remove_user_id=remove_user_id)
+        reviews_raw = FileLoader.load_records(sample_revs_path, anonymize_pii=True, remove_user_id=remove_user_id)
+        prices_raw = (
+            FileLoader.load_records(sample_prices_path, anonymize_pii=True, remove_user_id=remove_user_id)
+            if sample_prices_path.exists()
+            else []
+        )
+        src_prods_ref = str(sample_prods_path)
+        src_revs_ref = str(sample_revs_path)
+        src_prices_ref = str(sample_prices_path)
+    else:
+        sample_prods_path = Path(products_path or (REPO_ROOT / "data" / "sample" / "products.json"))
+        sample_revs_path = Path(reviews_path or (REPO_ROOT / "data" / "sample" / "reviews.json"))
+        sample_prices_path = Path(prices_path or (REPO_ROOT / "data" / "sample" / "prices.json"))
 
-    products_raw = FileLoader.load_records(sample_prods_path)
-    reviews_raw = FileLoader.load_records(sample_revs_path)
-    prices_raw = FileLoader.load_records(sample_prices_path) if sample_prices_path.exists() else []
+        if not sample_prods_path.exists() or not sample_revs_path.exists():
+            raise RuntimeError(
+                f"Stage 1 failed: Required source files missing ({sample_prods_path}, {sample_revs_path})."
+            )
 
-    # --- Stage 1 Verification: Count & Content ---
+        products_raw = FileLoader.load_records(sample_prods_path, anonymize_pii=True, remove_user_id=remove_user_id)
+        reviews_raw = FileLoader.load_records(sample_revs_path, anonymize_pii=True, remove_user_id=remove_user_id)
+        prices_raw = (
+            FileLoader.load_records(sample_prices_path, anonymize_pii=True, remove_user_id=remove_user_id)
+            if sample_prices_path.exists()
+            else []
+        )
+        src_prods_ref = str(sample_prods_path)
+        src_revs_ref = str(sample_revs_path)
+        src_prices_ref = str(sample_prices_path)
+
+    # Guarantee ingest-time PII sanitization on all records
+    products_raw = sanitize_records_pii(products_raw, remove_user_id=remove_user_id)
+    reviews_raw = sanitize_records_pii(reviews_raw, remove_user_id=remove_user_id)
+
+    # --- Stage 1 Verification: Count, Content & PII Sanitization ---
     if not isinstance(products_raw, list) or len(products_raw) == 0:
         raise RuntimeError("Stage 1 verification failed: products source dataset is empty.")
     if not isinstance(reviews_raw, list) or len(reviews_raw) == 0:
@@ -97,22 +151,35 @@ def stage_1_ingest_sources(
     if not all(isinstance(r, dict) and req_rev_keys.issubset(r.keys()) for r in reviews_raw):
         raise RuntimeError(f"Stage 1 verification failed: reviews records missing required keys {req_rev_keys}.")
 
+    # Verify PII anonymization at ingest boundary
+    forbidden_pii_keys = set(_RAW_PII_FIELDS)
+    for r in reviews_raw:
+        if forbidden_pii_keys.intersection(r.keys()):
+            raise RuntimeError(
+                f"Stage 1 PII verification failed: Raw PII fields {forbidden_pii_keys.intersection(r.keys())} leaked into review record."
+            )
+        if not is_anonymized_user_id(r.get("user_id")):
+            raise RuntimeError(
+                f"Stage 1 PII verification failed: Review user_id '{r.get('user_id')}' was not hashed/anonymized at ingest."
+            )
+
     if prices_raw:
         req_price_keys = {"price_id", "product_id", "price", "timestamp"}
         if not all(isinstance(r, dict) and req_price_keys.issubset(r.keys()) for r in prices_raw):
             raise RuntimeError(f"Stage 1 verification failed: prices records missing required keys {req_price_keys}.")
 
     print(
-        f"[Stage 1 OK] Loaded and verified {len(products_raw)} products, "
-        f"{len(reviews_raw)} reviews, {len(prices_raw)} prices."
+        f"[Stage 1 OK] Loaded, PII-sanitized, and verified {len(products_raw)} products, "
+        f"{len(reviews_raw)} reviews, {len(prices_raw)} prices from '{resolved_source_type}'."
     )
     return {
+        "source_type": resolved_source_type,
         "products_raw": products_raw,
         "reviews_raw": reviews_raw,
         "prices_raw": prices_raw,
-        "products_path": str(sample_prods_path),
-        "reviews_path": str(sample_revs_path),
-        "prices_path": str(sample_prices_path)
+        "products_path": src_prods_ref,
+        "reviews_path": src_revs_ref,
+        "prices_path": src_prices_ref,
     }
 
 
@@ -590,6 +657,12 @@ def run_end_to_end(
     mode: Optional[str] = None,
     enforce_dq_gate: bool = True,
     min_dq_score: Optional[float] = None,
+    source_type: str = "dataset",
+    crawler_platform: str = "tiki",
+    crawler_query: str = "iphone 15",
+    crawler_max_products: int = 5,
+    crawler_reviews_per_product: int = 10,
+    remove_user_id: bool = False,
 ) -> bool:
     """Executes the canonical 6-stage SentinelAI End-to-End Pipeline with strict stage verification."""
     effective_mode = configure_pipeline_mode(mode)
@@ -602,7 +675,13 @@ def run_end_to_end(
     s1 = stage_1_ingest_sources(
         products_path=products_path,
         reviews_path=reviews_path,
-        prices_path=prices_path
+        prices_path=prices_path,
+        source_type=source_type,
+        crawler_platform=crawler_platform,
+        crawler_query=crawler_query,
+        crawler_max_products=crawler_max_products,
+        crawler_reviews_per_product=crawler_reviews_per_product,
+        remove_user_id=remove_user_id,
     )
 
     # Stage 2: Kafka Producer -> Kafka -> RawConsumer
@@ -647,6 +726,7 @@ def run_end_to_end(
     summary = DescriptiveStats.compute_summary(s4["df_prods"], s4["df_revs"])
     print("\n==========================================================")
     print(f"  PIPELINE VERIFICATION COMPLETE (MODE: {effective_mode.upper()})")
+    print(f"  - Source Type:        {s1['source_type']}")
     print(f"  - Storage Backend:    {type(storage.backend).__name__}")
     print(f"  - Warehouse Engine:   {s6['source_name']}")
     print(f"  - Products In Silver: {summary['total_products']}")
@@ -666,6 +746,17 @@ if __name__ == "__main__":
         default=None,
         help="Execution mode: 'integration' (real Kafka/MinIO/Spark/Postgres, default) or 'local'/'test'"
     )
+    parser.add_argument(
+        "--source-type",
+        choices=["dataset", "public_dataset", "crawler"],
+        default="dataset",
+        help="Ingestion source type: 'dataset' (default), 'public_dataset' (data/public/*), or 'crawler'"
+    )
+    parser.add_argument("--crawler-platform", default="tiki", help="Crawler platform when --source-type=crawler")
+    parser.add_argument("--crawler-query", default="iphone 15", help="Search query when --source-type=crawler")
+    parser.add_argument("--crawler-max-products", type=int, default=5, help="Max products to crawl")
+    parser.add_argument("--crawler-reviews-per-prod", type=int, default=10, help="Reviews per product to crawl")
+    parser.add_argument("--remove-user-id", action="store_true", help="Redact user_id completely instead of hashing")
     parser.add_argument("--products", default=None, help="Path to products raw file (JSON, CSV, Parquet)")
     parser.add_argument("--reviews", default=None, help="Path to reviews raw file (JSON, CSV, Parquet)")
     parser.add_argument("--prices", default=None, help="Path to prices raw file (JSON, CSV, Parquet)")
@@ -680,7 +771,13 @@ if __name__ == "__main__":
             prices_path=args.prices,
             burst_window_hours=args.burst_hours,
             burst_multiplier=args.burst_mult,
-            mode=args.mode
+            mode=args.mode,
+            source_type=args.source_type,
+            crawler_platform=args.crawler_platform,
+            crawler_query=args.crawler_query,
+            crawler_max_products=args.crawler_max_products,
+            crawler_reviews_per_product=args.crawler_reviews_per_prod,
+            remove_user_id=args.remove_user_id,
         )
         if not ok:
             sys.exit(1)

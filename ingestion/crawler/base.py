@@ -1,13 +1,15 @@
 import time
+import datetime
 import requests
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from config.settings import settings
+from ingestion.privacy import sanitize_record_pii
 
 class BaseEcommerceCrawler(ABC):
     """Abstract Base Class for E-Commerce Crawlers.
     Provides standardized session management, exponential backoff retries,
-    rate limiting, and data normalization into SentinelAI canonical schemas.
+    rate limiting, ingest-time PII anonymization, and data normalization into SentinelAI canonical schemas.
     """
 
     def __init__(
@@ -19,7 +21,8 @@ class BaseEcommerceCrawler(ABC):
         rate_limit_rps: Optional[float] = None,
         max_retries: Optional[int] = None,
         retry_backoff_sec: Optional[float] = None,
-        custom_headers: Optional[Dict[str, str]] = None
+        custom_headers: Optional[Dict[str, str]] = None,
+        remove_user_id: bool = False,
     ):
         self.platform_name = platform_name
         self.base_url = base_url.rstrip("/")
@@ -28,6 +31,7 @@ class BaseEcommerceCrawler(ABC):
         self.rate_limit_rps = rate_limit_rps if rate_limit_rps is not None else settings.crawler.rate_limit_rps
         self.max_retries = max_retries if max_retries is not None else settings.crawler.max_retries
         self.retry_backoff_sec = retry_backoff_sec if retry_backoff_sec is not None else settings.crawler.retry_backoff_sec
+        self.remove_user_id = remove_user_id
 
         self._min_interval = 1.0 / self.rate_limit_rps if self.rate_limit_rps > 0 else 0.0
         self._last_request_time = 0.0
@@ -107,30 +111,67 @@ class BaseEcommerceCrawler(ABC):
         max_products: int = 10,
         reviews_per_product: int = 10
     ) -> Dict[str, Any]:
-        """Batch crawl products and their respective customer reviews by search query/category."""
+        """Batch crawl products, customer reviews, and price snapshots by search query/category.
+        Anonymizes/removes user_id and strips raw PII fields immediately at ingest.
+        """
         print(f"[{self.platform_name}] Starting crawl for '{query}' (max_products={max_products}, reviews_per_prod={reviews_per_product})...")
         raw_products = self.search_products(query, limit=max_products, page=1)
         
         standard_products = []
         all_reviews = []
+        all_prices = []
+        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
 
-        for p in raw_products[:max_products]:
-            std_p = self.standardize_product(p)
+        for idx, p in enumerate(raw_products[:max_products]):
+            std_p = sanitize_record_pii(
+                self.standardize_product(p),
+                remove_user_id=self.remove_user_id,
+            )
             standard_products.append(std_p)
+            pid = std_p["product_id"]
+
+            all_prices.append({
+                "price_id": f"pr_{self.platform_name.lower()}_{pid}_{idx+1:04d}",
+                "product_id": pid,
+                "price": float(std_p.get("price", 0.0)),
+                "currency": str(std_p.get("currency", "VND")),
+                "seller": str(std_p.get("seller", "Official Store")),
+                "timestamp": str(std_p.get("updated_at") or now_iso),
+                "source": str(std_p.get("source") or f"{self.platform_name.lower()}_crawler"),
+            })
 
             # Extract platform product id to query reviews
-            orig_id = str(p.get("id") or std_p.get("product_id"))
+            orig_id = str(p.get("id") or pid)
             if reviews_per_product > 0:
                 raw_revs = self.get_product_reviews(orig_id, limit=reviews_per_product, page=1)
                 for r in raw_revs:
-                    all_reviews.append(self.standardize_review(r, product_id=std_p["product_id"]))
+                    std_rev = sanitize_record_pii(
+                        self.standardize_review(r, product_id=pid),
+                        remove_user_id=self.remove_user_id,
+                    )
+                    all_reviews.append(std_rev)
 
-        print(f"[{self.platform_name}] Crawl completed: {len(standard_products)} products, {len(all_reviews)} reviews.")
+        print(f"[{self.platform_name}] Crawl completed: {len(standard_products)} products, {len(all_reviews)} reviews, {len(all_prices)} prices.")
         return {
             "platform": self.platform_name,
             "query": query,
             "products_count": len(standard_products),
             "reviews_count": len(all_reviews),
+            "prices_count": len(all_prices),
             "products": standard_products,
-            "reviews": all_reviews
+            "reviews": all_reviews,
+            "prices": all_prices,
         }
+
+    def crawl_pipeline(
+        self,
+        query: str,
+        max_products: int = 10,
+        reviews_per_product: int = 10
+    ) -> Dict[str, Any]:
+        """Alias for crawl_category returning canonical products, reviews, and prices."""
+        return self.crawl_category(
+            query=query,
+            max_products=max_products,
+            reviews_per_product=reviews_per_product,
+        )
