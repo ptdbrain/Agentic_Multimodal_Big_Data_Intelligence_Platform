@@ -1,94 +1,229 @@
 {
-  "volume": {
-    "benchmark_type": "volume",
-    "results": [
-      {
-        "records": 100,
-        "duration_sec": 2.223,
-        "throughput_rps": 45.0,
-        "products_processed": 15,
-        "reviews_processed": 100,
-        "dq_score": 100.0
-      },
-      {
-        "records": 1000,
-        "duration_sec": 0.044,
-        "throughput_rps": 22601.1,
-        "products_processed": 15,
-        "reviews_processed": 1000,
-        "dq_score": 100.0
-      },
-      {
-        "records": 5000,
-        "duration_sec": 0.045,
-        "throughput_rps": 111645.7,
-        "products_processed": 15,
-        "reviews_processed": 5000,
-        "dq_score": 100.0
-      },
-      {
-        "records": 10000,
-        "duration_sec": 0.061,
-        "throughput_rps": 163792.0,
-        "products_processed": 15,
-        "reviews_processed": 10000,
-        "dq_score": 100.0
-      }
-    ]
+  "timestamp": "2026-10-12 05:01:02 UTC",
+  "metadata": {
+    "runtime_mode": "integration",
+    "storage_backend": "MinIOBackend",
+    "seed": 42,
+    "dirty_ratio": 0.05,
+    "duplicate_ratio": 0.03,
+    "pii_anonymized_at_ingest": true
   },
-  "velocity": {
-    "benchmark_type": "velocity",
-    "results": [
-      {
-        "target_rate": 10,
-        "actual_rate": 10.0,
-        "messages_sent": 100,
-        "duration_sec": 10.038
-      },
-      {
-        "target_rate": 50,
-        "actual_rate": 48.8,
-        "messages_sent": 100,
-        "duration_sec": 2.048
-      },
-      {
-        "target_rate": 100,
-        "actual_rate": 95.6,
-        "messages_sent": 100,
-        "duration_sec": 1.047
-      },
-      {
-        "target_rate": 500,
-        "actual_rate": 410.6,
-        "messages_sent": 100,
-        "duration_sec": 0.244
-      }
-    ]
-  },
-  "variety": {
-    "benchmark_type": "variety",
-    "results": [
-      {
-        "format": "JSON",
-        "files_processed": 3,
-        "records_loaded": 1800,
-        "duration_sec": 0.029,
-        "throughput_rps": 62181.9
-      },
-      {
-        "format": "CSV",
-        "files_processed": 3,
-        "records_loaded": 1800,
-        "duration_sec": 0.056,
-        "throughput_rps": 32056.7
-      },
-      {
-        "format": "Parquet",
-        "files_processed": 3,
-        "records_loaded": 1800,
-        "duration_sec": 0.044,
-        "throughput_rps": 40704.7
-      }
-    ]
-  }
+  "volume": [
+    {
+      "seed": 142,
+      "records_input": 100,
+      "duration_sec": 17.9701,
+      "throughput_rps": 5.6,
+      "valid_count": 92,
+      "quarantine_count": 5,
+      "duplicate_count": 3,
+      "silver_written_count": 92,
+      "dq_score": 92.0,
+      "bronze_bytes": 64262,
+      "silver_bytes": 11424,
+      "quarantine_bytes": 5708,
+      "total_storage_bytes": 81394
+    },
+    {
+      "seed": 1042,
+      "records_input": 1000,
+      "duration_sec": 18.0859,
+      "throughput_rps": 55.3,
+      "valid_count": 920,
+      "quarantine_count": 50,
+      "duplicate_count": 30,
+      "silver_written_count": 920,
+      "dq_score": 92.0,
+      "bronze_bytes": 642052,
+      "silver_bytes": 52327,
+      "quarantine_bytes": 7801,
+      "total_storage_bytes": 702180
+    },
+    {
+      "seed": 5042,
+      "records_input": 5000,
+      "duration_sec": 19.1923,
+      "throughput_rps": 260.5,
+      "valid_count": 4600,
+      "quarantine_count": 250,
+      "duplicate_count": 150,
+      "silver_written_count": 4600,
+      "dq_score": 92.0,
+      "bronze_bytes": 3213561,
+      "silver_bytes": 222331,
+      "quarantine_bytes": 16057,
+      "total_storage_bytes": 3451949
+    },
+    {
+      "seed": 10042,
+      "records_input": 10000,
+      "duration_sec": 21.0059,
+      "throughput_rps": 476.1,
+      "valid_count": 9200,
+      "quarantine_count": 500,
+      "duplicate_count": 300,
+      "silver_written_count": 9200,
+      "dq_score": 92.0,
+      "bronze_bytes": 6433642,
+      "silver_bytes": 412904,
+      "quarantine_bytes": 26277,
+      "total_storage_bytes": 6872823
+    }
+  ],
+  "velocity": [
+    {
+      "seed": 92,
+      "transport_mode": "real_kafka",
+      "target_rate_mps": 50,
+      "messages_sent": 100,
+      "produce_duration_sec": 2.2619,
+      "actual_produce_rate_mps": 44.2,
+      "messages_consumed": 100,
+      "valid_count": 96,
+      "quarantine_dlq_count": 4,
+      "e2e_duration_sec": 4.5136,
+      "e2e_throughput_mps": 22.2,
+      "bronze_bytes": 71211
+    },
+    {
+      "seed": 242,
+      "transport_mode": "real_kafka",
+      "target_rate_mps": 200,
+      "messages_sent": 200,
+      "produce_duration_sec": 1.3508,
+      "actual_produce_rate_mps": 148.1,
+      "messages_consumed": 200,
+      "valid_count": 192,
+      "quarantine_dlq_count": 8,
+      "e2e_duration_sec": 2.5525,
+      "e2e_throughput_mps": 78.4,
+      "bronze_bytes": 142986
+    },
+    {
+      "seed": 542,
+      "transport_mode": "real_kafka",
+      "target_rate_mps": 500,
+      "messages_sent": 500,
+      "produce_duration_sec": 1.8037,
+      "actual_produce_rate_mps": 277.2,
+      "messages_consumed": 500,
+      "valid_count": 480,
+      "quarantine_dlq_count": 20,
+      "e2e_duration_sec": 3.2681,
+      "e2e_throughput_mps": 153.0,
+      "bronze_bytes": 356559
+    },
+    {
+      "seed": 1042,
+      "transport_mode": "real_kafka",
+      "target_rate_mps": 1000,
+      "messages_sent": 500,
+      "produce_duration_sec": 1.4301,
+      "actual_produce_rate_mps": 349.6,
+      "messages_consumed": 500,
+      "valid_count": 480,
+      "quarantine_dlq_count": 20,
+      "e2e_duration_sec": 2.9168,
+      "e2e_throughput_mps": 171.4,
+      "bronze_bytes": 357692
+    }
+  ],
+  "variety": [
+    {
+      "seed": 42,
+      "format": "JSON",
+      "source_bytes": 215893,
+      "records_input": 500,
+      "valid_count": 465,
+      "quarantine_count": 25,
+      "duplicate_count": 10,
+      "dq_score": 93.0,
+      "duration_sec": 18.1009,
+      "throughput_rps": 27.6,
+      "bronze_bytes": 318611,
+      "silver_bytes": 30035,
+      "quarantine_bytes": 6739,
+      "pii_anonymized": true
+    },
+    {
+      "seed": 42,
+      "format": "JSONL",
+      "source_bytes": 215893,
+      "records_input": 500,
+      "valid_count": 465,
+      "quarantine_count": 25,
+      "duplicate_count": 10,
+      "dq_score": 93.0,
+      "duration_sec": 17.5559,
+      "throughput_rps": 28.5,
+      "bronze_bytes": 319111,
+      "silver_bytes": 30035,
+      "quarantine_bytes": 6739,
+      "pii_anonymized": true
+    },
+    {
+      "seed": 42,
+      "format": "CSV",
+      "source_bytes": 106765,
+      "records_input": 500,
+      "valid_count": 473,
+      "quarantine_count": 17,
+      "duplicate_count": 10,
+      "dq_score": 94.6,
+      "duration_sec": 17.6744,
+      "throughput_rps": 28.3,
+      "bronze_bytes": 318119,
+      "silver_bytes": 30324,
+      "quarantine_bytes": 6509,
+      "pii_anonymized": true
+    },
+    {
+      "seed": 42,
+      "format": "TSV",
+      "source_bytes": 106041,
+      "records_input": 500,
+      "valid_count": 473,
+      "quarantine_count": 17,
+      "duplicate_count": 10,
+      "dq_score": 94.6,
+      "duration_sec": 17.7482,
+      "throughput_rps": 28.2,
+      "bronze_bytes": 318119,
+      "silver_bytes": 30324,
+      "quarantine_bytes": 6509,
+      "pii_anonymized": true
+    },
+    {
+      "seed": 42,
+      "format": "Parquet",
+      "source_bytes": 31177,
+      "records_input": 500,
+      "valid_count": 465,
+      "quarantine_count": 25,
+      "duplicate_count": 10,
+      "dq_score": 93.0,
+      "duration_sec": 17.9053,
+      "throughput_rps": 27.9,
+      "bronze_bytes": 320111,
+      "silver_bytes": 30035,
+      "quarantine_bytes": 6739,
+      "pii_anonymized": true
+    },
+    {
+      "seed": 42,
+      "format": "HTML_JSONLD_Crawler",
+      "source_bytes": 163779,
+      "records_input": 500,
+      "valid_count": 465,
+      "quarantine_count": 25,
+      "duplicate_count": 10,
+      "dq_score": 93.0,
+      "duration_sec": 17.8881,
+      "throughput_rps": 28.0,
+      "bronze_bytes": 325879,
+      "silver_bytes": 28902,
+      "quarantine_bytes": 6562,
+      "pii_anonymized": true
+    }
+  ]
 }
