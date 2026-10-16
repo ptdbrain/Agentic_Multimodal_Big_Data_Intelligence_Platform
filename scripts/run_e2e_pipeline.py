@@ -29,6 +29,7 @@ from storage.minio_backend import MinIOBackend
 from storage.local_backend import LocalBackend
 from ingestion.file_loader.loader import FileLoader
 from ingestion.crawler.registry import CrawlerRegistry
+from ingestion.crawler.validator import CrawlerDataValidator
 from ingestion.privacy import sanitize_records_pii, is_anonymized_user_id, _RAW_PII_FIELDS
 from kafka.topics.topic_manager import TopicManager
 from kafka.producers.stream_producer import StreamProducer
@@ -167,6 +168,16 @@ def stage_1_ingest_sources(
         req_price_keys = {"price_id", "product_id", "price", "timestamp"}
         if not all(isinstance(r, dict) and req_price_keys.issubset(r.keys()) for r in prices_raw):
             raise RuntimeError(f"Stage 1 verification failed: prices records missing required keys {req_price_keys}.")
+
+    # Pre-Spark contract validation guard
+    if resolved_source_type == "crawler":
+        CrawlerDataValidator.verify_pre_spark_guard(
+            products=products_raw,
+            prices=prices_raw,
+            reviews=reviews_raw,
+            enforce_tiki_id_format=(crawler_platform == "tiki"),
+            strict=True,
+        )
 
     print(
         f"[Stage 1 OK] Loaded, PII-sanitized, and verified {len(products_raw)} products, "

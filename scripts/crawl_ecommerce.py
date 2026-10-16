@@ -13,6 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from ingestion.crawler.registry import CrawlerRegistry
+from ingestion.crawler.validator import CrawlerDataValidator
 from ingestion.privacy import is_anonymized_user_id
 from kafka.consumers.raw_consumer import RawConsumer
 from kafka.producers.stream_producer import StreamProducer
@@ -26,8 +27,9 @@ def main():
     parser.add_argument("--query", default="iphone 15", help="Search keyword or product category")
     parser.add_argument("--max-products", type=int, default=5, help="Maximum number of products to crawl")
     parser.add_argument("--reviews-per-prod", type=int, default=5, help="Number of customer reviews per product")
-    parser.add_argument("--save-datalake", action="store_true", default=True, help="Save raw JSON batch to Bronze Data Lake")
+    parser.add_argument("--save-datalake", action=argparse.BooleanOptionalAction, default=True, help="Save raw JSON batch to Bronze Data Lake")
     parser.add_argument("--push-kafka", action="store_true", default=False, help="Push live events into Kafka topics")
+    parser.add_argument("--validate-pre-spark", action=argparse.BooleanOptionalAction, default=True, help="Validate field names, types, IDs, and prices before downstream processing")
     parser.add_argument("--run-pipeline", action="store_true", default=False, help="Run the full 6-stage canonical E2E pipeline on crawled data")
     parser.add_argument("--mode", choices=["integration", "local", "test"], default=None, help="Pipeline runtime mode when --run-pipeline is set")
     parser.add_argument("--remove-user-id", action="store_true", default=False, help="Redact user_id completely instead of hashing")
@@ -79,7 +81,19 @@ def main():
         if not is_anonymized_user_id(r.get("user_id")):
             raise RuntimeError(f"PII violation: crawled review user_id '{r.get('user_id')}' was not anonymized.")
 
-    print(f"\n[Summary] Crawled {len(products)} products, {len(reviews)} reviews, and {len(prices)} prices (all PII anonymized).")
+    # Pre-Spark contract validation
+    if args.validate_pre_spark and (products or prices):
+        report = CrawlerDataValidator.validate_crawled_dataset(
+            products=products,
+            prices=prices,
+            enforce_tiki_id_format=(args.platform == "tiki"),
+        )
+        if not report["is_valid"]:
+            print(f"[ERROR] Pre-Spark validation failed: {len(report['errors'])} errors detected.")
+            for err in report["errors"][:5]:
+                print(f"  ! {err}")
+            raise ValueError(f"Pre-Spark contract guard rejected crawled data for platform '{args.platform}'.")
+        print(f"[OK] Pre-Spark contract validation passed ({len(products)} products, {len(prices)} prices verified).")
 
     # 1. Save to Bronze Data Lake
     if args.save_datalake:
