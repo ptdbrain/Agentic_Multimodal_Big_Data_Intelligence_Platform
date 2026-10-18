@@ -1,0 +1,3 @@
+﻿price_id,product_id,price,currency,seller,timestamp,source
+pr_tiki_278505394_0001,tiki_278505394,5990000.0,VND,Tiki Trading,2026-10-18T16:59:45Z,tiki_crawler
+pr_tiki_187266104_0002,tiki_187266104,4990000.0,VND,Tiki Trading,2026-10-18T16:59:49Z,tiki_crawler
