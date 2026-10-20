@@ -86,11 +86,11 @@ class MinIOBackend:
         """Converts Windows backslashes to canonical S3 POSIX forward slashes."""
         return str(path).replace("\\", "/").lstrip("/")
 
-    def write_json(self, path: str, data: Any) -> str:
+    def write_json(self, path: str, data: Any, indent: Optional[int] = 2) -> str:
         """Write JSON directly to MinIO bucket. Fails loudly if MinIO is down."""
         self._ensure_bucket()
         norm_path = self._normalize_s3_key(path)
-        json_bytes = json.dumps(data, ensure_ascii=False, indent=2).encode('utf-8')
+        json_bytes = json.dumps(data, ensure_ascii=False, indent=indent).encode('utf-8')
         json_stream = io.BytesIO(json_bytes)
         
         try:
@@ -112,7 +112,7 @@ class MinIOBackend:
             local_file = self._local_mirror / norm_path
             local_file.parent.mkdir(parents=True, exist_ok=True)
             with open(local_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+                json.dump(data, f, ensure_ascii=False, indent=indent)
 
         return norm_path
 
