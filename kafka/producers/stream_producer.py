@@ -69,6 +69,10 @@ class StreamProducer:
         resolved_key = str(key) if key is not None else str(entity_key)
         det_hash = hashlib.sha256(f"{source}|{entity_key}|{event_time}".encode("utf-8")).hexdigest()[:24]
 
+        # Record precise dispatch timestamps (monotonic clock for single-host profiling, epoch for distributed)
+        t_sent_mono = time.perf_counter()
+        t_sent_epoch_ms = time.time() * 1000.0
+
         envelope = {
             "event_id": f"evt_{det_hash}",
             "event_type": event_type,
@@ -88,6 +92,8 @@ class StreamProducer:
                 "partition": 0,
                 "offset": offset,
                 "sent_at": time.time(),
+                "sent_epoch_ms": t_sent_epoch_ms,
+                "sent_perf_counter": t_sent_mono,
                 "status": "BUFFERED"
             }
             self.virtual_queue.append(delivery_record)
@@ -97,7 +103,11 @@ class StreamProducer:
             raise RuntimeError("Kafka producer is not initialized and offline buffer is disabled.")
 
         try:
-            future = self.producer.send(topic, key=resolved_key, value=envelope)
+            kafka_headers = [
+                ("sent_perf_counter", str(t_sent_mono).encode("utf-8")),
+                ("sent_epoch_ms", str(t_sent_epoch_ms).encode("utf-8")),
+            ]
+            future = self.producer.send(topic, key=resolved_key, value=envelope, headers=kafka_headers)
             if wait_for_delivery:
                 metadata = future.get(timeout=timeout_sec)
                 delivery_info = {
@@ -105,7 +115,9 @@ class StreamProducer:
                     "topic": metadata.topic,
                     "partition": metadata.partition,
                     "offset": metadata.offset,
-                    "event_id": envelope["event_id"]
+                    "event_id": envelope["event_id"],
+                    "sent_perf_counter": t_sent_mono,
+                    "sent_epoch_ms": t_sent_epoch_ms,
                 }
                 return envelope, delivery_info
             return envelope, future

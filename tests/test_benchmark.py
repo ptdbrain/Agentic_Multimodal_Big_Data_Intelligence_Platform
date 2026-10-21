@@ -38,48 +38,80 @@ from scripts.benchmark import (
 
 @pytest.mark.unit
 class TestBenchmarkAccountingInvariants:
-    """Verifies strict mathematical accounting identities across benchmark runs."""
+    """Verifies strict mathematical accounting identities on ACTUAL executed benchmark pipeline outputs."""
 
-    def test_volume_accounting_invariant_calculation(self):
-        """Volume invariant: records_input == valid_count + duplicate_count + quarantine_count."""
-        input_count = 1000
-        dirty_ratio = 0.05
-        duplicate_ratio = 0.03
+    def test_volume_benchmark_real_execution_accounting(self):
+        """Executes real benchmark_volume and verifies accounting invariant on actual returned metrics:
+        records_input == valid_count + duplicate_count + quarantine_count.
+        """
+        configure_benchmark_mode("local")
+        results = benchmark_volume(
+            sizes=[20],
+            seed=42,
+            dirty_ratio=0.10,
+            duplicate_ratio=0.05,
+            iterations=2,
+        )
+        assert len(results) == 1
+        r = results[0]
 
-        dirty_target = int(round(input_count * dirty_ratio))  # 50
-        dup_target = int(round(input_count * duplicate_ratio))  # 30
-        valid_count = input_count - dirty_target - dup_target  # 920
+        # Consolidated row verification
+        assert r["records_input"] == r["valid_count"] + r["quarantine_count"] + r["duplicate_count"]
+        assert r["accounting_reconciled"] is True
+        assert r["quarantine_count"] > 0, "Quarantine count must be non-zero when dirty_ratio > 0"
+        assert r["duplicate_count"] > 0, "Duplicate count must be non-zero when duplicate_ratio > 0"
+        assert r["bronze_bytes"] > 0
+        assert r["silver_bytes"] > 0
+        assert r["duration_sec"] > 0.0
 
-        assert input_count == valid_count + dup_target + dirty_target
-        assert valid_count == 920
-        assert dup_target == 30
-        assert dirty_target == 50
+        # Every iteration run row verification
+        for ir in r.get("iteration_runs", []):
+            assert ir["records_input"] == ir["valid_count"] + ir["quarantine_count"] + ir["duplicate_count"]
+            assert ir["accounting_reconciled"] is True
+            assert ir["quarantine_count"] > 0
 
-    def test_velocity_accounting_invariant_calculation(self):
-        """Velocity invariant: messages_consumed == valid_count + quarantine_dlq_count."""
-        consumed = 200
-        dirty_ratio = 0.04
+    def test_velocity_benchmark_real_execution_accounting(self):
+        """Executes real benchmark_velocity and verifies accounting invariant on actual returned metrics:
+        messages_consumed == valid_count + quarantine_dlq_count.
+        """
+        results = benchmark_velocity(
+            rates=[50],
+            seed=42,
+            effective_mode="local",
+            messages_per_rate=20,
+            dirty_ratio=0.10,
+        )
+        assert len(results) == 1
+        r = results[0]
 
-        dlq_count = int(round(consumed * dirty_ratio))  # 8
-        valid_count = consumed - dlq_count  # 192
+        assert r["messages_consumed"] == r["valid_count"] + r["quarantine_dlq_count"]
+        assert r["accounting_reconciled"] is True
+        assert r["quarantine_dlq_count"] > 0, "DLQ count must be non-zero when dirty_ratio > 0"
+        assert r["messages_sent"] == r["messages_consumed"]
+        assert 0.0 < r["latency_p50_ms"] <= r["latency_p95_ms"] <= r["latency_p99_ms"]
 
-        assert consumed == valid_count + dlq_count
-        assert valid_count == 192
-        assert dlq_count == 8
+    def test_variety_benchmark_real_execution_accounting(self):
+        """Executes real benchmark_variety and verifies accounting invariant on actual returned metrics
+        across all 7 formats.
+        """
+        results = benchmark_variety(
+            records_per_format=10,
+            seed=42,
+            effective_mode="local",
+            dirty_ratio=0.10,
+            duplicate_ratio=0.05,
+        )
+        assert len(results) == 7
+        format_names = [r["format"] for r in results]
+        assert "JSONL_Tiki_Crawler" in format_names
+        assert "HTML_Synthetic_JSONLD" in format_names
 
-    def test_variety_accounting_invariant_all_formats(self):
-        """All Variety formats must satisfy: records_input == valid + duplicate + quarantine."""
-        test_cases = [
-            {"format": "JSON", "input": 100, "valid": 93, "quarantine": 5, "dup": 2},
-            {"format": "JSONL", "input": 100, "valid": 93, "quarantine": 5, "dup": 2},
-            {"format": "CSV", "input": 100, "valid": 94, "quarantine": 4, "dup": 2},
-            {"format": "TSV", "input": 100, "valid": 94, "quarantine": 4, "dup": 2},
-            {"format": "Parquet", "input": 100, "valid": 93, "quarantine": 5, "dup": 2},
-            {"format": "HTML_Synthetic_JSONLD", "input": 100, "valid": 93, "quarantine": 5, "dup": 2},
-            {"format": "HTML_Tiki_Crawler", "input": 10, "valid": 10, "quarantine": 0, "dup": 0},
-        ]
-        for c in test_cases:
-            assert c["input"] == c["valid"] + c["quarantine"] + c["dup"], f"Invariant failed for {c['format']}"
+        for r in results:
+            assert r["records_input"] == r["valid_count"] + r["quarantine_count"] + r["duplicate_count"], (
+                f"Accounting failed for format {r['format']}"
+            )
+            assert r["accounting_reconciled"] is True
+            assert r["silver_bytes"] > 0
 
 
 @pytest.mark.unit
@@ -116,6 +148,73 @@ class TestBenchmarkFormulas:
         assert stats["p99"] == 0.0
         assert stats["avg"] == 0.0
 
+    def test_velocity_per_message_latency_matching_by_review_id(self):
+        """Behavioral verification: checks that send timestamps and processed timestamps match
+        per review_id, and produce distinct per-message latencies across simulated delays.
+        """
+        import time
+        from storage.storage_manager import storage
+        from kafka.producers.stream_producer import StreamProducer
+        from kafka.consumers.raw_consumer import RawConsumer
+
+        storage.set_mode("local")
+        producer = StreamProducer(enable_offline_buffer=True)
+        consumer = RawConsumer()
+
+        review_ids = ["rv_alpha_101", "rv_beta_102", "rv_gamma_103", "rv_delta_104"]
+        records = [
+            {
+                "product_id": f"p_{i}",
+                "review_id": r_id,
+                "user_id": f"anon_user_{i}",
+                "rating": 5.0,
+                "review_title": f"Title {i}",
+                "review_text": f"Review content {i}",
+                "review_date": "2026-10-20T10:00:00Z",
+            }
+            for i, r_id in enumerate(review_ids)
+        ]
+
+        # Produce messages with pacing so each message gets an individual, distinct monotonic timestamp
+        sent_count, _ = producer.produce_batch("raw.reviews", records, rate=50.0)
+        assert sent_count == 4
+        assert len(producer.virtual_queue) == 4
+
+        # Manually stagger the send timestamps in virtual queue to simulate varying network/transit delays
+        t_base = time.perf_counter()
+        simulated_delays_sec = [0.080, 0.045, 0.020, 0.005]  # 80ms, 45ms, 20ms, 5ms
+        for idx, item in enumerate(producer.virtual_queue):
+            item["sent_perf_counter"] = t_base - simulated_delays_sec[idx]
+
+        # Consumer processes records and records individual completion timestamps
+        res = consumer.consume_batch_once(topics=["raw.reviews"], offline_records=producer.virtual_queue)
+        assert res["records_consumed"] == 4
+        assert "message_latencies" in res
+        msg_lats = res["message_latencies"]
+        assert len(msg_lats) == 4
+
+        # 1. Verify every message latency entry matches the exact review_id
+        recorded_ids = [m["review_id"] for m in msg_lats]
+        assert recorded_ids == review_ids, f"Recorded IDs {recorded_ids} do not match review_ids {review_ids}"
+
+        # 2. Verify latency Li = t_processed - t_sent for each individual message
+        for idx, m in enumerate(msg_lats):
+            expected_diff_ms = (m["processed_mono"] - m["sent_mono"]) * 1000.0
+            assert abs(m["latency_ms"] - expected_diff_ms) < 0.05
+            assert m["latency_ms"] > 0.0
+
+        # 3. Verify that latencies are strictly distinct (reflecting per-message pacing, not batch elapsed time)
+        lat_values = [m["latency_ms"] for m in msg_lats]
+        # Since simulated delays were 80ms, 45ms, 20ms, 5ms:
+        assert lat_values[0] > lat_values[1] > lat_values[2] > lat_values[3], (
+            f"Per-message latencies not varying according to individual send times: {lat_values}"
+        )
+
+        # 4. Verify percentile calculation produces distinct p50 < p95 <= p99 from these varying latencies
+        stats = compute_percentiles(lat_values)
+        assert stats["p50"] > 0.0
+        assert stats["p50"] < stats["p95"] <= stats["p99"]
+
     def test_compute_median_run_single_run(self):
         single_run = [{"duration_sec": 2.5, "throughput_rps": 400.0, "cpu_percent": 15.0}]
         res = compute_median_run(single_run)
@@ -138,18 +237,42 @@ class TestBenchmarkFormulas:
         assert res["peak_ram_mb"] == 145.0
         assert res["iterations"] == 3
         assert len(res["iteration_runs"]) == 3
+        # Stability metrics
+        assert res["duration_min_sec"] == 2.0
+        assert res["duration_max_sec"] == 3.0
+        assert res["duration_std_sec"] > 0.0
+        assert res["spark_etl_min_sec"] == 1.6
+        assert res["spark_etl_max_sec"] == 2.5
 
-    def test_resource_monitor(self):
-        mon = ResourceMonitor()
+    def test_resource_monitor_continuous_sampling_without_manual_sample(self):
+        """Verifies that ResourceMonitor background thread samples continuously across the full
+        run duration without requiring manual sample() calls, capturing memory allocation.
+        """
+        import time
+        mon = ResourceMonitor(interval_sec=0.01)
         mon.start()
-        mon.sample()
+
+        # Do NOT call mon.sample() manually; let the daemon thread sample continuously
+        time.sleep(0.02)
+        data_chunk = bytearray(15 * 1024 * 1024)
+        time.sleep(0.04)
+        del data_chunk
+
         metrics = mon.stop()
 
         assert "wall_sec" in metrics
-        assert metrics["wall_sec"] >= 0.0
+        assert metrics["wall_sec"] >= 0.05
         assert "cpu_percent" in metrics
+        assert "python_cpu_percent" in metrics
         assert "peak_ram_mb" in metrics
+        assert "peak_tree_ram_mb" in metrics
+        assert "peak_python_ram_mb" in metrics
         assert metrics["peak_ram_mb"] > 0.0
+        assert metrics["peak_tree_ram_mb"] >= metrics["peak_python_ram_mb"]
+
+        # Proves the background sampler ticked multiple times on its own
+        assert metrics["sample_count"] >= 3, f"Expected >= 3 background samples, got {metrics.get('sample_count')}"
+        assert mon._thread is None, "Monitor daemon thread must terminate cleanly after stop()"
 
 
 @pytest.mark.unit
@@ -256,8 +379,8 @@ class TestReportParserAndConsistency:
                 },
                 {
                     "seed": 42,
-                    "format": "HTML_Tiki_Crawler",
-                    "category": "real_crawler_html",
+                    "format": "JSONL_Tiki_Crawler",
+                    "category": "authentic_snapshot_jsonl",
                     "source_bytes": 12000,
                     "records_input": 10,
                     "valid_count": 10,
@@ -305,13 +428,13 @@ class TestReportParserAndConsistency:
             assert "Stage 1 Bronze Storage Write + Stage 2 Spark Batch ETL" in md_text
             assert "real_kafka" in md_text
             assert "HTML_Synthetic_JSONLD" in md_text
-            assert "HTML_Tiki_Crawler" in md_text
+            assert "JSONL_Tiki_Crawler" in md_text
 
             # 3. Verify Evidence file
             ev_file = REPO_ROOT / "docs" / "reports" / "3v_evidence.md"
             assert ev_file.exists()
             ev_text = ev_file.read_text(encoding="utf-8")
-            assert "HTML_Synthetic_JSONLD" in ev_text or "HTML_Tiki_Crawler" in ev_text
+            assert "HTML_Synthetic_JSONLD" in ev_text or "JSONL_Tiki_Crawler" in ev_text
 
             # 4. Verify no unrun 1M claims in docs/benchmark.md
             doc_bench = (REPO_ROOT / "docs" / "benchmark.md").read_text(encoding="utf-8")
@@ -338,16 +461,85 @@ class TestIntegrationModeServiceEnforcement:
 
 @pytest.mark.unit
 class TestVarietyDistinctionAndSanitization:
-    """Verifies distinction between synthetic HTML fixture and authentic Tiki crawler datasets."""
+    """Verifies behavioral distinction between HTML parser fixtures, authentic Tiki crawler datasets,
+    and synthetic fallbacks, ensuring zero disguise of synthetic data as real crawler sources.
+    """
 
-    def test_distinguish_synthetic_html_and_tiki_crawler(self):
-        synthetic_name = "HTML_Synthetic_JSONLD"
-        tiki_name = "HTML_Tiki_Crawler"
-        assert synthetic_name != tiki_name
-        assert "Synthetic" in synthetic_name
-        assert "Tiki" in tiki_name
+    def test_html_parser_strictly_expects_html_and_rejects_jsonl(self):
+        """Proves that UniversalProductScraper actually parses HTML documents with embedded Schema.org
+        JSON-LD script tags, and returns 0 reviews when given raw JSONL text.
+        """
+        from ingestion.crawler.generic_html import UniversalProductScraper
 
-    def test_pii_sanitization_enforced_across_records(self):
+        scraper = UniversalProductScraper()
+
+        # 1. Valid HTML payload containing Schema.org JSON-LD Review objects
+        html_content = (
+            "<!DOCTYPE html><html><head><title>Product Page</title>"
+            '<script type="application/ld+json">'
+            '{"@context": "https://schema.org/", "@type": "Product", "name": "Phone", "review": ['
+            '{"@type": "Review", "@id": "rv_html_1", "name": "Great", "reviewBody": "Excellent phone", '
+            '"author": {"@type": "Person", "name": "customer_1"}, "reviewRating": {"@type": "Rating", "ratingValue": 5}}'
+            ']}'
+            "</script></head><body><h1>Phone</h1></body></html>"
+        )
+        extracted = scraper.extract_reviews_from_html(html_content, product_id="prod_1")
+        assert len(extracted) == 1
+        assert extracted[0]["review_id"] == "rv_html_1"
+        assert extracted[0]["review_text"] == "Excellent phone"
+
+        # 2. Raw JSONL content passed into HTML parser must extract 0 reviews,
+        # proving that HTML parser is strictly coupled to HTML structure and cannot parse raw JSONL
+        raw_jsonl = '{"review_id": "rv_jsonl_1", "review_text": "Good"}\n{"review_id": "rv_jsonl_2"}\n'
+        extracted_from_jsonl = scraper.extract_reviews_from_html(raw_jsonl, product_id="prod_1")
+        assert len(extracted_from_jsonl) == 0, "HTML parser must reject non-HTML JSONL text"
+
+    def test_tiki_crawler_format_labeled_jsonl_and_parsed_as_jsonl(self):
+        """Verifies that the Tiki crawler output is correctly labeled as JSONL (not HTML)
+        and parsed via FileLoader.load_records.
+        """
+        from ingestion.file_loader.loader import FileLoader
+
+        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False, encoding="utf-8") as f:
+            f.write(json.dumps({"review_id": "tiki_rv_101", "rating": 5.0, "user_id": "raw_user_1"}) + "\n")
+            temp_path = Path(f.name)
+
+        try:
+            records = FileLoader.load_records(temp_path, anonymize_pii=True)
+            assert len(records) == 1
+            assert records[0]["review_id"] == "tiki_rv_101"
+            assert records[0]["user_id"].startswith("anon_")
+        finally:
+            if temp_path.exists():
+                temp_path.unlink()
+
+    def test_integration_fails_loudly_when_tiki_crawler_fails_and_no_snapshot(self):
+        """In integration mode, when Tiki crawler fails and no snapshot exists, benchmark_variety
+        must raise RuntimeError refusing to disguise fallback data as real crawler dataset.
+        """
+        with tempfile.TemporaryDirectory() as empty_dir:
+            with patch("ingestion.crawler.tiki.TikiCrawler.crawl_category", side_effect=Exception("Network down")), \
+                 patch("scripts.benchmark.REPO_ROOT", Path(empty_dir)):
+                with pytest.raises(RuntimeError, match="Integration mode strictly requires a live Tiki crawler"):
+                    benchmark_variety(records_per_format=10, effective_mode="integration")
+
+    def test_local_fallback_cannot_disguise_as_real_crawler(self):
+        """In local/offline mode when live crawler fails and snapshot does not exist,
+        category must be 'synthetic_fallback', NEVER 'real_crawler_html' or 'real_crawler_jsonl'.
+        """
+        with tempfile.TemporaryDirectory() as empty_dir:
+            with patch("ingestion.crawler.tiki.TikiCrawler.crawl_category", side_effect=Exception("Offline")), \
+                 patch("scripts.benchmark.REPO_ROOT", Path(empty_dir)):
+                results = benchmark_variety(records_per_format=10, effective_mode="local")
+                tiki_row = next(r for r in results if r["format"] == "JSONL_Tiki_Crawler")
+                assert tiki_row["category"] == "synthetic_fallback"
+                assert tiki_row["category"] != "real_crawler_html"
+                assert tiki_row["category"] != "real_crawler_jsonl"
+
+    def test_pii_sanitization_in_variety_fallback(self):
+        """Proves that raw customer emails and unhashed user IDs in the fallback branch
+        are strictly sanitized and hashed at ingest.
+        """
         records = [
             {"review_id": "rv_1", "user_id": "raw_user_1", "customer_email": "test@example.com"},
             {"review_id": "rv_2", "user_id": "raw_user_2", "customer_email": "test2@example.com"},

@@ -13,7 +13,7 @@ Benchmarks the real execution pipeline:
             Disallows silent offline fallback in integration mode.
   - Variety: Multi-format Parse -> PII Hash -> Bronze Storage -> Spark Batch ETL ->
             Silver & Quarantine Parquet across JSON, JSONL, CSV, TSV, Parquet,
-            HTML_Synthetic_JSONLD (Schema.org fixture), and HTML_Tiki_Crawler (real Tiki crawler).
+            HTML_Synthetic_JSONLD (Schema.org fixture), and JSONL_Tiki_Crawler (authentic Tiki crawler dataset).
 
 Directly regenerates synchronized empirical reports:
   - docs/reports/benchmark_3v.json
@@ -32,6 +32,7 @@ import shutil
 import statistics
 import sys
 import tempfile
+import threading
 import time
 import uuid
 from pathlib import Path
@@ -63,48 +64,141 @@ from storage.storage_manager import storage
 # -----------------------------------------------------------------------------
 
 class ResourceMonitor:
-    """Empirically tracks process CPU % and peak RSS RAM (MB) across a benchmark run."""
+    """Continuously tracks process tree CPU % and peak RSS RAM (MB) across a benchmark run.
 
-    def __init__(self):
+    Uses a background daemon thread sampling at periodic intervals (default 50ms) across
+    both the parent Python process and all child processes (including PySpark Java JVM,
+    Py4J gateway, and worker subprocesses).
+
+    Note:
+      These metrics capture the local client process tree (Python harness + child JVM).
+      They should NOT be interpreted as the total cluster-wide resource utilization
+      in a distributed Spark environment with remote executors/nodes.
+    """
+
+    def __init__(self, interval_sec: float = 0.05):
+        self._interval = interval_sec
         self._proc = psutil.Process()
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
         self._t0: float = 0.0
-        self._cpu0: Any = None
-        self._peak_rss: int = 0
+        self._parent_cpu0: float = 0.0
+        self._initial_child_cpu: Dict[int, float] = {}
+        self._last_child_cpu: Dict[int, float] = {}
+        self._accum_child_cpu: float = 0.0
+        self._peak_py_rss: int = 0
+        self._peak_children_rss: int = 0
+        self._peak_tree_rss: int = 0
+        self.sample_count: int = 0
+
+    def _get_cpu_sum(self, p: psutil.Process) -> float:
+        try:
+            t = p.cpu_times()
+            return float(t.user + t.system)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            return 0.0
+
+    def _sample(self) -> None:
+        try:
+            py_rss = self._proc.memory_info().rss
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            py_rss = 0
+
+        children_rss = 0
+        active_children: Dict[int, float] = {}
+        try:
+            children = self._proc.children(recursive=True)
+        except Exception:
+            children = []
+
+        for c in children:
+            try:
+                c_rss = c.memory_info().rss
+                children_rss += c_rss
+                c_cpu = self._get_cpu_sum(c)
+                active_children[c.pid] = c_cpu
+                if c.pid not in self._initial_child_cpu:
+                    self._initial_child_cpu[c.pid] = c_cpu
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+
+        tree_rss = py_rss + children_rss
+
+        if py_rss > self._peak_py_rss:
+            self._peak_py_rss = py_rss
+        if children_rss > self._peak_children_rss:
+            self._peak_children_rss = children_rss
+        if tree_rss > self._peak_tree_rss:
+            self._peak_tree_rss = tree_rss
+
+        # Track terminated children CPU delta
+        for pid, last_cpu in list(self._last_child_cpu.items()):
+            if pid not in active_children:
+                init_cpu = self._initial_child_cpu.get(pid, last_cpu)
+                self._accum_child_cpu += max(0.0, last_cpu - init_cpu)
+                self._initial_child_cpu.pop(pid, None)
+
+        self._last_child_cpu = active_children
+        self.sample_count += 1
+
+    def _sample_loop(self) -> None:
+        while self._running:
+            self._sample()
+            time.sleep(self._interval)
 
     def start(self) -> None:
         self._t0 = time.perf_counter()
-        try:
-            self._cpu0 = self._proc.cpu_times()
-            self._peak_rss = self._proc.memory_info().rss
-        except Exception:
-            self._cpu0 = None
-            self._peak_rss = 0
+        self._parent_cpu0 = self._get_cpu_sum(self._proc)
+        self._accum_child_cpu = 0.0
+        self._initial_child_cpu.clear()
+        self._last_child_cpu.clear()
+        self._peak_py_rss = 0
+        self._peak_children_rss = 0
+        self._peak_tree_rss = 0
+        self.sample_count = 0
+
+        self._sample()
+        self._running = True
+        self._thread = threading.Thread(target=self._sample_loop, daemon=True)
+        self._thread.start()
 
     def sample(self) -> None:
-        try:
-            rss = self._proc.memory_info().rss
-            if rss > self._peak_rss:
-                self._peak_rss = rss
-        except Exception:
-            pass
+        """Manual sample hook for explicit sampling points."""
+        self._sample()
 
     def stop(self) -> Dict[str, float]:
-        self.sample()
+        self._running = False
+        if self._thread is not None:
+            self._thread.join(timeout=1.0)
+            self._thread = None
+        self._sample()
+
         wall = max(0.0001, time.perf_counter() - self._t0)
-        cpu_pct = 0.0
-        if self._cpu0 is not None:
-            try:
-                cpu1 = self._proc.cpu_times()
-                user_sec = max(0.0, cpu1.user - self._cpu0.user)
-                sys_sec = max(0.0, cpu1.system - self._cpu0.system)
-                cpu_pct = round(((user_sec + sys_sec) / wall) * 100.0, 1)
-            except Exception:
-                cpu_pct = 0.0
-        peak_mb = round(self._peak_rss / (1024 * 1024), 2)
+        parent_cpu1 = self._get_cpu_sum(self._proc)
+        parent_delta = max(0.0, parent_cpu1 - self._parent_cpu0)
+
+        child_delta = self._accum_child_cpu
+        for pid, last_cpu in self._last_child_cpu.items():
+            init_cpu = self._initial_child_cpu.get(pid, last_cpu)
+            child_delta += max(0.0, last_cpu - init_cpu)
+
+        total_cpu_sec = parent_delta + child_delta
+        cpu_pct = round((total_cpu_sec / wall) * 100.0, 1)
+        py_cpu_pct = round((parent_delta / wall) * 100.0, 1)
+
+        peak_tree_mb = round(self._peak_tree_rss / (1024 * 1024), 2)
+        peak_py_mb = round(self._peak_py_rss / (1024 * 1024), 2)
+        peak_child_mb = round(self._peak_children_rss / (1024 * 1024), 2)
+
         return {
             "wall_sec": round(wall, 4),
             "cpu_percent": cpu_pct,
-            "peak_ram_mb": peak_mb,
+            "python_cpu_percent": py_cpu_pct,
+            "peak_ram_mb": peak_tree_mb,
+            "peak_tree_ram_mb": peak_tree_mb,
+            "peak_python_ram_mb": peak_py_mb,
+            "peak_children_ram_mb": peak_child_mb,
+            "sample_count": self.sample_count,
         }
 
 
@@ -130,12 +224,23 @@ def compute_percentiles(values: List[float]) -> Dict[str, float]:
 
 
 def compute_median_run(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Computes a consolidated row taking median values across repeated benchmark runs."""
+    """Computes a consolidated row taking median values across repeated benchmark runs
+    along with min, max, and standard deviation stability indicators.
+    """
     if not runs:
         raise ValueError("Cannot compute median over an empty runs list.")
     if len(runs) == 1:
         res = dict(runs[0])
         res["iterations"] = 1
+        res["duration_min_sec"] = res.get("duration_sec", 0.0)
+        res["duration_max_sec"] = res.get("duration_sec", 0.0)
+        res["duration_std_sec"] = 0.0
+        res["spark_etl_min_sec"] = res.get("spark_etl_sec", 0.0)
+        res["spark_etl_max_sec"] = res.get("spark_etl_sec", 0.0)
+        res["spark_etl_std_sec"] = 0.0
+        res["throughput_min_rps"] = res.get("throughput_rps", 0.0)
+        res["throughput_max_rps"] = res.get("throughput_rps", 0.0)
+        res["iteration_runs"] = runs
         return res
 
     base = dict(runs[0])
@@ -146,13 +251,33 @@ def compute_median_run(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
         "throughput_rps",
         "spark_throughput_rps",
         "cpu_percent",
+        "python_cpu_percent",
         "peak_ram_mb",
+        "peak_tree_ram_mb",
+        "peak_python_ram_mb",
+        "peak_children_ram_mb",
     ]
     for k in numeric_keys:
-        if k in base:
-            vals = [float(r[k]) for r in runs if k in r]
-            if vals:
-                base[k] = round(float(statistics.median(vals)), 4 if "sec" in k else 1)
+        vals = [float(r[k]) for r in runs if k in r]
+        if vals:
+            base[k] = round(float(statistics.median(vals)), 4 if "sec" in k else 1)
+
+    durations = [float(r["duration_sec"]) for r in runs if "duration_sec" in r]
+    if durations:
+        base["duration_min_sec"] = round(min(durations), 4)
+        base["duration_max_sec"] = round(max(durations), 4)
+        base["duration_std_sec"] = round(statistics.stdev(durations), 4) if len(durations) > 1 else 0.0
+
+    spark_etls = [float(r["spark_etl_sec"]) for r in runs if "spark_etl_sec" in r]
+    if spark_etls:
+        base["spark_etl_min_sec"] = round(min(spark_etls), 4)
+        base["spark_etl_max_sec"] = round(max(spark_etls), 4)
+        base["spark_etl_std_sec"] = round(statistics.stdev(spark_etls), 4) if len(spark_etls) > 1 else 0.0
+
+    tps = [float(r["throughput_rps"]) for r in runs if "throughput_rps" in r]
+    if tps:
+        base["throughput_min_rps"] = round(min(tps), 1)
+        base["throughput_max_rps"] = round(max(tps), 1)
 
     base["iterations"] = len(runs)
     base["iteration_runs"] = runs
@@ -271,6 +396,9 @@ def benchmark_volume(
             except TypeError:
                 storage.backend.write_json(bronze_key, envelopes)
             bronze_write_sec = time.perf_counter() - t_b0
+            del reviews, envelopes
+            import gc
+            gc.collect()
 
             # Boundary 2: Spark Batch ETL
             t_s0 = time.perf_counter()
@@ -327,19 +455,35 @@ def benchmark_volume(
                 "quarantine_bytes": int(quarantine_bytes),
                 "total_storage_bytes": int(total_bytes),
                 "cpu_percent": mon_metrics["cpu_percent"],
+                "python_cpu_percent": mon_metrics.get("python_cpu_percent", 0.0),
                 "peak_ram_mb": mon_metrics["peak_ram_mb"],
+                "peak_tree_ram_mb": mon_metrics.get("peak_tree_ram_mb", mon_metrics["peak_ram_mb"]),
+                "peak_python_ram_mb": mon_metrics.get("peak_python_ram_mb", 0.0),
+                "peak_children_ram_mb": mon_metrics.get("peak_children_ram_mb", 0.0),
                 "accounting_reconciled": True,
             }
             size_runs.append(run_row)
+            if iters > 1:
+                print(
+                    f"    - Iteration {iter_idx + 1}/{iters}: total={total_elapsed:.3f}s "
+                    f"(write={bronze_write_sec:.3f}s, spark={spark_etl_sec:.3f}s) | "
+                    f"rate={total_throughput:,.1f} rec/s | DQ={res['dq_score']}% | "
+                    f"RAM(tree)={mon_metrics['peak_ram_mb']:.1f}MB (py: {mon_metrics.get('peak_python_ram_mb', 0.0):.1f}MB) | "
+                    f"CPU={mon_metrics['cpu_percent']}%"
+                )
 
         med_row = compute_median_run(size_runs)
-        iter_label = f" (median of {iters} runs)" if iters > 1 else ""
+        iter_label = (
+            f" (median of {iters} runs, range: {med_row.get('duration_min_sec', 0.0):.3f}s - {med_row.get('duration_max_sec', 0.0):.3f}s, std: {med_row.get('duration_std_sec', 0.0):.3f}s)"
+            if iters > 1
+            else ""
+        )
         print(
-            f"  [Volume] seed={med_row['seed']} | input={med_row['records_input']:,}{iter_label} | "
+            f"  [Volume Consolidated] seed={med_row['seed']} | input={med_row['records_input']:,}{iter_label} | "
             f"write={med_row['bronze_write_sec']:.3f}s | spark={med_row['spark_etl_sec']:.3f}s | total={med_row['duration_sec']:.3f}s | "
             f"rate={med_row['throughput_rps']:,.1f} rec/s (spark: {med_row['spark_throughput_rps']:,.1f}) | "
             f"valid={med_row['valid_count']:,} | quarantine={med_row['quarantine_count']:,} | dup={med_row['duplicate_count']:,} | "
-            f"DQ={med_row['dq_score']}% | CPU={med_row['cpu_percent']}% | RAM={med_row['peak_ram_mb']:.1f}MB | "
+            f"DQ={med_row['dq_score']}% | CPU={med_row['cpu_percent']}% | RAM(tree)={med_row['peak_ram_mb']:.1f}MB | "
             f"storage={med_row['total_storage_bytes']:,} B (B:{med_row['bronze_bytes']:,} / S:{med_row['silver_bytes']:,} / Q:{med_row['quarantine_bytes']:,})"
         )
         results.append(med_row)
@@ -372,6 +516,8 @@ def benchmark_velocity(
         rates = [50, 200, 500, 1000]
 
     is_local = effective_mode not in ("integration", "production")
+    settings.set_runtime_mode(effective_mode)
+    storage.set_mode(effective_mode)
 
     if not is_local:
         if not check_kafka(strict=False):
@@ -395,7 +541,11 @@ def benchmark_velocity(
     results: List[Dict[str, Any]] = []
 
     suite_group_id = f"sentinel-bench-velocity-{seed}-{uuid.uuid4().hex[:6]}"
-    consumer = RawConsumer(group_id=suite_group_id, auto_offset_reset="earliest")
+    consumer = RawConsumer(
+        bronze_dir=(settings.storage.local_data_dir / "bronze") if is_local else None,
+        group_id=suite_group_id,
+        auto_offset_reset="earliest"
+    )
     producer = StreamProducer(enable_offline_buffer=is_local)
 
     try:
@@ -435,15 +585,45 @@ def benchmark_velocity(
             if is_local:
                 producer.virtual_queue.clear()
 
-            # Producer stage: track send time & embed send timestamps
+            # Streaming execution: Consumer runs concurrently in a worker thread,
+            # polling/processing messages and recording individual completion timestamps
+            # while Producer sends messages pacing at (1.0 / rate).
+            cons_res: Dict[str, Any] = {}
+            cons_errors: List[Exception] = []
+            stop_event = threading.Event()
+            cons_start_barrier = threading.Event()
+            t_cons_start = 0.0
+            t_cons_end = 0.0
+
+            def consumer_worker():
+                nonlocal t_cons_start, t_cons_end
+                t_cons_start = time.perf_counter()
+                cons_start_barrier.set()
+                try:
+                    res = consumer.consume_batch_once(
+                        topics=[settings.kafka.topic_reviews],
+                        max_records=msg_count,
+                        timeout_ms=max(10000, int(msg_count / rate * 1000) + 5000),
+                        offline_records=producer.virtual_queue if is_local else None,
+                        live_stream=True,
+                        stop_event=stop_event,
+                    )
+                    cons_res.update(res)
+                except Exception as ce:
+                    cons_errors.append(ce)
+                finally:
+                    t_cons_end = time.perf_counter()
+
+            consumer_thread = threading.Thread(
+                target=consumer_worker,
+                name=f"velocity-consumer-{rate}",
+                daemon=True,
+            )
+            consumer_thread.start()
+            cons_start_barrier.wait(timeout=2.0)
+
             send_errors = 0
             t_prod_start = time.perf_counter()
-            send_timestamps = {}
-            for r in reviews:
-                now_ms = time.time() * 1000.0
-                r["sent_epoch_ms"] = now_ms
-                send_timestamps[r["review_id"]] = now_ms
-
             try:
                 sent, actual_prod_rate = producer.produce_batch(
                     settings.kafka.topic_reviews,
@@ -454,24 +634,22 @@ def benchmark_velocity(
                 )
             except Exception as pe:
                 send_errors += 1
+                stop_event.set()
                 raise pe
-            prod_duration = time.perf_counter() - t_prod_start
+            finally:
+                prod_duration = time.perf_counter() - t_prod_start
 
-            # Consumer stage: consume records, route valid -> Bronze, invalid -> DLQ
-            consume_errors = 0
-            offline_items = list(producer.virtual_queue) if is_local else None
-            t_cons_start = time.perf_counter()
-            try:
-                cons_res = consumer.consume_batch_once(
-                    topics=[settings.kafka.topic_reviews],
-                    max_records=sent,
-                    timeout_ms=5000,
-                    offline_records=offline_items,
-                )
-            except Exception as ce:
-                consume_errors += 1
-                raise ce
-            cons_duration = time.perf_counter() - t_cons_start
+            # Wait for consumer to finish processing all sent messages
+            consumer_thread.join(timeout=max(10.0, (msg_count / rate) + 5.0))
+            if consumer_thread.is_alive():
+                stop_event.set()
+                consumer_thread.join(timeout=2.0)
+
+            consume_errors = len(cons_errors)
+            if cons_errors:
+                raise cons_errors[0]
+
+            cons_duration = max(t_cons_end - t_cons_start, 0.0001) if t_cons_end > 0 else 0.0001
 
             consumed = int(cons_res.get("records_consumed", 0))
             valid_to_bronze = int(cons_res.get("records_valid", 0))
@@ -487,19 +665,8 @@ def benchmark_velocity(
                     f"Velocity integration failed: produced {sent} messages to Kafka, but 0 consumed."
                 )
 
-            # Measure end-to-end latency per message
-            latencies_ms: List[float] = []
-            recv_now_ms = time.time() * 1000.0
-            if is_local and offline_items:
-                for item in offline_items:
-                    s_ms = item["value"].get("sent_epoch_ms", item.get("sent_at", 0) * 1000.0)
-                    latencies_ms.append(max(0.0, recv_now_ms - s_ms))
-            else:
-                for r in reviews[:consumed]:
-                    s_ms = send_timestamps.get(r["review_id"], 0)
-                    if s_ms > 0:
-                        latencies_ms.append(max(0.1, recv_now_ms - s_ms))
-
+            # Extract true per-message latencies (Li = t_processed,i - t_sent,i) measured by consumer
+            latencies_ms: List[float] = cons_res.get("latencies_ms", [])
             latency_stats = compute_percentiles(latencies_ms)
 
             # Consumer lag
@@ -516,7 +683,9 @@ def benchmark_velocity(
             else:
                 consumer_lag = max(0, sent - consumed)
 
-            e2e_duration = prod_duration + cons_duration
+            e2e_start = min(t_prod_start, t_cons_start) if t_cons_start > 0 else t_prod_start
+            e2e_end = max(t_prod_start + prod_duration, t_cons_end)
+            e2e_duration = max(e2e_end - e2e_start, 0.0001)
             e2e_rate = consumed / e2e_duration if e2e_duration > 0 else 0.0
             cons_throughput = consumed / cons_duration if cons_duration > 0 else 0.0
 
@@ -585,12 +754,14 @@ def benchmark_variety(
       - TSV (.tsv)
       - Parquet (.parquet)
       - HTML_Synthetic_JSONLD (Schema.org JSON-LD semi-structured HTML fixture)
-      - HTML_Tiki_Crawler (Authentic Tiki live crawler / realistic HTML payload)
+      - JSONL_Tiki_Crawler (Authentic Tiki live crawler / realistic JSONL payload)
     """
     print(
         f"\n--- [3/3] Running VARIETY Benchmark "
         f"(Full Parse -> Validate -> Transform -> Silver/Quarantine, seed={seed}, n={records_per_format}) ---"
     )
+    settings.set_runtime_mode(effective_mode)
+    storage.set_mode(effective_mode)
     etl_job = spark_etl or SparkBatchETLJob()
     products = generate_products(seed=seed)
 
@@ -663,17 +834,20 @@ def benchmark_variety(
         synthetic_html_file = temp_dir / "product_reviews_synthetic.html"
         synthetic_html_file.write_text(synthetic_html_doc, encoding="utf-8")
 
-        # 2. Authentic Tiki Crawler Dataset / HTML payload
-        tiki_html_file = temp_dir / "tiki_reviews_crawler.jsonl"
+        # 2. Authentic Tiki Crawler Dataset / Export payload (JSONL format)
+        tiki_file = temp_dir / "tiki_reviews_crawler.jsonl"
         tiki_reviews_data: List[Dict[str, Any]] = []
+        tiki_category = None
 
         is_integration = effective_mode in ("integration", "production")
         if is_integration:
             try:
                 crawler = TikiCrawler(allow_public_fallback=False)
-                crawled_revs = crawler.search_products_and_reviews("smartphones", limit=3, reviews_per_product=3)
+                crawl_res = crawler.crawl_category("smartphones", max_products=3, reviews_per_product=3)
+                crawled_revs = crawl_res.get("reviews", []) if isinstance(crawl_res, dict) else []
                 if crawled_revs:
                     tiki_reviews_data = crawled_revs
+                    tiki_category = "real_crawler_jsonl"
             except Exception:
                 tiki_reviews_data = []
 
@@ -682,9 +856,16 @@ def benchmark_variety(
             if snapshot_path.exists():
                 with open(snapshot_path, "r", encoding="utf-8") as f:
                     tiki_reviews_data = [json.loads(line) for line in f if line.strip()]
+                tiki_category = "authentic_snapshot_jsonl"
 
         if not tiki_reviews_data:
-            # Fallback to realistic raw Tiki reviews structure
+            if is_integration:
+                raise RuntimeError(
+                    "Integration mode strictly requires a live Tiki crawler connection or verified snapshot; "
+                    "refusing silent fallback to synthetic data with real crawler claim."
+                )
+            # Local/offline fallback: Must NOT claim to be real crawler
+            tiki_category = "synthetic_fallback"
             tiki_reviews_data = [
                 {
                     "review_id": f"tiki_rv_{20000000 + i}",
@@ -704,7 +885,7 @@ def benchmark_variety(
                 for i in range(min(records_per_format, max(10, tiki_limit)))
             ]
 
-        with open(tiki_html_file, "w", encoding="utf-8") as f:
+        with open(tiki_file, "w", encoding="utf-8") as f:
             for item in tiki_reviews_data:
                 f.write(json.dumps(item, ensure_ascii=False) + "\n")
 
@@ -715,7 +896,7 @@ def benchmark_variety(
             ("TSV", format_files["TSV"][0], "synthetic_file"),
             ("Parquet", format_files["Parquet"][0], "synthetic_file"),
             ("HTML_Synthetic_JSONLD", synthetic_html_file, "synthetic_html"),
-            ("HTML_Tiki_Crawler", tiki_html_file, "real_crawler_html"),
+            ("JSONL_Tiki_Crawler", tiki_file, tiki_category),
         ]
 
         for fmt_name, fpath, category in all_cases:
@@ -730,7 +911,7 @@ def benchmark_variety(
                 loaded_records = scraper.extract_reviews_from_html(
                     html_text, product_id=prod_meta["product_id"]
                 )
-            elif fmt_name == "HTML_Tiki_Crawler":
+            elif fmt_name == "JSONL_Tiki_Crawler":
                 loaded_records = FileLoader.load_records(fpath, anonymize_pii=True)
             else:
                 loaded_records = FileLoader.load_records(fpath, anonymize_pii=True)
@@ -848,6 +1029,7 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
 
     # 1. docs/reports/benchmark_report.md
     md_path = report_dir / "benchmark_report.md"
+    vol_iters = meta.get("volume_iterations", 1)
     lines = [
         "# SentinelAI 3V Empirical Benchmark Report",
         "",
@@ -856,35 +1038,71 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
         f"**Storage Backend:** `{meta['storage_backend']}`  ",
         f"**Base Deterministic Seed:** `{meta['seed']}`  ",
         f"**PII Anonymization at Ingest:** `{meta['pii_anonymized_at_ingest']}`  ",
-        f"**Volume Iterations (Median):** `{meta.get('volume_iterations', 1)}`",
+        f"**Volume Iterations (Median):** `{vol_iters}` (reporting median across repeated runs)",
         "",
         "## 1. Volume Benchmark (Bronze Storage Write + Spark Batch ETL -> Silver & Quarantine Parquet)",
         "",
         "> [!NOTE]",
         "> **Measurement Boundary:** Stage 1 Bronze Storage Write + Stage 2 Spark Batch ETL (Read Bronze S3A/JSON -> Schema Cast -> Validation & Quarantine -> Window Deduplication -> Silver Parquet Write). Excludes Kafka streaming.",
+        ">",
+        "> **Resource Measurement Boundary (CPU / RAM):** CPU % and peak RSS RAM (MB) are continuously sampled every 50ms via a background thread across the full process tree (Python benchmark harness + PySpark Java JVM / Py4J children). These numbers reflect the local client/driver benchmark process tree and should **not** be interpreted as the cluster-wide distributed resource utilization of an arbitrary multi-node Spark cluster.",
         "",
-        "| Seed | Input Records | Valid (Silver) | Quarantined | Deduplicated | DQ Score | Bronze Write (s) | Spark ETL (s) | Total Time (s) | Spark Rate (rec/s) | Total Rate (rec/s) | CPU % | RAM (MB) | Bronze (B) | Silver (B) | Quarantine (B) |",
-        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
+        "| Seed | Input Records | Valid (Silver) | Quarantined | Deduplicated | DQ Score | Bronze Write (s) | Spark ETL (s) | Total Time (s) | Stability Range (s) | Spark Rate (rec/s) | Total Rate (rec/s) | CPU % (Tree) | RAM Tree (MB) | RAM Py (MB) | Bronze (B) | Silver (B) | Quarantine (B) |",
+        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
     ]
     for v in vol_rows:
         bw = v.get("bronze_write_sec", 0.0)
         se = v.get("spark_etl_sec", 0.0)
         st = v.get("spark_throughput_rps", v["throughput_rps"])
         cpu = v.get("cpu_percent", 0.0)
-        ram = v.get("peak_ram_mb", 0.0)
+        ram = v.get("peak_tree_ram_mb", v.get("peak_ram_mb", 0.0))
+        py_ram = v.get("peak_python_ram_mb", 0.0)
+        stab_range = (
+            f"{v.get('duration_min_sec', v['duration_sec']):.4f} - {v.get('duration_max_sec', v['duration_sec']):.4f}"
+            if v.get("duration_min_sec") is not None and v.get("iterations", 1) > 1
+            else f"{v['duration_sec']:.4f}"
+        )
         lines.append(
             f"| {v['seed']} | {v['records_input']:,} | {v['valid_count']:,} | {v['quarantine_count']:,} | "
             f"{v['duplicate_count']:,} | {v['dq_score']}% | {bw:.4f}s | {se:.4f}s | {v['duration_sec']:.4f}s | "
-            f"{st:,.1f} | {v['throughput_rps']:,.1f} | {cpu}% | {ram:.1f} | "
+            f"{stab_range}s | {st:,.1f} | {v['throughput_rps']:,.1f} | {cpu}% | {ram:.1f} | {py_ram:.1f} | "
             f"{v['bronze_bytes']:,} | {v['silver_bytes']:,} | {v['quarantine_bytes']:,} |"
         )
+
+    # Detailed iteration breakdown if any volume row has multiple iterations
+    has_multi_iters = any(len(v.get("iteration_runs", [])) > 1 for v in vol_rows)
+    if has_multi_iters:
+        lines.extend([
+            "",
+            "### 1.1 Volume Iterations Stability Breakdown",
+            "",
+            "| Input Records | Iteration | Bronze Write (s) | Spark ETL (s) | Total Time (s) | Spark Rate (rec/s) | Total Rate (rec/s) | CPU % | RAM Tree (MB) | RAM Py (MB) | Accounting Match |",
+            "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
+        ])
+        for v in vol_rows:
+            for ir in v.get("iteration_runs", []):
+                ir_bw = ir.get("bronze_write_sec", 0.0)
+                ir_se = ir.get("spark_etl_sec", 0.0)
+                ir_st = ir.get("spark_throughput_rps", ir.get("throughput_rps", 0.0))
+                ir_tot = ir.get("duration_sec", 0.0)
+                ir_tp = ir.get("throughput_rps", 0.0)
+                ir_cpu = ir.get("cpu_percent", 0.0)
+                ir_ram = ir.get("peak_tree_ram_mb", ir.get("peak_ram_mb", 0.0))
+                ir_py = ir.get("peak_python_ram_mb", 0.0)
+                ir_acc = "PASSED" if ir.get("accounting_reconciled") else "FAILED"
+                lines.append(
+                    f"| {ir['records_input']:,} | Run {ir.get('iteration', 1)} | {ir_bw:.4f}s | {ir_se:.4f}s | "
+                    f"{ir_tot:.4f}s | {ir_st:,.1f} | {ir_tp:,.1f} | {ir_cpu}% | {ir_ram:.1f} | {ir_py:.1f} | {ir_acc} |"
+                )
 
     lines.extend([
         "",
         "## 2. Velocity Benchmark (Kafka Producer -> KRaft Broker -> RawConsumer -> Bronze / DLQ)",
         "",
         "> [!NOTE]",
-        "> **Transport Mode:** `real_kafka` enforces live Kafka KRaft broker connection; offline buffer is disallowed in integration mode. Latencies p50/p95/p99 measure true message dispatch to consumer commit.",
+        "> **Transport Mode:** `real_kafka` enforces live Kafka KRaft broker connection; offline buffer is disallowed in integration mode.",
+        ">",
+        "> **Per-Message Latency Profiling ($L_i = t_{\\text{processed}, i} - t_{\\text{sent}, i}$):** Monotonic clocks (`time.perf_counter()`) timestamp each individual message at dispatch and upon consumer schema validation/quarantine routing. Percentiles p50/p95/p99 reflect actual per-message processing latency, not aggregate batch duration.",
         "",
         "| Seed | Transport | Target (msg/s) | Sent | Consumed | Valid (Bronze) | DLQ | Lag | Produce Rate (msg/s) | Consume Rate (msg/s) | Latency p50 (ms) | Latency p95 (ms) | Latency p99 (ms) | E2E Time (s) | E2E Rate (msg/s) | Bronze (B) |",
         "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
@@ -942,13 +1160,14 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
         f"- **Generated At**: `{results['timestamp']}`",
         f"- **Runtime Mode**: `{meta['runtime_mode']}` (`{meta['storage_backend']}`)",
         f"- **Deterministic Seed**: `{meta['seed']}`",
-        f"- **Volume Iterations**: `{meta.get('volume_iterations', 1)}` (reporting median)",
+        f"- **Volume Iterations**: `{meta.get('volume_iterations', 1)}` (reporting median with min-max stability range)",
         "",
         "## 1. Volume",
         f"- **Executed Scale**: Empirically benchmarked from **{min_vol:,}** to **{max_vol:,}** records per batch (`sizes={[r['records_input'] for r in vol_rows]}`).",
         f"- **Peak Measured Spark Batch Throughput**: **{peak_spark_rate:,.1f} records/sec** (Stage 2: Spark S3A read, envelope unpacking, schema cast, validation, quarantine routing, window deduplication, and Silver Parquet write).",
         f"- **Peak Total End-to-End Throughput**: **{peak_total_rate:,.1f} records/sec** (Stage 1 Bronze Write + Stage 2 Spark Batch ETL).",
         "- **Measurement Boundary**: Explicitly limited to Bronze write + Spark ETL. Kafka is not involved in this stage.",
+        "- **Resource Tracking (CPU / RAM)**: Continuously sampled at 50ms across the full process tree (Python harness + Java JVM / Py4J children). Reflects local client/driver benchmark process tree, not distributed cluster total.",
         "- **Quarantine & Deduplication Accounting**: Every run enforces `records_input == valid_unique + duplicate_count + quarantine_count` and tracks exact byte footprint across Bronze JSON, Silver Parquet, and Quarantine Parquet.",
         "",
         "## 2. Velocity",
@@ -974,32 +1193,64 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
         f"- **Thời điểm chạy (Timestamp)**: `{results['timestamp']}`",
         f"- **Chế độ chạy (Runtime Mode)**: `{meta['runtime_mode']}` (`{meta['storage_backend']}`)",
         f"- **Seed cố định (Deterministic Seed)**: `{meta['seed']}`",
-        f"- **Số lần chạy lặp lại (Iterations)**: `{meta.get('volume_iterations', 1)}` (báo cáo giá trị median)",
+        f"- **Số lần chạy lặp lại (Iterations)**: `{meta.get('volume_iterations', 1)}` (báo cáo giá trị median và dải min-max)",
         "",
         "---",
         "",
         "## 1. Kết Quả Volume (Bronze -> Spark Batch ETL -> Silver & Quarantine)",
         "",
         "> [!NOTE]",
-        "> **Ranh giới đo lường:** Giai đoạn 1 ghi Bronze Storage + Giai đoạn 2 Spark Batch ETL (đọc Bronze -> chuẩn hóa kiểu -> kiểm định & cách ly -> khử trùng lặp -> ghi Silver Parquet). Không bao gồm Kafka.",
+        "> **Ranh giới đo lường (Measurement Boundary):** Giai đoạn 1 ghi Bronze Storage + Giai đoạn 2 Spark Batch ETL (đọc Bronze -> chuẩn hóa kiểu -> kiểm định & cách ly -> khử trùng lặp -> ghi Silver Parquet). Không bao gồm Kafka.",
+        ">",
+        "> **Lưu ý về số đo CPU / RAM:** Chỉ số CPU % và RAM (MB) được đo đạc liên tục (sampling định kỳ 50ms bằng background thread) trên toàn bộ cây tiến trình cục bộ (tiến trình Python + tiến trình con Java JVM / Py4J worker). Số đo này phản ánh tài nguyên client chạy benchmark cục bộ, **không nên được diễn giải là tổng tài nguyên phân tán của toàn bộ cụm Spark** trong môi trường cluster đa node độc lập (như YARN/K8s/Standalone workers chạy ngoài cây tiến trình cục bộ).",
         "",
-        f"Kịch bản chạy thực tế với các cỡ dữ liệu `{[r['records_input'] for r in vol_rows]}` bản ghi (có tiêm tỷ lệ bản ghi lỗi `dirty_ratio={meta['dirty_ratio']}` và bản ghi trùng `duplicate_ratio={meta['duplicate_ratio']}`). Không ngoại suy hay quảng cáo số liệu 1 triệu bản ghi khi kịch bản đó không nằm trong danh sách chạy.",
+        f"Kịch bản chạy thực tế với các cỡ dữ liệu `{[r['records_input'] for r in vol_rows]}` bản ghi (có tiêm tỷ lệ bản ghi lỗi `dirty_ratio={meta['dirty_ratio']}` và bản ghi trùng `duplicate_ratio={meta['duplicate_ratio']}`). Mỗi cỡ được chạy lặp lại `{vol_iters}` lần để tính median và kiểm tra độ ổn định giữa các lần chạy.",
         "",
-        "| Seed | Đầu Vào | Hợp Lệ (Silver) | Quarantine | Trùng Lặp | Điểm DQ | Ghi Bronze (s) | Spark ETL (s) | Tổng Thời Gian (s) | Spark Rate (rec/s) | Tổng Rate (rec/s) | CPU % | RAM (MB) | Dung Lượng Bronze (B) | Dung Lượng Silver (B) | Dung Lượng Quarantine (B) |",
-        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
+        "| Seed | Đầu Vào | Hợp Lệ (Silver) | Quarantine | Trùng Lặp | Điểm DQ | Ghi Bronze (s) | Spark ETL (s) | Tổng Thời Gian (s) | Độ Ổn Định Min-Max (s) | Spark Rate (rec/s) | Tổng Rate (rec/s) | CPU % (Tree) | RAM Tree (MB) | RAM Py (MB) | Dung Lượng Bronze (B) | Dung Lượng Silver (B) | Dung Lượng Quarantine (B) |",
+        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
     ]
     for v in vol_rows:
         bw = v.get("bronze_write_sec", 0.0)
         se = v.get("spark_etl_sec", 0.0)
         st = v.get("spark_throughput_rps", v["throughput_rps"])
         cpu = v.get("cpu_percent", 0.0)
-        ram = v.get("peak_ram_mb", 0.0)
+        ram = v.get("peak_tree_ram_mb", v.get("peak_ram_mb", 0.0))
+        py_ram = v.get("peak_python_ram_mb", 0.0)
+        stab_range = (
+            f"{v.get('duration_min_sec', v['duration_sec']):.4f} - {v.get('duration_max_sec', v['duration_sec']):.4f}"
+            if v.get("duration_min_sec") is not None and v.get("iterations", 1) > 1
+            else f"{v['duration_sec']:.4f}"
+        )
         doc_lines.append(
             f"| {v['seed']} | {v['records_input']:,} | {v['valid_count']:,} | {v['quarantine_count']:,} | "
             f"{v['duplicate_count']:,} | {v['dq_score']}% | {bw:.4f}s | {se:.4f}s | {v['duration_sec']:.4f}s | "
-            f"{st:,.1f} | {v['throughput_rps']:,.1f} | {cpu}% | {ram:.1f} | "
+            f"{stab_range}s | {st:,.1f} | {v['throughput_rps']:,.1f} | {cpu}% | {ram:.1f} | {py_ram:.1f} | "
             f"{v['bronze_bytes']:,} | {v['silver_bytes']:,} | {v['quarantine_bytes']:,} |"
         )
+
+    if has_multi_iters:
+        doc_lines.extend([
+            "",
+            "### 1.1 Chi Tiết Các Lần Chạy Lặp (Volume Iterations Breakdown)",
+            "",
+            "| Cỡ Dữ Liệu | Lần Chạy | Ghi Bronze (s) | Spark ETL (s) | Tổng Thời Gian (s) | Spark Rate (rec/s) | Tổng Rate (rec/s) | CPU % | RAM Tree (MB) | RAM Py (MB) | Trạng Thái Khớp Accounting |",
+            "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
+        ])
+        for v in vol_rows:
+            for ir in v.get("iteration_runs", []):
+                ir_bw = ir.get("bronze_write_sec", 0.0)
+                ir_se = ir.get("spark_etl_sec", 0.0)
+                ir_st = ir.get("spark_throughput_rps", ir.get("throughput_rps", 0.0))
+                ir_tot = ir.get("duration_sec", 0.0)
+                ir_tp = ir.get("throughput_rps", 0.0)
+                ir_cpu = ir.get("cpu_percent", 0.0)
+                ir_ram = ir.get("peak_tree_ram_mb", ir.get("peak_ram_mb", 0.0))
+                ir_py = ir.get("peak_python_ram_mb", 0.0)
+                ir_acc = "ĐẠT (100% Khớp)" if ir.get("accounting_reconciled") else "LỖI"
+                doc_lines.append(
+                    f"| {ir['records_input']:,} | Lần {ir.get('iteration', 1)} | {ir_bw:.4f}s | {ir_se:.4f}s | "
+                    f"{ir_tot:.4f}s | {ir_st:,.1f} | {ir_tp:,.1f} | {ir_cpu}% | {ir_ram:.1f} | {ir_py:.1f} | {ir_acc} |"
+                )
 
     doc_lines.extend([
         "",
@@ -1008,7 +1259,9 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
         "## 2. Kết Quả Velocity (Kafka Producer -> Broker -> RawConsumer -> Bronze / DLQ)",
         "",
         "> [!NOTE]",
-        "> **Transport Mode:** `real_kafka` kết nối trực tiếp cụm Kafka KRaft; chế độ integration không dùng hàng đợi offline giả lập. Đo đạc độ trễ p50/p95/p99 từ lúc phát đến lúc commit.",
+        "> **Transport Mode:** `real_kafka` kết nối trực tiếp cụm Kafka KRaft; chế độ integration không dùng hàng đợi offline giả lập.",
+        ">",
+        "> **Phương Pháp Đo Độ Trễ ($L_i = t_{\\text{processed}, i} - t_{\\text{sent}, i}$):** Sử dụng đồng hồ monotonic độ chính xác cao (`time.perf_counter()`) ghi nhận thời điểm gửi của từng message riêng biệt và thời điểm hoàn tất xử lý/quarantine của consumer đối với message đó. Các phân vị p50, p95, p99 được tính trực tiếp từ tập hợp các $L_i$ này, phản ánh trung thực độ trễ streaming trên từng bản ghi thay vì thời gian gộp của cả batch.",
         "",
         "| Seed | Transport | Mục Tiêu (msg/s) | Đã Gửi | Đã Nhận | Hợp Lệ (Bronze) | DLQ | Lag | Tốc Độ Gửi (msg/s) | Tốc Độ Nhận (msg/s) | Độ Trễ p50 (ms) | Độ Trễ p95 (ms) | Độ Trễ p99 (ms) | Thời Gian E2E (s) | Throughput E2E (msg/s) | Dung Lượng Bronze (B) |",
         "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
@@ -1075,7 +1328,7 @@ def run_all_benchmarks(
     mode: Optional[str] = None,
     seed: int = 42,
     volume_sizes: Optional[List[int]] = None,
-    volume_iterations: int = 1,
+    volume_iterations: int = 3,
     velocity_rates: Optional[List[int]] = None,
     velocity_messages: Optional[int] = None,
     velocity_duration_sec: Optional[float] = None,
@@ -1135,6 +1388,20 @@ def run_all_benchmarks(
         else []
     )
 
+    json_path = REPO_ROOT / "docs" / "reports" / "benchmark_3v.json"
+    if json_path.exists():
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                prev_data = json.load(f)
+            if skip_volume and not vol_res and prev_data.get("volume"):
+                vol_res = prev_data["volume"]
+            if skip_velocity and not vel_res and prev_data.get("velocity"):
+                vel_res = prev_data["velocity"]
+            if skip_variety and not var_res and prev_data.get("variety"):
+                var_res = prev_data["variety"]
+        except Exception:
+            pass
+
     full_results = {
         "timestamp": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
         "metadata": {
@@ -1177,8 +1444,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--volume-iterations",
         type=int,
-        default=1,
-        help="Number of iterations to run each Volume size to report median (default: 1)",
+        default=3,
+        help="Number of iterations to run each Volume size to report median (default: 3)",
     )
     parser.add_argument(
         "--iterations",
@@ -1213,7 +1480,7 @@ if __name__ == "__main__":
         "--tiki-limit",
         type=int,
         default=10,
-        help="Max Tiki crawler records for HTML_Tiki_Crawler in Variety (default: 10)",
+        help="Max Tiki crawler records for JSONL_Tiki_Crawler in Variety (default: 10)",
     )
     parser.add_argument("--skip-volume", action="store_true", help="Skip Volume benchmark")
     parser.add_argument("--skip-velocity", action="store_true", help="Skip Velocity benchmark")

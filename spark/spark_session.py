@@ -94,11 +94,12 @@ class SparkSessionFactory:
         spark_master = master or settings.spark.master
         s3a_map = cls.get_s3a_config_map()
 
+        driver_mem = os.environ.get("SPARK_DRIVER_MEMORY", "4g")
         builder = (
             SparkSession.builder
             .appName(app)
             .master(spark_master)
-            .config("spark.driver.memory", "2g")
+            .config("spark.driver.memory", driver_mem)
             .config("spark.sql.shuffle.partitions", "4")
             .config("spark.sql.session.timeZone", "UTC")
             .config(

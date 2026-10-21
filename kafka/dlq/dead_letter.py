@@ -27,6 +27,8 @@ class DeadLetterQueueHandler:
 
     @property
     def producer(self):
+        if settings.is_local_mode:
+            return None
         if not self._init_attempted and self._producer is None:
             self._init_attempted = True
             try:
@@ -74,11 +76,11 @@ class DeadLetterQueueHandler:
         persisted = False
         kafka_err = None
 
-        # 1. Attempt delivery to real Kafka 'dead-letter' topic
-        if self.producer:
+        # 1. Attempt delivery to real Kafka 'dead-letter' topic (only in integration/production modes)
+        if self.producer and not settings.is_local_mode:
             try:
                 future = self.producer.send(self.topic, value=dlq_record)
-                future.get(timeout=3.0)
+                future.get(timeout=1.5)
                 persisted = True
             except Exception as e:
                 kafka_err = e

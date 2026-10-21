@@ -161,6 +161,74 @@ class RawConsumer:
 
         return True, [], envelope
 
+    @staticmethod
+    def _extract_send_time(record_item: Any, canonical_env: Optional[Dict[str, Any]] = None) -> Tuple[Optional[float], Optional[float]]:
+        """Extracts (sent_perf_counter, sent_epoch_ms) from envelope, record item, or Kafka headers."""
+        sent_perf = None
+        sent_epoch_ms = None
+
+        if isinstance(canonical_env, dict):
+            sent_perf = canonical_env.get("sent_perf_counter")
+            sent_epoch_ms = canonical_env.get("sent_epoch_ms")
+
+        if sent_perf is None and isinstance(record_item, dict):
+            sent_perf = record_item.get("sent_perf_counter")
+            sent_epoch_ms = record_item.get("sent_epoch_ms") or (record_item.get("sent_at", 0) * 1000.0 if record_item.get("sent_at") else None)
+            if sent_perf is None and "value" in record_item and isinstance(record_item["value"], dict):
+                sent_perf = record_item["value"].get("sent_perf_counter")
+                sent_epoch_ms = record_item["value"].get("sent_epoch_ms")
+            if sent_perf is None and "payload" in record_item and isinstance(record_item["payload"], dict):
+                sent_perf = record_item["payload"].get("sent_perf_counter")
+                sent_epoch_ms = record_item["payload"].get("sent_epoch_ms")
+
+        if hasattr(record_item, "headers") and record_item.headers:
+            for k, v in record_item.headers:
+                if k == "sent_perf_counter" and sent_perf is None:
+                    try:
+                        sent_perf = float(v.decode("utf-8"))
+                    except Exception:
+                        pass
+                elif k == "sent_epoch_ms" and sent_epoch_ms is None:
+                    try:
+                        sent_epoch_ms = float(v.decode("utf-8"))
+                    except Exception:
+                        pass
+
+        if sent_epoch_ms is None and hasattr(record_item, "timestamp") and record_item.timestamp:
+            sent_epoch_ms = float(record_item.timestamp)
+
+        return sent_perf, sent_epoch_ms
+
+    @staticmethod
+    def _extract_msg_id(raw_val: Any, record_item: Any = None) -> str:
+        """Resolves canonical review_id, event_id, or key from message payload."""
+        if isinstance(raw_val, dict):
+            payload = raw_val.get("payload")
+            if isinstance(payload, dict):
+                if payload.get("review_id"):
+                    return str(payload["review_id"])
+                if payload.get("product_id"):
+                    return str(payload["product_id"])
+            if raw_val.get("review_id"):
+                return str(raw_val["review_id"])
+            if raw_val.get("product_id"):
+                return str(raw_val["product_id"])
+            if raw_val.get("event_id"):
+                return str(raw_val["event_id"])
+
+        if isinstance(record_item, dict):
+            if record_item.get("key"):
+                return str(record_item["key"])
+            if "offset" in record_item:
+                return f"off_{record_item['offset']}"
+        elif hasattr(record_item, "key") and record_item.key:
+            try:
+                return record_item.key.decode("utf-8") if isinstance(record_item.key, bytes) else str(record_item.key)
+            except Exception:
+                pass
+
+        return "unknown_msg"
+
     def save_raw_batch(
         self,
         topic: str,
@@ -190,13 +258,16 @@ class RawConsumer:
         topics: Optional[List[str]] = None,
         max_records: int = 100,
         timeout_ms: int = 2000,
-        offline_records: Optional[List[Dict[str, Any]]] = None
+        offline_records: Optional[List[Dict[str, Any]]] = None,
+        live_stream: bool = False,
+        stop_event: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """Finite batch consumer polling up to max_records once.
         Validates canonical envelopes and payload schemas.
         Saves valid envelopes to MinIO Bronze.
         Routes bad records to durable DLQ (failing loud if DLQ is broken).
         Commits offsets strictly for successfully persisted partitions.
+        Records individual message completion timestamp and per-message latency L_i = t_processed - t_sent.
         """
         target_topics = topics or [
             settings.kafka.topic_products,
@@ -212,6 +283,8 @@ class RawConsumer:
         topic_counts: Dict[str, int] = {}
         committed_offsets: Dict[str, int] = {}
         quarantined_records: List[Dict[str, Any]] = []
+        latencies_ms: List[float] = []
+        message_latencies: List[Dict[str, Any]] = []
 
         # -------------------------------------------------------------
         # 1. Real Kafka Consumer Branch
@@ -225,14 +298,17 @@ class RawConsumer:
             empty_polls = 0
             deadline = time.time() + max(timeout_ms / 1000.0, 4.0)
             while fetched_total < max_records and time.time() < deadline:
+                if stop_event is not None and stop_event.is_set():
+                    break
                 remaining = max(1, max_records - fetched_total)
-                batch = self.consumer.poll(timeout_ms=min(timeout_ms, 800), max_records=remaining)
+                poll_timeout = min(timeout_ms, 200 if live_stream else 800)
+                batch = self.consumer.poll(timeout_ms=poll_timeout, max_records=remaining)
                 if batch:
                     empty_polls = 0
                     for tp, recs in batch.items():
                         polled.setdefault(tp, []).extend(recs)
                         fetched_total += len(recs)
-                elif fetched_total > 0 and self.consumer.assignment():
+                elif fetched_total > 0 and self.consumer.assignment() and not live_stream:
                     empty_polls += 1
                     if empty_polls >= 2:
                         break
@@ -246,7 +322,9 @@ class RawConsumer:
                     "batches_by_topic": {},
                     "topic_counts": {},
                     "committed_offsets": {},
-                    "dlq_records": []
+                    "dlq_records": [],
+                    "latencies_ms": [],
+                    "message_latencies": [],
                 }
 
             from kafka.structs import OffsetAndMetadata
@@ -267,6 +345,28 @@ class RawConsumer:
                         total_consumed += 1
                         highest_offset = max(highest_offset, record.offset)
                         is_valid, errors, canonical_env = self.validate_message(topic, record.value)
+
+                        # Individual per-message processed timestamp and transit latency Li = t_processed - t_sent
+                        t_proc_perf = time.perf_counter()
+                        t_proc_epoch_ms = time.time() * 1000.0
+                        sent_perf, sent_epoch_ms = self._extract_send_time(record, canonical_env or record.value)
+                        if sent_perf is not None:
+                            l_i = max(0.01, (t_proc_perf - sent_perf) * 1000.0)
+                        elif sent_epoch_ms is not None and sent_epoch_ms > 0:
+                            l_i = max(0.01, t_proc_epoch_ms - sent_epoch_ms)
+                        else:
+                            l_i = 0.1
+                        latencies_ms.append(round(l_i, 3))
+                        msg_id = self._extract_msg_id(canonical_env or record.value, record)
+                        message_latencies.append({
+                            "id": msg_id,
+                            "review_id": msg_id,
+                            "topic": topic,
+                            "sent_mono": sent_perf,
+                            "processed_mono": t_proc_perf,
+                            "latency_ms": round(l_i, 3),
+                            "is_valid": is_valid,
+                        })
 
                         if is_valid and canonical_env is not None:
                             valid_batch.append(canonical_env)
@@ -314,58 +414,156 @@ class RawConsumer:
             dlq_handler.flush()
 
         # -------------------------------------------------------------
-        # 2. Explicit Offline / Unit Test Simulation Branch
+        # 2. Offline / Virtual Queue Branch
         # -------------------------------------------------------------
         else:
-            by_topic: Dict[str, List[Dict[str, Any]]] = {}
-            for item in offline_records:
-                t = item.get("topic") or target_topics[0]
-                by_topic.setdefault(t, []).append(item)
+            if live_stream:
+                by_topic_valid: Dict[str, List[Dict[str, Any]]] = {}
+                highest_offset_by_topic: Dict[str, int] = {}
+                partition_failed_by_topic: Dict[str, bool] = {}
+                consumed_idx = 0
+                deadline = time.time() + max(timeout_ms / 1000.0, 4.0)
 
-            for topic, items in by_topic.items():
-                valid_batch = []
-                highest_offset = -1
-                partition_failed = False
+                while total_consumed < max_records and time.time() < deadline:
+                    if stop_event is not None and stop_event.is_set():
+                        break
+                    if offline_records is not None and consumed_idx < len(offline_records):
+                        item = offline_records[consumed_idx]
+                        consumed_idx += 1
+                        topic = item.get("topic") or target_topics[0]
+                        total_consumed += 1
+                        offset = item.get("offset", total_consumed - 1)
+                        partition = item.get("partition", 0)
+                        highest_offset_by_topic[topic] = max(highest_offset_by_topic.get(topic, -1), offset)
+                        raw_val = item.get("value", item)
 
-                for item in items:
-                    total_consumed += 1
-                    offset = item.get("offset", total_consumed - 1)
-                    partition = item.get("partition", 0)
-                    highest_offset = max(highest_offset, offset)
-                    raw_val = item.get("value", item)
+                        is_valid, errors, canonical_env = self.validate_message(topic, raw_val)
+                        t_proc_perf = time.perf_counter()
+                        t_proc_epoch_ms = time.time() * 1000.0
+                        sent_perf, sent_epoch_ms = self._extract_send_time(item, canonical_env or raw_val)
+                        if sent_perf is not None:
+                            l_i = max(0.01, (t_proc_perf - sent_perf) * 1000.0)
+                        elif sent_epoch_ms is not None and sent_epoch_ms > 0:
+                            l_i = max(0.01, t_proc_epoch_ms - sent_epoch_ms)
+                        else:
+                            l_i = 0.1
+                        latencies_ms.append(round(l_i, 3))
+                        msg_id = self._extract_msg_id(canonical_env or raw_val, item)
+                        message_latencies.append({
+                            "id": msg_id,
+                            "review_id": msg_id,
+                            "topic": topic,
+                            "sent_mono": sent_perf,
+                            "processed_mono": t_proc_perf,
+                            "latency_ms": round(l_i, 3),
+                            "is_valid": is_valid,
+                        })
 
-                    is_valid, errors, canonical_env = self.validate_message(topic, raw_val)
-                    if is_valid and canonical_env is not None:
-                        valid_batch.append(canonical_env)
-                        total_valid += 1
+                        if is_valid and canonical_env is not None:
+                            by_topic_valid.setdefault(topic, []).append(canonical_env)
+                            total_valid += 1
+                        else:
+                            try:
+                                dlq_res = dlq_handler.send_to_dlq(
+                                    error_type="SCHEMA_VALIDATION_ERROR",
+                                    source_topic=topic,
+                                    partition=partition,
+                                    offset=offset,
+                                    payload=raw_val,
+                                    errors=errors
+                                )
+                                quarantined_records.append(dlq_res)
+                                total_dlq += 1
+                            except Exception:
+                                partition_failed_by_topic[topic] = True
+                                raise
                     else:
+                        time.sleep(0.0005)
+
+                for topic, valid_batch in by_topic_valid.items():
+                    if valid_batch and not partition_failed_by_topic.get(topic, False):
                         try:
-                            dlq_res = dlq_handler.send_to_dlq(
-                                error_type="SCHEMA_VALIDATION_ERROR",
-                                source_topic=topic,
-                                partition=partition,
-                                offset=offset,
-                                payload=raw_val,
-                                errors=errors
-                            )
-                            quarantined_records.append(dlq_res)
-                            total_dlq += 1
+                            written_path = self.save_raw_batch(topic, valid_batch)
+                            batches_written.append(str(written_path))
+                            batches_by_topic.setdefault(topic, []).append(str(written_path))
+                            topic_counts[topic] = topic_counts.get(topic, 0) + len(valid_batch)
+                        except Exception:
+                            partition_failed_by_topic[topic] = True
+                            raise
+                    high_off = highest_offset_by_topic.get(topic, -1)
+                    if not partition_failed_by_topic.get(topic, False) and high_off >= 0:
+                        committed_offsets[f"{topic}-0"] = high_off + 1
+            else:
+                by_topic: Dict[str, List[Dict[str, Any]]] = {}
+                for item in (offline_records or []):
+                    t = item.get("topic") or target_topics[0]
+                    by_topic.setdefault(t, []).append(item)
+
+                for topic, items in by_topic.items():
+                    valid_batch = []
+                    highest_offset = -1
+                    partition_failed = False
+
+                    for item in items:
+                        total_consumed += 1
+                        offset = item.get("offset", total_consumed - 1)
+                        partition = item.get("partition", 0)
+                        highest_offset = max(highest_offset, offset)
+                        raw_val = item.get("value", item)
+
+                        is_valid, errors, canonical_env = self.validate_message(topic, raw_val)
+                        t_proc_perf = time.perf_counter()
+                        t_proc_epoch_ms = time.time() * 1000.0
+                        sent_perf, sent_epoch_ms = self._extract_send_time(item, canonical_env or raw_val)
+                        if sent_perf is not None:
+                            l_i = max(0.01, (t_proc_perf - sent_perf) * 1000.0)
+                        elif sent_epoch_ms is not None and sent_epoch_ms > 0:
+                            l_i = max(0.01, t_proc_epoch_ms - sent_epoch_ms)
+                        else:
+                            l_i = 0.1
+                        latencies_ms.append(round(l_i, 3))
+                        msg_id = self._extract_msg_id(canonical_env or raw_val, item)
+                        message_latencies.append({
+                            "id": msg_id,
+                            "review_id": msg_id,
+                            "topic": topic,
+                            "sent_mono": sent_perf,
+                            "processed_mono": t_proc_perf,
+                            "latency_ms": round(l_i, 3),
+                            "is_valid": is_valid,
+                        })
+
+                        if is_valid and canonical_env is not None:
+                            valid_batch.append(canonical_env)
+                            total_valid += 1
+                        else:
+                            try:
+                                dlq_res = dlq_handler.send_to_dlq(
+                                    error_type="SCHEMA_VALIDATION_ERROR",
+                                    source_topic=topic,
+                                    partition=partition,
+                                    offset=offset,
+                                    payload=raw_val,
+                                    errors=errors
+                                )
+                                quarantined_records.append(dlq_res)
+                                total_dlq += 1
+                            except Exception:
+                                partition_failed = True
+                                raise
+
+                    if valid_batch and not partition_failed:
+                        try:
+                            written_path = self.save_raw_batch(topic, valid_batch)
+                            batches_written.append(str(written_path))
+                            batches_by_topic.setdefault(topic, []).append(str(written_path))
+                            topic_counts[topic] = topic_counts.get(topic, 0) + len(valid_batch)
                         except Exception:
                             partition_failed = True
                             raise
 
-                if valid_batch and not partition_failed:
-                    try:
-                        written_path = self.save_raw_batch(topic, valid_batch)
-                        batches_written.append(str(written_path))
-                        batches_by_topic.setdefault(topic, []).append(str(written_path))
-                        topic_counts[topic] = topic_counts.get(topic, 0) + len(valid_batch)
-                    except Exception:
-                        partition_failed = True
-                        raise
-
-                if not partition_failed and highest_offset >= 0:
-                    committed_offsets[f"{topic}-0"] = highest_offset + 1
+                    if not partition_failed and highest_offset >= 0:
+                        committed_offsets[f"{topic}-0"] = highest_offset + 1
 
         return {
             "records_consumed": total_consumed,
@@ -375,7 +573,9 @@ class RawConsumer:
             "batches_by_topic": batches_by_topic,
             "topic_counts": topic_counts,
             "committed_offsets": committed_offsets,
-            "dlq_records": quarantined_records
+            "dlq_records": quarantined_records,
+            "latencies_ms": latencies_ms,
+            "message_latencies": message_latencies
         }
 
     def consume_to_bronze(
