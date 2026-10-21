@@ -151,11 +151,11 @@ class SparkSessionFactory:
         if str(dataset).startswith("s3a://") or str(dataset).startswith("file://"):
             return str(dataset)
 
+        p = Path(str(dataset))
+        if p.is_absolute():
+            return str(p)
+
         is_local = settings.runtime_mode in ("local", "test")
-        if is_local:
-            p = Path(str(dataset))
-            if p.is_absolute():
-                return str(p)
 
         clean_name = str(dataset).replace("\\", "/").strip("/")
         if clean_name.startswith(f"{layer}/"):

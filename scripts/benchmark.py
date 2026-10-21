@@ -414,14 +414,26 @@ def benchmark_volume(
             mon_metrics = mon.stop()
             total_elapsed = bronze_write_sec + spark_etl_sec
 
-            # Accounting invariant verification:
-            # input_count == unique_valid_count + intra_dedup_dropped + quarantine_count
+            # Dual Accounting Invariant Verification:
+            # 1. Batch Invariant: input_count == quarantine_count + intra_batch_duplicate_count + cross_batch_duplicate_count + new_inserts_count
+            # 2. Silver State Invariant: silver_written_count == silver_prev_count + new_inserts_count
             input_cnt = int(res["input_count"])
+            valid_input_cnt = int(res.get("valid_input_count", res["valid_count"]))
             valid_cnt = int(res["unique_valid_count"])
             quar_cnt = int(res["quarantine_count"])
-            dup_cnt = int(res["intra_dedup_dropped"])
-            assert input_cnt == valid_cnt + quar_cnt + dup_cnt, (
-                f"Accounting invariant failed: input ({input_cnt}) != valid ({valid_cnt}) + dup ({dup_cnt}) + quarantine ({quar_cnt})"
+            intra_dup_cnt = int(res.get("intra_batch_duplicate_count", res["intra_dedup_dropped"]))
+            cross_dup_cnt = int(res.get("cross_batch_duplicate_count", 0))
+            new_ins_cnt = int(res.get("new_inserts_count", valid_cnt))
+            silver_prev_cnt = int(res.get("silver_prev_count", 0))
+            silver_written_cnt = int(res["silver_written_count"])
+
+            assert input_cnt == quar_cnt + intra_dup_cnt + cross_dup_cnt + new_ins_cnt, (
+                f"Batch accounting invariant failed: input ({input_cnt}) != "
+                f"quar ({quar_cnt}) + intra_dup ({intra_dup_cnt}) + cross_dup ({cross_dup_cnt}) + new_ins ({new_ins_cnt})"
+            )
+            assert silver_written_cnt == silver_prev_cnt + new_ins_cnt, (
+                f"Silver state accounting invariant failed: silver_written ({silver_written_cnt}) != "
+                f"silver_prev ({silver_prev_cnt}) + new_ins ({new_ins_cnt})"
             )
 
             bronze_bytes = storage.backend.get_size(bronze_key)
@@ -445,10 +457,15 @@ def benchmark_volume(
                 "duration_sec": round(total_elapsed, 4),
                 "throughput_rps": round(total_throughput, 1),
                 "spark_throughput_rps": round(spark_throughput, 1),
+                "valid_input_count": valid_input_cnt,
                 "valid_count": valid_cnt,
                 "quarantine_count": quar_cnt,
-                "duplicate_count": dup_cnt,
-                "silver_written_count": int(res["silver_written_count"]),
+                "duplicate_count": intra_dup_cnt,
+                "intra_batch_duplicate_count": intra_dup_cnt,
+                "cross_batch_duplicate_count": cross_dup_cnt,
+                "new_inserts_count": new_ins_cnt,
+                "silver_prev_count": silver_prev_cnt,
+                "silver_written_count": silver_written_cnt,
                 "dq_score": float(res["dq_score"]),
                 "bronze_bytes": int(bronze_bytes),
                 "silver_bytes": int(silver_bytes),
@@ -460,6 +477,8 @@ def benchmark_volume(
                 "peak_tree_ram_mb": mon_metrics.get("peak_tree_ram_mb", mon_metrics["peak_ram_mb"]),
                 "peak_python_ram_mb": mon_metrics.get("peak_python_ram_mb", 0.0),
                 "peak_children_ram_mb": mon_metrics.get("peak_children_ram_mb", 0.0),
+                "reconciled_batch": True,
+                "reconciled_silver": True,
                 "accounting_reconciled": True,
             }
             size_runs.append(run_row)
@@ -960,13 +979,24 @@ def benchmark_variety(
             )
             elapsed = time.perf_counter() - t0
 
-            # Mathematical accounting check: input == unique_valid + duplicate + quarantine
+            # Dual accounting check: Batch invariant & Silver state transition invariant
             input_cnt = int(etl_res["input_count"])
+            valid_input_cnt = int(etl_res.get("valid_input_count", etl_res["valid_count"]))
             valid_cnt = int(etl_res["unique_valid_count"])
             quar_cnt = int(etl_res["quarantine_count"])
-            dup_cnt = int(etl_res["intra_dedup_dropped"])
-            assert input_cnt == valid_cnt + quar_cnt + dup_cnt, (
-                f"Variety accounting error on {fmt_name}: input ({input_cnt}) != valid ({valid_cnt}) + dup ({dup_cnt}) + quarantine ({quar_cnt})"
+            intra_dup_cnt = int(etl_res.get("intra_batch_duplicate_count", etl_res["intra_dedup_dropped"]))
+            cross_dup_cnt = int(etl_res.get("cross_batch_duplicate_count", 0))
+            new_ins_cnt = int(etl_res.get("new_inserts_count", valid_cnt))
+            silver_prev_cnt = int(etl_res.get("silver_prev_count", 0))
+            silver_written_cnt = int(etl_res["silver_written_count"])
+
+            assert input_cnt == quar_cnt + intra_dup_cnt + cross_dup_cnt + new_ins_cnt, (
+                f"Variety batch accounting error on {fmt_name}: input ({input_cnt}) != "
+                f"quar ({quar_cnt}) + intra_dup ({intra_dup_cnt}) + cross_dup ({cross_dup_cnt}) + new_ins ({new_ins_cnt})"
+            )
+            assert silver_written_cnt == silver_prev_cnt + new_ins_cnt, (
+                f"Variety silver state accounting error on {fmt_name}: silver_written ({silver_written_cnt}) != "
+                f"silver_prev ({silver_prev_cnt}) + new_ins ({new_ins_cnt})"
             )
 
             bronze_bytes = storage.backend.get_size(bronze_key)
@@ -984,9 +1014,15 @@ def benchmark_variety(
                 "category": category,
                 "source_bytes": int(source_bytes),
                 "records_input": input_cnt,
+                "valid_input_count": valid_input_cnt,
                 "valid_count": valid_cnt,
                 "quarantine_count": quar_cnt,
-                "duplicate_count": dup_cnt,
+                "duplicate_count": intra_dup_cnt,
+                "intra_batch_duplicate_count": intra_dup_cnt,
+                "cross_batch_duplicate_count": cross_dup_cnt,
+                "new_inserts_count": new_ins_cnt,
+                "silver_prev_count": silver_prev_cnt,
+                "silver_written_count": silver_written_cnt,
                 "dq_score": float(etl_res["dq_score"]),
                 "duration_sec": round(elapsed, 4),
                 "throughput_rps": round(throughput, 1),

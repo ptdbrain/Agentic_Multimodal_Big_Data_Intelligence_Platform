@@ -10,6 +10,8 @@ from spark.etl.deduplicator import Deduplicator
 from spark.spark_session import SparkSessionFactory
 from spark.batch.spark_etl_job import SparkBatchETLJob
 from spark.storage_safe import SafeParquetIO
+from config.settings import settings
+from storage.storage_manager import storage
 
 pytestmark = pytest.mark.unit
 
@@ -295,3 +297,193 @@ def test_silver_atomic_swap_and_reconciliation_success():
         parent_dir = Path(tmp_dir)
         extra_dirs = [p.name for p in parent_dir.glob("silver_reconcile.parquet__*")]
         assert extra_dirs == [], f"Temporary staging/backup dirs were not cleaned up: {extra_dirs}"
+
+
+def test_periodic_cross_batch_reconciliation_accounting_metrics():
+    """Verify that when processing a new batch against an existing historical Silver dataset:
+    1. valid_input_count, intra_batch_duplicate_count, cross_batch_duplicate_count,
+       silver_prev_count, new_inserts_count, and silver_written_count are individually and accurately tracked.
+    2. Batch accounting invariant holds:
+       input_count == quarantine_count + intra_batch_duplicate_count + cross_batch_duplicate_count + new_inserts_count
+    3. Silver state transition invariant holds:
+       silver_written_count == silver_prev_count + new_inserts_count
+    """
+    spark = SparkSessionFactory.get_spark_session()
+    if spark is None:
+        pytest.skip("PySpark not available")
+
+    orig_mode = settings.runtime_mode
+    settings.runtime_mode = "local"
+    storage.set_mode("local")
+
+    try:
+        job = SparkBatchETLJob(spark=spark)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            silver_subpath = (tmp_path / "silver_periodic").as_posix()
+            quarantine_subpath = (tmp_path / "quarantine_periodic").as_posix()
+
+        # Step 1: Pre-populate Silver with 5 historical reviews (rv_hist_1 .. rv_hist_5)
+        hist_records = [
+            {
+                "review_id": f"rv_hist_{i}",
+                "product_id": f"prod_{i}",
+                "user_id": f"anon_user_{i}",
+                "rating": 4.0,
+                "review_title": f"Initial {i}",
+                "review_text": f"Historical review {i}",
+                "review_date": "2026-10-01T10:00:00Z",
+                "ingested_at": "2026-10-01T10:00:00Z",
+            }
+            for i in range(1, 6)
+        ]
+        spark.createDataFrame(hist_records).write.mode("overwrite").parquet(silver_subpath)
+        assert spark.read.parquet(silver_subpath).count() == 5
+
+        # Step 2: Prepare new incoming batch with 6 records:
+        # - 1 invalid (rating out of bounds) -> quarantine
+        # - 5 valid input records
+        # - 1 intra-batch duplicate (two copies of rv_brand_new_1, keeping latest) -> intra_dup = 1
+        # - Leaves 4 unique valid records in this batch:
+        #   * 2 cross-batch duplicates of existing Silver records (rv_hist_1 updated, rv_hist_2 re-sent) -> cross_dup = 2
+        #   * 2 genuinely new inserts (rv_brand_new_1, rv_brand_new_2) -> new_inserts = 2
+        incoming_batch = [
+            # 1. Invalid: rating 99.0
+            {
+                "event_id": "evt_bad_1",
+                "event_type": "NEW_REVIEW",
+                "source": "crawler",
+                "ingested_at": "2026-10-21T10:00:00Z",
+                "payload": {
+                    "review_id": "rv_bad_1",
+                    "product_id": "prod_1",
+                    "user_id": "usr_bad",
+                    "rating": 99.0,
+                    "review_title": "Bad rating",
+                    "review_text": "Out of range",
+                    "review_date": "2026-10-21T09:00:00Z",
+                },
+            },
+            # 2. Cross-batch duplicate 1: updates rv_hist_1 with 5.0 stars
+            {
+                "event_id": "evt_hist_1_v2",
+                "event_type": "NEW_REVIEW",
+                "source": "crawler",
+                "ingested_at": "2026-10-21T10:05:00Z",
+                "payload": {
+                    "review_id": "rv_hist_1",
+                    "product_id": "prod_1",
+                    "user_id": "usr_alpha",
+                    "rating": 5.0,
+                    "review_title": "Updated to 5 stars",
+                    "review_text": "Historical review 1 updated",
+                    "review_date": "2026-10-21T09:05:00Z",
+                },
+            },
+            # 3. Cross-batch duplicate 2: re-sends rv_hist_2
+            {
+                "event_id": "evt_hist_2_v2",
+                "event_type": "NEW_REVIEW",
+                "source": "crawler",
+                "ingested_at": "2026-10-21T10:06:00Z",
+                "payload": {
+                    "review_id": "rv_hist_2",
+                    "product_id": "prod_2",
+                    "user_id": "usr_beta",
+                    "rating": 4.0,
+                    "review_title": "Re-sent",
+                    "review_text": "Historical review 2 re-sent",
+                    "review_date": "2026-10-21T09:06:00Z",
+                },
+            },
+            # 4. Brand new insert 1 (first occurrence)
+            {
+                "event_id": "evt_new_1_v1",
+                "event_type": "NEW_REVIEW",
+                "source": "crawler",
+                "ingested_at": "2026-10-21T10:07:00Z",
+                "payload": {
+                    "review_id": "rv_brand_new_1",
+                    "product_id": "prod_99",
+                    "user_id": "usr_gamma",
+                    "rating": 4.5,
+                    "review_title": "Brand new 1 v1",
+                    "review_text": "New review 1 v1",
+                    "review_date": "2026-10-21T09:07:00Z",
+                },
+            },
+            # 5. Intra-batch duplicate: second occurrence of rv_brand_new_1 (newer timestamp, 5.0 rating)
+            {
+                "event_id": "evt_new_1_v2",
+                "event_type": "NEW_REVIEW",
+                "source": "crawler",
+                "ingested_at": "2026-10-21T10:08:00Z",
+                "payload": {
+                    "review_id": "rv_brand_new_1",
+                    "product_id": "prod_99",
+                    "user_id": "usr_gamma",
+                    "rating": 5.0,
+                    "review_title": "Brand new 1 v2",
+                    "review_text": "New review 1 v2 updated within batch",
+                    "review_date": "2026-10-21T09:08:00Z",
+                },
+            },
+            # 6. Brand new insert 2
+            {
+                "event_id": "evt_new_2",
+                "event_type": "NEW_REVIEW",
+                "source": "crawler",
+                "ingested_at": "2026-10-21T10:09:00Z",
+                "payload": {
+                    "review_id": "rv_brand_new_2",
+                    "product_id": "prod_100",
+                    "user_id": "usr_delta",
+                    "rating": 5.0,
+                    "review_title": "Brand new 2",
+                    "review_text": "New review 2",
+                    "review_date": "2026-10-21T09:09:00Z",
+                },
+            },
+        ]
+
+        # Step 3: Execute process_dataset
+        res = job.process_dataset(
+            "reviews",
+            incoming_batch,
+            silver_subpath=silver_subpath,
+            quarantine_subpath=quarantine_subpath,
+            replace_existing_silver=False,
+        )
+
+        # Step 4: Verify metrics
+        assert res["input_count"] == 6
+        assert res["quarantine_count"] == 1
+        assert res["valid_input_count"] == 5
+        assert res["intra_batch_duplicate_count"] == 1
+        assert res["cross_batch_duplicate_count"] == 2
+        assert res["new_inserts_count"] == 2
+        assert res["silver_prev_count"] == 5
+        assert res["silver_written_count"] == 7
+        assert res["reconciled_batch"] is True
+        assert res["reconciled_silver"] is True
+        assert res["reconciled"] is True
+
+        # Step 5: Verify persisted parquet
+        persisted_df = spark.read.parquet(silver_subpath)
+        assert persisted_df.count() == 7
+        persisted_records = {r["review_id"]: r for r in persisted_df.collect()}
+        assert "rv_hist_1" in persisted_records
+        assert persisted_records["rv_hist_1"]["rating"] == 5.0  # Updated by new batch
+        assert "rv_brand_new_1" in persisted_records
+        assert persisted_records["rv_brand_new_1"]["rating"] == 5.0  # Kept latest v2 from intra-dedup
+        assert "rv_brand_new_2" in persisted_records
+        assert "rv_bad_1" not in persisted_records
+
+        # Quarantine verification
+        quar_df = spark.read.parquet(quarantine_subpath)
+        assert quar_df.count() == 1
+        assert quar_df.collect()[0]["review_id"] == "rv_bad_1"
+    finally:
+        settings.runtime_mode = orig_mode
+        storage.set_mode(orig_mode)

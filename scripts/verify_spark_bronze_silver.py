@@ -175,20 +175,27 @@ def run_acceptance_test():
 
     print("\n[Step 3] Audit & Mathematical Reconciliation Results:")
     print(f"  • Input records read from Bronze: {result['input_count']}")
-    print(f"  • Valid records:                  {result['valid_count']}")
+    print(f"  • Valid input records:            {result['valid_input_count']}")
     print(f"  • Quarantine records (bad data):  {result['quarantine_count']}")
-    print(f"  • Intra-batch duplicates dropped: {result['intra_dedup_dropped']}")
+    print(f"  • Intra-batch duplicates dropped: {result['intra_batch_duplicate_count']}")
+    print(f"  • Cross-batch duplicates dropped: {result['cross_batch_duplicate_count']}")
+    print(f"  • New unique inserts to Silver:   {result['new_inserts_count']}")
+    print(f"  • Silver records before batch:    {result['silver_prev_count']}")
     print(f"  • Final Silver records written:   {result['silver_written_count']}")
-    print(f"  • Reconciled (input == v + q):    {result['reconciled']}")
+    print(f"  • Batch Reconciled:               {result['reconciled_batch']}")
+    print(f"  • Silver State Reconciled:        {result['reconciled_silver']}")
     print(f"  • Data Quality Score:             {result['dq_score']}%")
 
     # Mathematical Assertions
     assert result["input_count"] == 6, f"Expected 6 input records, got {result['input_count']}"
     assert result["quarantine_count"] == 2, f"Expected 2 quarantine records, got {result['quarantine_count']}"
-    assert result["valid_count"] == 4, f"Expected 4 valid records, got {result['valid_count']}"
-    assert result["reconciled"] is True, "Accounting failure: input != valid + quarantine!"
-    assert result["intra_dedup_dropped"] == 1, f"Expected 1 dropped duplicate, got {result['intra_dedup_dropped']}"
+    assert result["valid_input_count"] == 4, f"Expected 4 valid input records, got {result['valid_input_count']}"
+    assert result["intra_batch_duplicate_count"] == 1, f"Expected 1 dropped intra duplicate, got {result['intra_batch_duplicate_count']}"
+    assert result["cross_batch_duplicate_count"] == 0, f"Expected 0 cross duplicates on first run, got {result['cross_batch_duplicate_count']}"
+    assert result["new_inserts_count"] == 3, f"Expected 3 new inserts, got {result['new_inserts_count']}"
     assert result["silver_written_count"] == 3, f"Expected 3 Silver records, got {result['silver_written_count']}"
+    assert result["reconciled_batch"] is True, "Batch accounting failure!"
+    assert result["reconciled_silver"] is True, "Silver state accounting failure!"
 
     # 5. Read Silver Parquet back from MinIO S3A using Spark DataFrame
     print("\n[Step 4] Verifying Silver Parquet directly from MinIO via Spark DataFrame...")
@@ -260,11 +267,25 @@ def run_acceptance_test():
 
     res2 = job.process_dataset("reviews", batch2_s3a)
     print(f"  • Batch 2 Input:          {res2['input_count']}")
-    print(f"  • Batch 2 Valid:          {res2['valid_count']}")
+    print(f"  • Batch 2 Valid Input:    {res2['valid_input_count']}")
+    print(f"  • Batch 2 Intra Dups:     {res2['intra_batch_duplicate_count']}")
+    print(f"  • Batch 2 Cross Dups:     {res2['cross_batch_duplicate_count']}")
+    print(f"  • Batch 2 New Inserts:    {res2['new_inserts_count']}")
+    print(f"  • Batch 2 Silver Prev:    {res2['silver_prev_count']}")
     print(f"  • Batch 2 Silver Total:   {res2['silver_written_count']}")
+    print(f"  • Batch 2 Reconciled:     {res2['reconciled_batch']}")
+    print(f"  • Silver State Reconciled:{res2['reconciled_silver']}")
 
     # Total in Silver should now be 4: (rv_acc_001, rv_acc_002 updated, rv_acc_003, rv_acc_004)
+    assert res2["input_count"] == 2
+    assert res2["valid_input_count"] == 2
+    assert res2["intra_batch_duplicate_count"] == 0
+    assert res2["cross_batch_duplicate_count"] == 1
+    assert res2["new_inserts_count"] == 1
+    assert res2["silver_prev_count"] == 3
     assert res2["silver_written_count"] == 4, f"Expected 4 consolidated Silver records, got {res2['silver_written_count']}"
+    assert res2["reconciled_batch"] is True
+    assert res2["reconciled_silver"] is True
     updated_silver_df = spark.read.parquet(silver_s3a)
     rv2_updated = updated_silver_df.filter(F.col("review_id") == "rv_acc_002").collect()[0]
     assert rv2_updated["rating"] == 5.0, f"Expected updated rating 5.0, got {rv2_updated['rating']}"

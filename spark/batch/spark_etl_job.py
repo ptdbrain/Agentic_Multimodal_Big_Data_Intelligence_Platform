@@ -431,9 +431,14 @@ class SparkBatchETLJob:
                 "dataset_name": dataset_name,
                 "input_count": 0,
                 "valid_count": 0,
+                "valid_input_count": 0,
                 "unique_valid_count": 0,
                 "quarantine_count": 0,
                 "intra_dedup_dropped": 0,
+                "intra_batch_duplicate_count": 0,
+                "cross_batch_duplicate_count": 0,
+                "silver_prev_count": 0,
+                "new_inserts_count": 0,
                 "row_invalid_count": 0,
                 "silver_written_count": 0,
                 "field_null_counts": {},
@@ -441,6 +446,8 @@ class SparkBatchETLJob:
                 "null_row_count": 0,
                 "cast_error_count": 0,
                 "reconciled": True,
+                "reconciled_batch": True,
+                "reconciled_silver": True,
                 "dq_score": 100.0,
                 "silver_df": raw_df
             }
@@ -464,11 +471,12 @@ class SparkBatchETLJob:
         # 4. Validate & Quarantine
         valid_df, invalid_df = self.validate(typed_df, dataset_name)
         valid_count = valid_df.count()
+        valid_input_count = valid_count
         quarantine_count = invalid_df.count()
 
         # Strict Mathematical Check: input == valid + quarantine
-        assert input_count == valid_count + quarantine_count, (
-            f"Accounting mismatch: input ({input_count}) != valid ({valid_count}) + quarantine ({quarantine_count})"
+        assert input_count == valid_input_count + quarantine_count, (
+            f"Accounting mismatch: input ({input_count}) != valid ({valid_input_count}) + quarantine ({quarantine_count})"
         )
 
         # 5. Save Quarantine if any invalid records exist
@@ -482,12 +490,13 @@ class SparkBatchETLJob:
         # 6. Intra-batch Deduplication
         intra_dedup_df = self.deduplicate(valid_df, [pk], order_col=order_col)
         intra_valid_count = intra_dedup_df.count()
-        intra_dedup_dropped = valid_count - intra_valid_count
+        intra_batch_duplicate_count = valid_input_count - intra_valid_count
+        intra_dedup_dropped = intra_batch_duplicate_count
 
         # 7. Cross-batch Deduplication against existing Silver Parquet
         s_rel_path = silver_subpath or dataset_name
         silver_path = SparkSessionFactory.resolve_storage_path(s_rel_path, layer="silver")
-        final_silver_df = self._cross_batch_dedup_and_write(
+        final_silver_df, cross_metrics = self._cross_batch_dedup_and_write(
             intra_dedup_df,
             dataset_name,
             silver_path,
@@ -495,33 +504,62 @@ class SparkBatchETLJob:
             order_col,
             partition_cols,
             replace_existing=replace_existing_silver,
+            return_metrics=True,
         )
-        silver_written_count = final_silver_df.count()
+        silver_prev_count = cross_metrics["silver_prev_count"]
+        cross_batch_duplicate_count = cross_metrics["cross_batch_duplicate_count"]
+        new_inserts_count = cross_metrics["new_inserts_count"]
+        silver_written_count = cross_metrics["silver_written_count"]
+
+        # Dual Reconciliation Invariants:
+        # Invariant A (Batch Invariant): Every input record is definitively accounted for
+        reconciled_batch = (
+            input_count == quarantine_count + intra_batch_duplicate_count + cross_batch_duplicate_count + new_inserts_count
+        )
+        assert reconciled_batch, (
+            f"Batch accounting invariant failed: input ({input_count}) != "
+            f"quarantine ({quarantine_count}) + intra_dup ({intra_batch_duplicate_count}) + "
+            f"cross_dup ({cross_batch_duplicate_count}) + new_inserts ({new_inserts_count})"
+        )
+
+        # Invariant B (Silver State Transition Invariant): Net change in Silver matches genuinely new inserts
+        reconciled_silver = (silver_written_count == silver_prev_count + new_inserts_count)
+        assert reconciled_silver, (
+            f"Silver state accounting invariant failed: silver_written ({silver_written_count}) != "
+            f"silver_prev ({silver_prev_count}) + new_inserts ({new_inserts_count})"
+        )
 
         # Row-level valid count after deduplication vs row-level invalid count
         unique_valid_count = intra_valid_count
-        row_invalid_count = quarantine_count + intra_dedup_dropped
+        row_invalid_count = quarantine_count + intra_batch_duplicate_count
         dq_score = round((unique_valid_count / input_count * 100.0), 2) if input_count > 0 else 100.0
 
         return {
             "dataset_name": dataset_name,
             "input_count": input_count,
             "valid_count": valid_count,
+            "valid_input_count": valid_input_count,
             "unique_valid_count": unique_valid_count,
             "quarantine_count": quarantine_count,
             "intra_dedup_dropped": intra_dedup_dropped,
+            "intra_batch_duplicate_count": intra_batch_duplicate_count,
+            "cross_batch_duplicate_count": cross_batch_duplicate_count,
+            "silver_prev_count": silver_prev_count,
+            "new_inserts_count": new_inserts_count,
             "row_invalid_count": row_invalid_count,
             "silver_written_count": silver_written_count,
             "field_null_counts": null_stats["field_null_counts"],
             "total_field_nulls": null_stats["total_field_nulls"],
             "null_row_count": null_stats["null_row_count"],
             "cast_error_count": cast_error_count,
-            "reconciled": (input_count == valid_count + quarantine_count),
+            "reconciled": (reconciled_batch and reconciled_silver),
+            "reconciled_batch": reconciled_batch,
+            "reconciled_silver": reconciled_silver,
             "dq_score": dq_score,
             "silver_path": silver_path,
             "quarantine_path": quarantine_path,
             "silver_df": final_silver_df,
-            "quarantine_df": invalid_df
+            "quarantine_df": invalid_df,
         }
 
     def _cross_batch_dedup_and_write(
@@ -533,10 +571,14 @@ class SparkBatchETLJob:
         order_col: str,
         partition_cols: Optional[List[str]] = None,
         replace_existing: bool = False,
-    ) -> DataFrame:
+        return_metrics: bool = False,
+    ) -> Union[DataFrame, Tuple[DataFrame, Dict[str, Any]]]:
         """Consolidates new batch with existing Silver Parquet via Spark union and window deduplication,
         then writes the reconciled dataset to Silver Parquet using staged atomic publish.
         """
+        intra_valid_count = new_batch_df.count()
+        silver_prev_count = 0
+        cross_batch_duplicate_count = 0
         combined_df = new_batch_df
 
         # Check if existing Silver Parquet exists (skip when replace_existing=True)
@@ -562,13 +604,22 @@ class SparkBatchETLJob:
                             )
                         ),
                     )
-                existing_materialized = existing_df.localCheckpoint(eager=True)
+                # Deduplicate existing historical records by PK to ensure base is strictly unique entities
+                existing_materialized = self.deduplicate(existing_df, [pk], order_col=order_col).localCheckpoint(eager=True)
+                silver_prev_count = existing_materialized.count()
+
+                # Identify records in new_batch_df whose primary key already exists in existing Silver
+                existing_keys = existing_materialized.select(pk).distinct()
+                cross_batch_dups_df = new_batch_df.join(existing_keys, on=pk, how="inner")
+                cross_batch_duplicate_count = cross_batch_dups_df.count()
+
                 combined_df = existing_materialized.unionByName(new_batch_df, allowMissingColumns=True)
                 combined_df = self.deduplicate(combined_df, [pk], order_col=order_col)
             elif existing_df is None:
                 print(f"[Spark ETL] Silver path does not exist yet ({silver_path}); initializing new Silver table.")
 
-        combined_count = combined_df.count()
+        silver_written_count = combined_df.count()
+        new_inserts_count = intra_valid_count - cross_batch_duplicate_count
 
         # Atomic publish via staging to prevent data loss or partial writes
         SafeParquetIO.publish_parquet_atomic(
@@ -576,10 +627,20 @@ class SparkBatchETLJob:
             df=combined_df,
             target_path=silver_path,
             partition_cols=partition_cols,
-            expected_count=combined_count,
+            expected_count=silver_written_count,
         )
 
-        print(f"[Spark ETL] Written {combined_count} records to Silver Parquet: {silver_path}")
+        print(f"[Spark ETL] Written {silver_written_count} records to Silver Parquet: {silver_path}")
+
+        metrics = {
+            "silver_prev_count": silver_prev_count,
+            "cross_batch_duplicate_count": cross_batch_duplicate_count,
+            "new_inserts_count": new_inserts_count,
+            "silver_written_count": silver_written_count,
+        }
+
+        if return_metrics:
+            return combined_df, metrics
         return combined_df
 
     def run_pipeline(
@@ -616,7 +677,13 @@ class SparkBatchETLJob:
                 "records_valid": res["unique_valid_count"],
                 "records_invalid": res["row_invalid_count"],
                 "records_quarantined": res["quarantine_count"],
-                "records_duplicate": res["intra_dedup_dropped"],
+                "records_duplicate": res["intra_batch_duplicate_count"] + res["cross_batch_duplicate_count"],
+                "intra_batch_duplicate_count": res["intra_batch_duplicate_count"],
+                "cross_batch_duplicate_count": res["cross_batch_duplicate_count"],
+                "valid_input_count": res["valid_input_count"],
+                "silver_prev_count": res["silver_prev_count"],
+                "silver_written_count": res["silver_written_count"],
+                "new_inserts_count": res["new_inserts_count"],
                 "records_missing": res["null_row_count"],
                 "field_null_counts": res["field_null_counts"],
                 "total_field_nulls": res["total_field_nulls"],
