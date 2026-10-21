@@ -200,6 +200,34 @@ class RawConsumer:
         return sent_perf, sent_epoch_ms
 
     @staticmethod
+    def _compute_message_latency(
+        t_finish_perf: float,
+        t_finish_epoch_ms: float,
+        sent_perf: Optional[float],
+        sent_epoch_ms: Optional[float],
+    ) -> Tuple[Optional[float], bool]:
+        """Calculates per-message latency in milliseconds.
+        Returns:
+            (latency_ms, is_measurement_error)
+
+        Strict rule: Does NOT clamp non-positive latencies with max(0.01, ...).
+        Non-positive latencies (<= 0), clock skews, or missing send timestamps
+        are counted as measurement errors (is_measurement_error=True) rather
+        than fabricating valid latencies.
+        """
+        if sent_perf is not None:
+            diff = (t_finish_perf - sent_perf) * 1000.0
+            if diff > 0.0:
+                return round(diff, 3), False
+            return None, True
+        elif sent_epoch_ms is not None and sent_epoch_ms > 0:
+            diff = t_finish_epoch_ms - sent_epoch_ms
+            if diff > 0.0:
+                return round(diff, 3), False
+            return None, True
+        return None, True
+
+    @staticmethod
     def _extract_msg_id(raw_val: Any, record_item: Any = None) -> str:
         """Resolves canonical review_id, event_id, or key from message payload."""
         if isinstance(raw_val, dict):
@@ -283,7 +311,9 @@ class RawConsumer:
         topic_counts: Dict[str, int] = {}
         committed_offsets: Dict[str, int] = {}
         quarantined_records: List[Dict[str, Any]] = []
-        latencies_ms: List[float] = []
+        validation_latencies_ms: List[float] = []
+        durable_sink_latencies_ms: List[float] = []
+        timing_measurement_errors: int = 0
         message_latencies: List[Dict[str, Any]] = []
 
         # -------------------------------------------------------------
@@ -324,6 +354,9 @@ class RawConsumer:
                     "committed_offsets": {},
                     "dlq_records": [],
                     "latencies_ms": [],
+                    "validation_latencies_ms": [],
+                    "durable_sink_latencies_ms": [],
+                    "timing_measurement_errors": 0,
                     "message_latencies": [],
                 }
 
@@ -336,6 +369,8 @@ class RawConsumer:
 
             for topic, tp_list in topic_partitions.items():
                 valid_batch: List[Dict[str, Any]] = []
+                valid_msg_entries: List[Dict[str, Any]] = []
+                dlq_msg_entries: List[Dict[str, Any]] = []
                 tp_offsets: Dict[Any, int] = {}
                 topic_failed = False
 
@@ -346,30 +381,40 @@ class RawConsumer:
                         highest_offset = max(highest_offset, record.offset)
                         is_valid, errors, canonical_env = self.validate_message(topic, record.value)
 
-                        # Individual per-message processed timestamp and transit latency Li = t_processed - t_sent
-                        t_proc_perf = time.perf_counter()
-                        t_proc_epoch_ms = time.time() * 1000.0
+                        # Metric 1: validation_latency_ms (send -> validation complete)
+                        t_val_perf = time.perf_counter()
+                        t_val_epoch_ms = time.time() * 1000.0
                         sent_perf, sent_epoch_ms = self._extract_send_time(record, canonical_env or record.value)
-                        if sent_perf is not None:
-                            l_i = max(0.01, (t_proc_perf - sent_perf) * 1000.0)
-                        elif sent_epoch_ms is not None and sent_epoch_ms > 0:
-                            l_i = max(0.01, t_proc_epoch_ms - sent_epoch_ms)
-                        else:
-                            l_i = 0.1
-                        latencies_ms.append(round(l_i, 3))
                         msg_id = self._extract_msg_id(canonical_env or record.value, record)
-                        message_latencies.append({
+
+                        val_lat_ms, is_timing_err = self._compute_message_latency(
+                            t_val_perf, t_val_epoch_ms, sent_perf, sent_epoch_ms
+                        )
+                        if is_timing_err:
+                            timing_measurement_errors += 1
+                        else:
+                            validation_latencies_ms.append(val_lat_ms)
+
+                        msg_entry = {
                             "id": msg_id,
                             "review_id": msg_id,
                             "topic": topic,
                             "sent_mono": sent_perf,
-                            "processed_mono": t_proc_perf,
-                            "latency_ms": round(l_i, 3),
+                            "sent_epoch_ms": sent_epoch_ms,
+                            "validation_mono": t_val_perf,
+                            "processed_mono": t_val_perf,
+                            "validation_latency_ms": val_lat_ms,
+                            "latency_ms": val_lat_ms if val_lat_ms is not None else 0.0,
+                            "durable_sink_latency_ms": None,
+                            "sink_mono": None,
+                            "sink_includes_batch_buffering": True,
                             "is_valid": is_valid,
-                        })
+                        }
+                        message_latencies.append(msg_entry)
 
                         if is_valid and canonical_env is not None:
                             valid_batch.append(canonical_env)
+                            valid_msg_entries.append(msg_entry)
                             total_valid += 1
                         else:
                             # Route through durable DLQ
@@ -383,25 +428,61 @@ class RawConsumer:
                                     errors=errors
                                 )
                                 quarantined_records.append(dlq_res)
+                                dlq_msg_entries.append(msg_entry)
                                 total_dlq += 1
                             except Exception as e:
-                                # Strict requirement: if DLQ is broken, do NOT ignore error!
                                 topic_failed = True
                                 print(f"[RawConsumer CRITICAL] DLQ failure on {topic}[{tp.partition}]@{record.offset}: {e}")
                                 raise
                     if highest_offset >= 0:
                         tp_offsets[tp] = highest_offset
 
-                # Write valid envelopes to MinIO Bronze
+                # Metric 2: durable_sink_latency_ms (send -> Bronze batch write confirmed, includes batch buffering)
                 if valid_batch and not topic_failed:
                     try:
                         written_path = self.save_raw_batch(topic, valid_batch)
+                        t_sink_perf = time.perf_counter()
+                        t_sink_epoch_ms = time.time() * 1000.0
                         batches_written.append(str(written_path))
                         batches_by_topic.setdefault(topic, []).append(str(written_path))
                         topic_counts[topic] = topic_counts.get(topic, 0) + len(valid_batch)
+
+                        for m in valid_msg_entries:
+                            m["sink_mono"] = t_sink_perf
+                            m["durable_sink_status"] = "bronze_written"
+                            s_lat, s_err = self._compute_message_latency(
+                                t_sink_perf, t_sink_epoch_ms, m["sent_mono"], m["sent_epoch_ms"]
+                            )
+                            if s_err:
+                                timing_measurement_errors += 1
+                            else:
+                                durable_sink_latencies_ms.append(s_lat)
+                                m["durable_sink_latency_ms"] = s_lat
                     except Exception as write_err:
                         topic_failed = True
                         print(f"[RawConsumer Error] Failed to write Bronze batch for {topic}: {write_err}")
+                        raise
+
+                # Flush DLQ handler and record sink latency for quarantined records
+                if dlq_msg_entries and not topic_failed:
+                    try:
+                        dlq_handler.flush()
+                        t_dlq_perf = time.perf_counter()
+                        t_dlq_epoch_ms = time.time() * 1000.0
+                        for m in dlq_msg_entries:
+                            m["sink_mono"] = t_dlq_perf
+                            m["durable_sink_status"] = "dlq_persisted"
+                            s_lat, s_err = self._compute_message_latency(
+                                t_dlq_perf, t_dlq_epoch_ms, m["sent_mono"], m["sent_epoch_ms"]
+                            )
+                            if s_err:
+                                timing_measurement_errors += 1
+                            else:
+                                durable_sink_latencies_ms.append(s_lat)
+                                m["durable_sink_latency_ms"] = s_lat
+                    except Exception as dlq_err:
+                        topic_failed = True
+                        print(f"[RawConsumer Error] Failed to flush DLQ for {topic}: {dlq_err}")
                         raise
 
                 # Commit partition offsets strictly if all records in this topic succeeded
@@ -419,6 +500,8 @@ class RawConsumer:
         else:
             if live_stream:
                 by_topic_valid: Dict[str, List[Dict[str, Any]]] = {}
+                by_topic_valid_entries: Dict[str, List[Dict[str, Any]]] = {}
+                dlq_msg_entries: List[Dict[str, Any]] = []
                 highest_offset_by_topic: Dict[str, int] = {}
                 partition_failed_by_topic: Dict[str, bool] = {}
                 consumed_idx = 0
@@ -438,29 +521,39 @@ class RawConsumer:
                         raw_val = item.get("value", item)
 
                         is_valid, errors, canonical_env = self.validate_message(topic, raw_val)
-                        t_proc_perf = time.perf_counter()
-                        t_proc_epoch_ms = time.time() * 1000.0
+                        t_val_perf = time.perf_counter()
+                        t_val_epoch_ms = time.time() * 1000.0
                         sent_perf, sent_epoch_ms = self._extract_send_time(item, canonical_env or raw_val)
-                        if sent_perf is not None:
-                            l_i = max(0.01, (t_proc_perf - sent_perf) * 1000.0)
-                        elif sent_epoch_ms is not None and sent_epoch_ms > 0:
-                            l_i = max(0.01, t_proc_epoch_ms - sent_epoch_ms)
-                        else:
-                            l_i = 0.1
-                        latencies_ms.append(round(l_i, 3))
                         msg_id = self._extract_msg_id(canonical_env or raw_val, item)
-                        message_latencies.append({
+
+                        val_lat_ms, is_timing_err = self._compute_message_latency(
+                            t_val_perf, t_val_epoch_ms, sent_perf, sent_epoch_ms
+                        )
+                        if is_timing_err:
+                            timing_measurement_errors += 1
+                        else:
+                            validation_latencies_ms.append(val_lat_ms)
+
+                        msg_entry = {
                             "id": msg_id,
                             "review_id": msg_id,
                             "topic": topic,
                             "sent_mono": sent_perf,
-                            "processed_mono": t_proc_perf,
-                            "latency_ms": round(l_i, 3),
+                            "sent_epoch_ms": sent_epoch_ms,
+                            "validation_mono": t_val_perf,
+                            "processed_mono": t_val_perf,
+                            "validation_latency_ms": val_lat_ms,
+                            "latency_ms": val_lat_ms if val_lat_ms is not None else 0.0,
+                            "durable_sink_latency_ms": None,
+                            "sink_mono": None,
+                            "sink_includes_batch_buffering": True,
                             "is_valid": is_valid,
-                        })
+                        }
+                        message_latencies.append(msg_entry)
 
                         if is_valid and canonical_env is not None:
                             by_topic_valid.setdefault(topic, []).append(canonical_env)
+                            by_topic_valid_entries.setdefault(topic, []).append(msg_entry)
                             total_valid += 1
                         else:
                             try:
@@ -473,6 +566,7 @@ class RawConsumer:
                                     errors=errors
                                 )
                                 quarantined_records.append(dlq_res)
+                                dlq_msg_entries.append(msg_entry)
                                 total_dlq += 1
                             except Exception:
                                 partition_failed_by_topic[topic] = True
@@ -484,23 +578,56 @@ class RawConsumer:
                     if valid_batch and not partition_failed_by_topic.get(topic, False):
                         try:
                             written_path = self.save_raw_batch(topic, valid_batch)
+                            t_sink_perf = time.perf_counter()
+                            t_sink_epoch_ms = time.time() * 1000.0
                             batches_written.append(str(written_path))
                             batches_by_topic.setdefault(topic, []).append(str(written_path))
                             topic_counts[topic] = topic_counts.get(topic, 0) + len(valid_batch)
+
+                            for m in by_topic_valid_entries.get(topic, []):
+                                m["sink_mono"] = t_sink_perf
+                                m["durable_sink_status"] = "bronze_written"
+                                s_lat, s_err = self._compute_message_latency(
+                                    t_sink_perf, t_sink_epoch_ms, m["sent_mono"], m["sent_epoch_ms"]
+                                )
+                                if s_err:
+                                    timing_measurement_errors += 1
+                                else:
+                                    durable_sink_latencies_ms.append(s_lat)
+                                    m["durable_sink_latency_ms"] = s_lat
                         except Exception:
                             partition_failed_by_topic[topic] = True
                             raise
                     high_off = highest_offset_by_topic.get(topic, -1)
                     if not partition_failed_by_topic.get(topic, False) and high_off >= 0:
                         committed_offsets[f"{topic}-0"] = high_off + 1
+
+                if dlq_msg_entries:
+                    dlq_handler.flush()
+                    t_dlq_perf = time.perf_counter()
+                    t_dlq_epoch_ms = time.time() * 1000.0
+                    for m in dlq_msg_entries:
+                        m["sink_mono"] = t_dlq_perf
+                        m["durable_sink_status"] = "dlq_persisted"
+                        s_lat, s_err = self._compute_message_latency(
+                            t_dlq_perf, t_dlq_epoch_ms, m["sent_mono"], m["sent_epoch_ms"]
+                        )
+                        if s_err:
+                            timing_measurement_errors += 1
+                        else:
+                            durable_sink_latencies_ms.append(s_lat)
+                            m["durable_sink_latency_ms"] = s_lat
             else:
                 by_topic: Dict[str, List[Dict[str, Any]]] = {}
                 for item in (offline_records or []):
                     t = item.get("topic") or target_topics[0]
                     by_topic.setdefault(t, []).append(item)
 
+                dlq_msg_entries_all: List[Dict[str, Any]] = []
+
                 for topic, items in by_topic.items():
                     valid_batch = []
+                    valid_msg_entries = []
                     highest_offset = -1
                     partition_failed = False
 
@@ -512,29 +639,39 @@ class RawConsumer:
                         raw_val = item.get("value", item)
 
                         is_valid, errors, canonical_env = self.validate_message(topic, raw_val)
-                        t_proc_perf = time.perf_counter()
-                        t_proc_epoch_ms = time.time() * 1000.0
+                        t_val_perf = time.perf_counter()
+                        t_val_epoch_ms = time.time() * 1000.0
                         sent_perf, sent_epoch_ms = self._extract_send_time(item, canonical_env or raw_val)
-                        if sent_perf is not None:
-                            l_i = max(0.01, (t_proc_perf - sent_perf) * 1000.0)
-                        elif sent_epoch_ms is not None and sent_epoch_ms > 0:
-                            l_i = max(0.01, t_proc_epoch_ms - sent_epoch_ms)
-                        else:
-                            l_i = 0.1
-                        latencies_ms.append(round(l_i, 3))
                         msg_id = self._extract_msg_id(canonical_env or raw_val, item)
-                        message_latencies.append({
+
+                        val_lat_ms, is_timing_err = self._compute_message_latency(
+                            t_val_perf, t_val_epoch_ms, sent_perf, sent_epoch_ms
+                        )
+                        if is_timing_err:
+                            timing_measurement_errors += 1
+                        else:
+                            validation_latencies_ms.append(val_lat_ms)
+
+                        msg_entry = {
                             "id": msg_id,
                             "review_id": msg_id,
                             "topic": topic,
                             "sent_mono": sent_perf,
-                            "processed_mono": t_proc_perf,
-                            "latency_ms": round(l_i, 3),
+                            "sent_epoch_ms": sent_epoch_ms,
+                            "validation_mono": t_val_perf,
+                            "processed_mono": t_val_perf,
+                            "validation_latency_ms": val_lat_ms,
+                            "latency_ms": val_lat_ms if val_lat_ms is not None else 0.0,
+                            "durable_sink_latency_ms": None,
+                            "sink_mono": None,
+                            "sink_includes_batch_buffering": True,
                             "is_valid": is_valid,
-                        })
+                        }
+                        message_latencies.append(msg_entry)
 
                         if is_valid and canonical_env is not None:
                             valid_batch.append(canonical_env)
+                            valid_msg_entries.append(msg_entry)
                             total_valid += 1
                         else:
                             try:
@@ -547,6 +684,7 @@ class RawConsumer:
                                     errors=errors
                                 )
                                 quarantined_records.append(dlq_res)
+                                dlq_msg_entries_all.append(msg_entry)
                                 total_dlq += 1
                             except Exception:
                                 partition_failed = True
@@ -555,15 +693,45 @@ class RawConsumer:
                     if valid_batch and not partition_failed:
                         try:
                             written_path = self.save_raw_batch(topic, valid_batch)
+                            t_sink_perf = time.perf_counter()
+                            t_sink_epoch_ms = time.time() * 1000.0
                             batches_written.append(str(written_path))
                             batches_by_topic.setdefault(topic, []).append(str(written_path))
                             topic_counts[topic] = topic_counts.get(topic, 0) + len(valid_batch)
+
+                            for m in valid_msg_entries:
+                                m["sink_mono"] = t_sink_perf
+                                m["durable_sink_status"] = "bronze_written"
+                                s_lat, s_err = self._compute_message_latency(
+                                    t_sink_perf, t_sink_epoch_ms, m["sent_mono"], m["sent_epoch_ms"]
+                                )
+                                if s_err:
+                                    timing_measurement_errors += 1
+                                else:
+                                    durable_sink_latencies_ms.append(s_lat)
+                                    m["durable_sink_latency_ms"] = s_lat
                         except Exception:
                             partition_failed = True
                             raise
 
                     if not partition_failed and highest_offset >= 0:
                         committed_offsets[f"{topic}-0"] = highest_offset + 1
+
+                if dlq_msg_entries_all:
+                    dlq_handler.flush()
+                    t_dlq_perf = time.perf_counter()
+                    t_dlq_epoch_ms = time.time() * 1000.0
+                    for m in dlq_msg_entries_all:
+                        m["sink_mono"] = t_dlq_perf
+                        m["durable_sink_status"] = "dlq_persisted"
+                        s_lat, s_err = self._compute_message_latency(
+                            t_dlq_perf, t_dlq_epoch_ms, m["sent_mono"], m["sent_epoch_ms"]
+                        )
+                        if s_err:
+                            timing_measurement_errors += 1
+                        else:
+                            durable_sink_latencies_ms.append(s_lat)
+                            m["durable_sink_latency_ms"] = s_lat
 
         return {
             "records_consumed": total_consumed,
@@ -574,8 +742,11 @@ class RawConsumer:
             "topic_counts": topic_counts,
             "committed_offsets": committed_offsets,
             "dlq_records": quarantined_records,
-            "latencies_ms": latencies_ms,
-            "message_latencies": message_latencies
+            "latencies_ms": validation_latencies_ms,
+            "validation_latencies_ms": validation_latencies_ms,
+            "durable_sink_latencies_ms": durable_sink_latencies_ms,
+            "timing_measurement_errors": timing_measurement_errors,
+            "message_latencies": message_latencies,
         }
 
     def consume_to_bronze(

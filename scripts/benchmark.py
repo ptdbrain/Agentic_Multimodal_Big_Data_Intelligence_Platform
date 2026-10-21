@@ -665,9 +665,14 @@ def benchmark_velocity(
                     f"Velocity integration failed: produced {sent} messages to Kafka, but 0 consumed."
                 )
 
-            # Extract true per-message latencies (Li = t_processed,i - t_sent,i) measured by consumer
-            latencies_ms: List[float] = cons_res.get("latencies_ms", [])
-            latency_stats = compute_percentiles(latencies_ms)
+            # Extract true per-message latencies measured by consumer
+            val_latencies: List[float] = cons_res.get("validation_latencies_ms", cons_res.get("latencies_ms", []))
+            val_stats = compute_percentiles(val_latencies)
+
+            sink_latencies: List[float] = cons_res.get("durable_sink_latencies_ms", [])
+            sink_stats = compute_percentiles(sink_latencies)
+
+            timing_errors: int = int(cons_res.get("timing_measurement_errors", 0))
 
             # Consumer lag
             consumer_lag = 0
@@ -710,10 +715,19 @@ def benchmark_velocity(
                 "consume_errors": int(consume_errors),
                 "e2e_duration_sec": round(e2e_duration, 4),
                 "e2e_throughput_mps": round(e2e_rate, 1),
-                "latency_p50_ms": latency_stats["p50"],
-                "latency_p95_ms": latency_stats["p95"],
-                "latency_p99_ms": latency_stats["p99"],
-                "latency_avg_ms": latency_stats["avg"],
+                "validation_latency_p50_ms": val_stats["p50"],
+                "validation_latency_p95_ms": val_stats["p95"],
+                "validation_latency_p99_ms": val_stats["p99"],
+                "validation_latency_avg_ms": val_stats["avg"],
+                "durable_sink_latency_p50_ms": sink_stats["p50"],
+                "durable_sink_latency_p95_ms": sink_stats["p95"],
+                "durable_sink_latency_p99_ms": sink_stats["p99"],
+                "durable_sink_latency_avg_ms": sink_stats["avg"],
+                "timing_measurement_errors": timing_errors,
+                "latency_p50_ms": val_stats["p50"],
+                "latency_p95_ms": val_stats["p95"],
+                "latency_p99_ms": val_stats["p99"],
+                "latency_avg_ms": val_stats["avg"],
                 "bronze_bytes": int(bronze_bytes),
                 "accounting_reconciled": True,
             }
@@ -722,7 +736,9 @@ def benchmark_velocity(
                 f"produce={row['actual_produce_rate_mps']:,.1f} msg/s ({row['produce_duration_sec']:.3f}s) | "
                 f"consume={row['consumer_throughput_mps']:,.1f} msg/s ({row['consume_duration_sec']:.3f}s) | "
                 f"consumed={row['messages_consumed']} (valid={row['valid_count']}, dlq={row['quarantine_dlq_count']}, lag={row['consumer_lag']}) | "
-                f"latency: p50={row['latency_p50_ms']}ms, p95={row['latency_p95_ms']}ms, p99={row['latency_p99_ms']}ms | "
+                f"val_lat(p50/p95/p99)={row['validation_latency_p50_ms']}/{row['validation_latency_p95_ms']}/{row['validation_latency_p99_ms']}ms | "
+                f"sink_lat_with_buffering(p50/p95/p99)={row['durable_sink_latency_p50_ms']}/{row['durable_sink_latency_p95_ms']}/{row['durable_sink_latency_p99_ms']}ms | "
+                f"timing_errs={row['timing_measurement_errors']} | "
                 f"e2e_rate={row['e2e_throughput_mps']:,.1f} msg/s | bronze={row['bronze_bytes']:,} B"
             )
             results.append(row)
@@ -1102,22 +1118,27 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
         "> [!NOTE]",
         "> **Transport Mode:** `real_kafka` enforces live Kafka KRaft broker connection; offline buffer is disallowed in integration mode.",
         ">",
-        "> **Per-Message Latency Profiling ($L_i = t_{\\text{processed}, i} - t_{\\text{sent}, i}$):** Monotonic clocks (`time.perf_counter()`) timestamp each individual message at dispatch and upon consumer schema validation/quarantine routing. Percentiles p50/p95/p99 reflect actual per-message processing latency, not aggregate batch duration.",
+        "> **Dual Latency Profiling:**",
+        "> 1. **Validation Latency ($L_{\\text{val}, i} = t_{\\text{val}, i} - t_{\\text{sent}, i}$):** Measured per message from producer dispatch to completed schema & envelope validation.",
+        "> 2. **Durable Sink Latency ($L_{\\text{sink}, i} = t_{\\text{sink}, i} - t_{\\text{sent}, i}$):** Measured upon confirmed persistence of the message batch into Bronze storage or DLQ (*includes consumer batch buffering*).",
+        "> 3. **Measurement Error Accounting:** Non-positive latencies or missing timestamps are counted strictly under `Timing Errs` instead of being clamped via `max(0.01, ...)`.",
         "",
-        "| Seed | Transport | Target (msg/s) | Sent | Consumed | Valid (Bronze) | DLQ | Lag | Produce Rate (msg/s) | Consume Rate (msg/s) | Latency p50 (ms) | Latency p95 (ms) | Latency p99 (ms) | E2E Time (s) | E2E Rate (msg/s) | Bronze (B) |",
-        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
+        "| Seed | Transport | Target (msg/s) | Sent | Consumed | Valid (Bronze) | DLQ | Lag | Produce Rate (msg/s) | Consume Rate (msg/s) | Val Latency p50 (ms) | Val Latency p95 (ms) | Sink Latency p50 (ms)* | Sink Latency p95 (ms)* | Timing Errs | E2E Time (s) | E2E Rate (msg/s) | Bronze (B) |",
+        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
     ])
     for v in vel_rows:
         cmps = v.get("consumer_throughput_mps", 0.0)
         lag = v.get("consumer_lag", 0)
-        p50 = v.get("latency_p50_ms", 0.0)
-        p95 = v.get("latency_p95_ms", 0.0)
-        p99 = v.get("latency_p99_ms", 0.0)
+        vp50 = v.get("validation_latency_p50_ms", v.get("latency_p50_ms", 0.0))
+        vp95 = v.get("validation_latency_p95_ms", v.get("latency_p95_ms", 0.0))
+        sp50 = v.get("durable_sink_latency_p50_ms", vp50)
+        sp95 = v.get("durable_sink_latency_p95_ms", vp95)
+        terrs = v.get("timing_measurement_errors", 0)
         lines.append(
             f"| {v['seed']} | {v['transport_mode']} | {v['target_rate_mps']:,} | "
             f"{v['messages_sent']:,} | {v['messages_consumed']:,} | {v['valid_count']:,} | "
             f"{v['quarantine_dlq_count']:,} | {lag} | {v['actual_produce_rate_mps']:,.1f} | "
-            f"{cmps:,.1f} | {p50}ms | {p95}ms | {p99}ms | "
+            f"{cmps:,.1f} | {vp50}ms | {vp95}ms | {sp50}ms | {sp95}ms | {terrs} | "
             f"{v['e2e_duration_sec']:.4f}s | {v['e2e_throughput_mps']:,.1f} | {v['bronze_bytes']:,} |"
         )
 
@@ -1261,22 +1282,27 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
         "> [!NOTE]",
         "> **Transport Mode:** `real_kafka` kết nối trực tiếp cụm Kafka KRaft; chế độ integration không dùng hàng đợi offline giả lập.",
         ">",
-        "> **Phương Pháp Đo Độ Trễ ($L_i = t_{\\text{processed}, i} - t_{\\text{sent}, i}$):** Sử dụng đồng hồ monotonic độ chính xác cao (`time.perf_counter()`) ghi nhận thời điểm gửi của từng message riêng biệt và thời điểm hoàn tất xử lý/quarantine của consumer đối với message đó. Các phân vị p50, p95, p99 được tính trực tiếp từ tập hợp các $L_i$ này, phản ánh trung thực độ trễ streaming trên từng bản ghi thay vì thời gian gộp của cả batch.",
+        "> **Phân biệt hai chỉ số độ trễ streaming độc lập:**",
+        "> 1. **Validation Latency ($L_{\\text{val}, i} = t_{\\text{val}, i} - t_{\\text{sent}, i}$):** Đo lường thời gian từ lúc gửi đến khi consumer hoàn tất validate schema cho từng message.",
+        "> 2. **Durable Sink Latency ($L_{\\text{sink}, i} = t_{\\text{sink}, i} - t_{\\text{sent}, i}$):** Đo lường thời gian từ lúc gửi đến khi batch chứa message được xác nhận lưu thành công vào Bronze Parquet/JSON hoặc DLQ (*bao gồm cả thời gian gom batch / batch buffering*).",
+        "> 3. **Kỷ luật dữ liệu đo lường:** Loại bỏ hoàn toàn `max(0.01, ...)`. Mọi trường hợp timestamp sai thứ tự hoặc không hợp lệ được đếm chính xác thành `Lỗi Đo Lường`, không tự ép thành latency hợp lệ giả tạo.",
         "",
-        "| Seed | Transport | Mục Tiêu (msg/s) | Đã Gửi | Đã Nhận | Hợp Lệ (Bronze) | DLQ | Lag | Tốc Độ Gửi (msg/s) | Tốc Độ Nhận (msg/s) | Độ Trễ p50 (ms) | Độ Trễ p95 (ms) | Độ Trễ p99 (ms) | Thời Gian E2E (s) | Throughput E2E (msg/s) | Dung Lượng Bronze (B) |",
-        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
+        "| Seed | Transport | Mục Tiêu (msg/s) | Đã Gửi | Đã Nhận | Hợp Lệ (Bronze) | DLQ | Lag | Tốc Độ Gửi (msg/s) | Tốc Độ Nhận (msg/s) | Độ Trễ Val p50 (ms) | Độ Trễ Val p95 (ms) | Độ Trễ Lưu Trữ p50 (ms)* | Độ Trễ Lưu Trữ p95 (ms)* | Lỗi Đo Lường | Thời Gian E2E (s) | Throughput E2E (msg/s) | Dung Lượng Bronze (B) |",
+        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
     ])
     for v in vel_rows:
         cmps = v.get("consumer_throughput_mps", 0.0)
         lag = v.get("consumer_lag", 0)
-        p50 = v.get("latency_p50_ms", 0.0)
-        p95 = v.get("latency_p95_ms", 0.0)
-        p99 = v.get("latency_p99_ms", 0.0)
+        vp50 = v.get("validation_latency_p50_ms", v.get("latency_p50_ms", 0.0))
+        vp95 = v.get("validation_latency_p95_ms", v.get("latency_p95_ms", 0.0))
+        sp50 = v.get("durable_sink_latency_p50_ms", vp50)
+        sp95 = v.get("durable_sink_latency_p95_ms", vp95)
+        terrs = v.get("timing_measurement_errors", 0)
         doc_lines.append(
             f"| {v['seed']} | {v['transport_mode']} | {v['target_rate_mps']:,} | "
             f"{v['messages_sent']:,} | {v['messages_consumed']:,} | {v['valid_count']:,} | "
             f"{v['quarantine_dlq_count']:,} | {lag} | {v['actual_produce_rate_mps']:,.1f} | "
-            f"{cmps:,.1f} | {p50}ms | {p95}ms | {p99}ms | "
+            f"{cmps:,.1f} | {vp50}ms | {vp95}ms | {sp50}ms | {sp95}ms | {terrs} | "
             f"{v['e2e_duration_sec']:.4f}s | {v['e2e_throughput_mps']:,.1f} | {v['bronze_bytes']:,} |"
         )
 

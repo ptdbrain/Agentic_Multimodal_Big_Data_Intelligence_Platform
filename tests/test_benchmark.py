@@ -202,6 +202,11 @@ class TestBenchmarkFormulas:
             expected_diff_ms = (m["processed_mono"] - m["sent_mono"]) * 1000.0
             assert abs(m["latency_ms"] - expected_diff_ms) < 0.05
             assert m["latency_ms"] > 0.0
+            # Dual latency metric verification
+            assert m["validation_latency_ms"] is not None
+            assert m["durable_sink_latency_ms"] is not None
+            assert m["durable_sink_latency_ms"] >= m["validation_latency_ms"]
+            assert m["sink_includes_batch_buffering"] is True
 
         # 3. Verify that latencies are strictly distinct (reflecting per-message pacing, not batch elapsed time)
         lat_values = [m["latency_ms"] for m in msg_lats]
@@ -214,6 +219,115 @@ class TestBenchmarkFormulas:
         stats = compute_percentiles(lat_values)
         assert stats["p50"] > 0.0
         assert stats["p50"] < stats["p95"] <= stats["p99"]
+
+        # 5. Verify dual latency arrays in consumer result
+        assert "validation_latencies_ms" in res
+        assert "durable_sink_latencies_ms" in res
+        assert len(res["validation_latencies_ms"]) == 4
+        assert len(res["durable_sink_latencies_ms"]) == 4
+        assert res["timing_measurement_errors"] == 0
+
+    def test_invalid_and_non_positive_latencies_counted_as_timing_errors_not_clamped(self):
+        """Verify that non-positive latencies, clock skews, and missing send timestamps
+        are strictly counted as timing measurement errors and never clamped into fake valid 0.01ms latencies.
+        """
+        import time
+        from kafka.consumers.raw_consumer import RawConsumer
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            consumer = RawConsumer(bronze_dir=Path(tmp_dir))
+
+            # Create 4 test items
+            now = time.perf_counter()
+            virtual_queue = [
+                # Item 1: Inverted clock / future send timestamp (sent after processing -> delta < 0)
+                {
+                    "topic": "raw.reviews",
+                    "offset": 0,
+                    "sent_perf_counter": now + 10.0,
+                    "sent_epoch_ms": (time.time() + 10.0) * 1000.0,
+                    "value": {
+                        "product_id": "p_inv",
+                        "review_id": "rv_inv",
+                        "user_id": "u1",
+                        "rating": 5.0,
+                        "review_title": "Good",
+                        "review_text": "Content",
+                        "review_date": "2026-10-20T10:00:00Z",
+                    },
+                },
+                # Item 2: Missing send timestamp (both None)
+                {
+                    "topic": "raw.reviews",
+                    "offset": 1,
+                    "sent_perf_counter": None,
+                    "sent_epoch_ms": None,
+                    "value": {
+                        "product_id": "p_miss",
+                        "review_id": "rv_miss",
+                        "user_id": "u2",
+                        "rating": 4.0,
+                        "review_title": "Nice",
+                        "review_text": "Content",
+                        "review_date": "2026-10-20T10:00:00Z",
+                    },
+                },
+                # Item 3: Zero / negative epoch timestamp
+                {
+                    "topic": "raw.reviews",
+                    "offset": 2,
+                    "sent_perf_counter": None,
+                    "sent_epoch_ms": -500.0,
+                    "value": {
+                        "product_id": "p_neg",
+                        "review_id": "rv_neg",
+                        "user_id": "u3",
+                        "rating": 3.0,
+                        "review_title": "OK",
+                        "review_text": "Content",
+                        "review_date": "2026-10-20T10:00:00Z",
+                    },
+                },
+                # Item 4: Genuinely valid message (sent 25ms ago)
+                {
+                    "topic": "raw.reviews",
+                    "offset": 3,
+                    "sent_perf_counter": now - 0.025,
+                    "sent_epoch_ms": (time.time() - 0.025) * 1000.0,
+                    "value": {
+                        "product_id": "p_valid",
+                        "review_id": "rv_valid",
+                        "user_id": "u4",
+                        "rating": 5.0,
+                        "review_title": "Super",
+                        "review_text": "Content",
+                        "review_date": "2026-10-20T10:00:00Z",
+                    },
+                },
+            ]
+
+            res = consumer.consume_batch_once(topics=["raw.reviews"], offline_records=virtual_queue)
+            assert res["records_consumed"] == 4
+
+            # 1. Measurement errors must be counted (> 0)
+            assert res["timing_measurement_errors"] >= 3, f"Expected at least 3 timing errors, got {res['timing_measurement_errors']}"
+
+            # 2. Clamped fake 0.01ms MUST NEVER be in validation or sink latencies
+            assert 0.01 not in res["validation_latencies_ms"]
+            assert 0.01 not in res["durable_sink_latencies_ms"]
+
+            # 3. Only the genuinely valid message (Item 4) is admitted into valid latency metrics
+            assert len(res["validation_latencies_ms"]) == 1
+            assert res["validation_latencies_ms"][0] >= 20.0  # Approx 25ms delay
+
+            # 4. Message latency entries for invalid timings record None rather than 0.01
+            inv_msg = next(m for m in res["message_latencies"] if m["review_id"] == "rv_inv")
+            assert inv_msg["validation_latency_ms"] is None
+            assert inv_msg["durable_sink_latency_ms"] is None
+
+            valid_msg = next(m for m in res["message_latencies"] if m["review_id"] == "rv_valid")
+            assert valid_msg["validation_latency_ms"] is not None
+            assert valid_msg["durable_sink_latency_ms"] is not None
 
     def test_compute_median_run_single_run(self):
         single_run = [{"duration_sec": 2.5, "throughput_rps": 400.0, "cpu_percent": 15.0}]
