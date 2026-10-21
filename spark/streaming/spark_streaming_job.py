@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Optional, Tuple, Dict, Any, List
 from config.settings import settings
 from spark.spark_session import SparkSessionFactory
+from spark.storage_safe import SafeParquetIO
 
 try:
     from pyspark.sql import SparkSession, DataFrame
@@ -374,22 +375,19 @@ class SparkStreamingJob:
         incoming = batch_df.withColumn("__batch_priority", F.lit(1)).localCheckpoint(eager=True)
         combined = incoming
 
-        try:
-            existing = self.spark.read.parquet(self.output_path)
-            if not existing.rdd.isEmpty():
-                existing_mat = existing.withColumn("__batch_priority", F.lit(0)).localCheckpoint(eager=True)
-                unioned = existing_mat.unionByName(incoming, allowMissingColumns=True)
-                w_spec = Window.partitionBy("window_start", "window_end", "product_id").orderBy(
-                    F.col("__batch_priority").desc()
-                )
-                combined = (
-                    unioned
-                    .withColumn("__rn", F.row_number().over(w_spec))
-                    .filter(F.col("__rn") == 1)
-                    .drop("__rn")
-                )
-        except Exception:
-            pass
+        existing = SafeParquetIO.read_parquet_safely(self.spark, self.output_path, check_exists_first=True)
+        if existing is not None and not existing.rdd.isEmpty():
+            existing_mat = existing.withColumn("__batch_priority", F.lit(0)).localCheckpoint(eager=True)
+            unioned = existing_mat.unionByName(incoming, allowMissingColumns=True)
+            w_spec = Window.partitionBy("window_start", "window_end", "product_id").orderBy(
+                F.col("__batch_priority").desc()
+            )
+            combined = (
+                unioned
+                .withColumn("__rn", F.row_number().over(w_spec))
+                .filter(F.col("__rn") == 1)
+                .drop("__rn")
+            )
 
         final_df = (
             combined
@@ -397,7 +395,13 @@ class SparkStreamingJob:
             .orderBy("window_start", "product_id")
             .localCheckpoint(eager=True)
         )
-        final_df.write.mode("overwrite").parquet(self.output_path)
+        final_count = final_df.count()
+        SafeParquetIO.publish_parquet_atomic(
+            spark=self.spark,
+            df=final_df,
+            target_path=self.output_path,
+            expected_count=final_count,
+        )
 
     def _write_quarantine_batch(self, batch_df: "DataFrame", batch_id: int) -> None:
         """Idempotent foreachBatch sink for streaming quarantine records."""
@@ -405,17 +409,23 @@ class SparkStreamingJob:
             return
         incoming = batch_df.localCheckpoint(eager=True)
         combined = incoming
-        try:
-            existing = self.spark.read.parquet(self.quarantine_path)
-            if not existing.rdd.isEmpty():
-                existing_mat = existing.localCheckpoint(eager=True)
-                combined = existing_mat.unionByName(incoming, allowMissingColumns=True)
-                dedup_cols = [c for c in ("event_id", "review_id", "quarantine_reason") if c in combined.columns]
-                if dedup_cols:
-                    combined = combined.dropDuplicates(dedup_cols)
-        except Exception:
-            pass
-        combined.localCheckpoint(eager=True).write.mode("overwrite").parquet(self.quarantine_path)
+
+        existing = SafeParquetIO.read_parquet_safely(self.spark, self.quarantine_path, check_exists_first=True)
+        if existing is not None and not existing.rdd.isEmpty():
+            existing_mat = existing.localCheckpoint(eager=True)
+            combined = existing_mat.unionByName(incoming, allowMissingColumns=True)
+            dedup_cols = [c for c in ("event_id", "review_id", "quarantine_reason") if c in combined.columns]
+            if dedup_cols:
+                combined = combined.dropDuplicates(dedup_cols)
+
+        final_df = combined.localCheckpoint(eager=True)
+        final_count = final_df.count()
+        SafeParquetIO.publish_parquet_atomic(
+            spark=self.spark,
+            df=final_df,
+            target_path=self.quarantine_path,
+            expected_count=final_count,
+        )
 
     def start_review_stream(
         self,

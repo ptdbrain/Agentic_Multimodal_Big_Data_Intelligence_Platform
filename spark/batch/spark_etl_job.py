@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional, Union
 from config.settings import settings
 from spark.spark_session import SparkSessionFactory
+from spark.storage_safe import SafeParquetIO
 
 try:
     from pyspark.sql import SparkSession, DataFrame
@@ -534,47 +535,51 @@ class SparkBatchETLJob:
         replace_existing: bool = False,
     ) -> DataFrame:
         """Consolidates new batch with existing Silver Parquet via Spark union and window deduplication,
-        then writes the reconciled dataset to Silver Parquet.
+        then writes the reconciled dataset to Silver Parquet using staged atomic publish.
         """
         combined_df = new_batch_df
 
         # Check if existing Silver Parquet exists (skip when replace_existing=True)
         if not replace_existing:
-            try:
-                existing_df = self.spark.read.parquet(silver_path)
-                if existing_df.count() > 0:
-                    if dataset_name == "reviews" and "user_id" in existing_df.columns:
-                        uid_trimmed = F.trim(F.col("user_id").cast(StringType()))
-                        existing_df = existing_df.withColumn(
-                            "user_id",
-                            F.when(
-                                uid_trimmed.isNull() | (uid_trimmed == "") | uid_trimmed.isin("None", "null", "nan"),
-                                F.lit("anon_redacted"),
-                            )
-                            .when(
-                                uid_trimmed.rlike(r"^anon_[0-9a-f]{16}$|^anon_redacted$"),
-                                uid_trimmed,
-                            )
-                            .otherwise(
-                                F.concat(
-                                    F.lit("anon_"),
-                                    F.substring(F.sha2(F.concat(F.lit("sentinel-pii-v1:"), uid_trimmed), 256), 1, 16),
-                                )
-                            ),
+            existing_df = SafeParquetIO.read_parquet_safely(self.spark, silver_path, check_exists_first=True)
+            if existing_df is not None and not existing_df.rdd.isEmpty():
+                if dataset_name == "reviews" and "user_id" in existing_df.columns:
+                    uid_trimmed = F.trim(F.col("user_id").cast(StringType()))
+                    existing_df = existing_df.withColumn(
+                        "user_id",
+                        F.when(
+                            uid_trimmed.isNull() | (uid_trimmed == "") | uid_trimmed.isin("None", "null", "nan"),
+                            F.lit("anon_redacted"),
                         )
-                    existing_materialized = existing_df.localCheckpoint(eager=True)
-                    combined_df = existing_materialized.unionByName(new_batch_df, allowMissingColumns=True)
-                    combined_df = self.deduplicate(combined_df, [pk], order_col=order_col)
-            except Exception:
-                pass
+                        .when(
+                            uid_trimmed.rlike(r"^anon_[0-9a-f]{16}$|^anon_redacted$"),
+                            uid_trimmed,
+                        )
+                        .otherwise(
+                            F.concat(
+                                F.lit("anon_"),
+                                F.substring(F.sha2(F.concat(F.lit("sentinel-pii-v1:"), uid_trimmed), 256), 1, 16),
+                            )
+                        ),
+                    )
+                existing_materialized = existing_df.localCheckpoint(eager=True)
+                combined_df = existing_materialized.unionByName(new_batch_df, allowMissingColumns=True)
+                combined_df = self.deduplicate(combined_df, [pk], order_col=order_col)
+            elif existing_df is None:
+                print(f"[Spark ETL] Silver path does not exist yet ({silver_path}); initializing new Silver table.")
 
-        # Write Parquet directly via Spark DataFrame
-        writer = combined_df.write.mode("overwrite")
-        if partition_cols:
-            writer = writer.partitionBy(*partition_cols)
-        writer.parquet(silver_path)
+        combined_count = combined_df.count()
 
-        print(f"[Spark ETL] Written {combined_df.count()} records to Silver Parquet: {silver_path}")
+        # Atomic publish via staging to prevent data loss or partial writes
+        SafeParquetIO.publish_parquet_atomic(
+            spark=self.spark,
+            df=combined_df,
+            target_path=silver_path,
+            partition_cols=partition_cols,
+            expected_count=combined_count,
+        )
+
+        print(f"[Spark ETL] Written {combined_count} records to Silver Parquet: {silver_path}")
         return combined_df
 
     def run_pipeline(
