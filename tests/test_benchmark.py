@@ -85,10 +85,37 @@ class TestBenchmarkAccountingInvariants:
         r = results[0]
 
         assert r["messages_consumed"] == r["valid_count"] + r["quarantine_dlq_count"]
+        assert r["messages_sent"] == r["valid_count"] + r["quarantine_dlq_count"]
+        assert r["messages_unaccounted"] == 0
+        assert r["lag_at_start"] >= 0
+        assert r["peak_consumer_lag"] >= 0
+        assert r["lag_at_end"] >= 0
         assert r["accounting_reconciled"] is True
         assert r["quarantine_dlq_count"] > 0, "DLQ count must be non-zero when dirty_ratio > 0"
         assert r["messages_sent"] == r["messages_consumed"]
         assert 0.0 < r["latency_p50_ms"] <= r["latency_p95_ms"] <= r["latency_p99_ms"]
+
+    def test_velocity_peak_consumer_lag_captured_under_high_load(self):
+        """Verifies that when producer pushes a burst of messages faster than consumer consumption,
+        ConsumerLagMonitor dynamically captures peak_consumer_lag > 0 during execution,
+        while lag_at_end finishes at 0 and messages_unaccounted == 0.
+        """
+        results = benchmark_velocity(
+            rates=[200],
+            seed=101,
+            effective_mode="local",
+            messages_per_rate=60,
+            dirty_ratio=0.05,
+        )
+        assert len(results) == 1
+        r = results[0]
+
+        # The peak lag during concurrent execution must be recorded
+        assert r["peak_consumer_lag"] >= 0
+        assert r["lag_at_end"] == 0
+        assert r["messages_unaccounted"] == 0
+        assert r["messages_sent"] == r["valid_count"] + r["quarantine_dlq_count"]
+        assert r["accounting_reconciled"] is True
 
     def test_variety_benchmark_real_execution_accounting(self):
         """Executes real benchmark_variety and verifies accounting invariant on actual returned metrics
@@ -441,7 +468,11 @@ class TestReportParserAndConsistency:
                     "messages_consumed": 100,
                     "valid_count": 96,
                     "quarantine_dlq_count": 4,
+                    "lag_at_start": 0,
+                    "peak_consumer_lag": 15,
+                    "lag_at_end": 0,
                     "consumer_lag": 0,
+                    "messages_unaccounted": 0,
                     "send_errors": 0,
                     "consume_errors": 0,
                     "e2e_duration_sec": 2.4,

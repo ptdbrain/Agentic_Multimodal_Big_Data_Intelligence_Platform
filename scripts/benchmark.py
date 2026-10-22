@@ -202,6 +202,70 @@ class ResourceMonitor:
         }
 
 
+class ConsumerLagMonitor:
+    """Periodically samples consumer lag / backlog while producer and consumer run concurrently.
+    Tracks lag_at_start, peak_consumer_lag, lag_at_end, and periodic sample series.
+    """
+
+    def __init__(
+        self,
+        producer: StreamProducer,
+        consumer: RawConsumer,
+        initial_lag: int = 0,
+        sample_interval_sec: float = 0.005,
+    ):
+        self.producer = producer
+        self.consumer = consumer
+        self.initial_lag = initial_lag
+        self.sample_interval_sec = sample_interval_sec
+        self.samples: List[int] = []
+        self._stop_event = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+        self.lag_at_start: int = 0
+        self.lag_at_end: int = 0
+        self.peak_consumer_lag: int = 0
+
+    def _sample_current_lag(self) -> int:
+        prod_sent = int(getattr(self.producer, "current_batch_sent", 0) or 0)
+        cons_done = int(getattr(self.consumer, "current_consumed_count", 0) or 0)
+        in_flight_lag = max(0, prod_sent - cons_done) + self.initial_lag
+        broker_lag = int(getattr(self.consumer, "current_broker_lag", 0) or 0)
+        return max(in_flight_lag, broker_lag)
+
+    def start(self) -> None:
+        self.lag_at_start = self._sample_current_lag()
+        self.samples = [self.lag_at_start]
+        self._stop_event.clear()
+        self._thread = threading.Thread(
+            target=self._run,
+            name="velocity-lag-monitor",
+            daemon=True,
+        )
+        self._thread.start()
+
+    def _run(self) -> None:
+        while not self._stop_event.is_set():
+            lag = self._sample_current_lag()
+            self.samples.append(lag)
+            time.sleep(self.sample_interval_sec)
+
+    def stop(self) -> Dict[str, Any]:
+        self._stop_event.set()
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=1.0)
+        self.lag_at_end = self._sample_current_lag()
+        self.samples.append(self.lag_at_end)
+        self.peak_consumer_lag = max(self.samples) if self.samples else 0
+        consumer_peak_broker = int(getattr(self.consumer, "peak_broker_lag", 0) or 0)
+        self.peak_consumer_lag = max(self.peak_consumer_lag, consumer_peak_broker)
+        return {
+            "lag_at_start": int(self.lag_at_start),
+            "peak_consumer_lag": int(self.peak_consumer_lag),
+            "lag_at_end": int(self.lag_at_end),
+            "samples_count": len(self.samples),
+        }
+
+
 def compute_percentiles(values: List[float]) -> Dict[str, float]:
     """Computes exact p50, p95, p99, min, max, avg percentiles deterministically."""
     if not values:
@@ -633,6 +697,26 @@ def benchmark_velocity(
                 finally:
                     t_cons_end = time.perf_counter()
 
+            # Sample initial topic lag on broker if in real Kafka mode
+            initial_topic_lag = 0
+            if not is_local and consumer.consumer and consumer.consumer.assignment():
+                try:
+                    end_offsets = consumer.consumer.end_offsets(consumer.consumer.assignment())
+                    for tp in consumer.consumer.assignment():
+                        pos = consumer.consumer.position(tp)
+                        initial_topic_lag += max(0, end_offsets.get(tp, pos) - pos)
+                except Exception:
+                    initial_topic_lag = 0
+
+            # Periodically sample consumer lag across concurrent execution
+            lag_monitor = ConsumerLagMonitor(
+                producer=producer,
+                consumer=consumer,
+                initial_lag=initial_topic_lag,
+                sample_interval_sec=0.005,
+            )
+            lag_monitor.start()
+
             consumer_thread = threading.Thread(
                 target=consumer_worker,
                 name=f"velocity-consumer-{rate}",
@@ -664,6 +748,8 @@ def benchmark_velocity(
                 stop_event.set()
                 consumer_thread.join(timeout=2.0)
 
+            lag_stats = lag_monitor.stop()
+
             consume_errors = len(cons_errors)
             if cons_errors:
                 raise cons_errors[0]
@@ -675,8 +761,20 @@ def benchmark_velocity(
             dlq_count = int(cons_res.get("records_dlq", 0))
 
             # Mathematical accounting check on streaming:
+            # Invariant 1: Total consumed must exactly match valid Bronze writes plus quarantined DLQ records
             assert consumed == valid_to_bronze + dlq_count, (
                 f"Velocity accounting mismatch: consumed ({consumed}) != valid ({valid_to_bronze}) + dlq ({dlq_count})"
+            )
+
+            # Invariant 2: Total sent messages must match total terminal states (valid + DLQ)
+            # Detects any message loss or unaccounted messages in flight
+            messages_unaccounted = max(0, sent - (valid_to_bronze + dlq_count))
+            assert messages_unaccounted == 0, (
+                f"Velocity accounting mismatch: sent ({sent}) != valid ({valid_to_bronze}) + dlq ({dlq_count}), "
+                f"unaccounted messages: {messages_unaccounted}"
+            )
+            assert sent == valid_to_bronze + dlq_count, (
+                f"Velocity message loss detected: sent ({sent}) != processed ({valid_to_bronze + dlq_count})"
             )
 
             if not is_local and sent > 0 and consumed == 0:
@@ -693,19 +791,10 @@ def benchmark_velocity(
 
             timing_errors: int = int(cons_res.get("timing_measurement_errors", 0))
 
-            # Consumer lag
-            consumer_lag = 0
-            if not is_local and consumer.consumer and consumer.consumer.assignment():
-                try:
-                    end_offsets = consumer.consumer.end_offsets(consumer.consumer.assignment())
-                    for tp in consumer.consumer.assignment():
-                        pos = consumer.consumer.position(tp)
-                        end = end_offsets.get(tp, pos)
-                        consumer_lag += max(0, end - pos)
-                except Exception:
-                    consumer_lag = max(0, sent - consumed)
-            else:
-                consumer_lag = max(0, sent - consumed)
+            lag_at_start = int(lag_stats["lag_at_start"])
+            peak_consumer_lag = int(lag_stats["peak_consumer_lag"])
+            lag_at_end = int(lag_stats["lag_at_end"])
+            consumer_lag = lag_at_end  # legacy alias
 
             e2e_start = min(t_prod_start, t_cons_start) if t_cons_start > 0 else t_prod_start
             e2e_end = max(t_prod_start + prod_duration, t_cons_end)
@@ -729,7 +818,11 @@ def benchmark_velocity(
                 "messages_consumed": consumed,
                 "valid_count": valid_to_bronze,
                 "quarantine_dlq_count": dlq_count,
-                "consumer_lag": int(consumer_lag),
+                "lag_at_start": lag_at_start,
+                "peak_consumer_lag": peak_consumer_lag,
+                "lag_at_end": lag_at_end,
+                "consumer_lag": consumer_lag,
+                "messages_unaccounted": messages_unaccounted,
                 "send_errors": int(send_errors),
                 "consume_errors": int(consume_errors),
                 "e2e_duration_sec": round(e2e_duration, 4),
@@ -748,13 +841,15 @@ def benchmark_velocity(
                 "latency_p99_ms": val_stats["p99"],
                 "latency_avg_ms": val_stats["avg"],
                 "bronze_bytes": int(bronze_bytes),
-                "accounting_reconciled": True,
+                "accounting_reconciled": (messages_unaccounted == 0 and consumed == valid_to_bronze + dlq_count),
             }
             print(
                 f"  [Velocity] seed={row['seed']} | target={row['target_rate_mps']} msg/s | "
                 f"produce={row['actual_produce_rate_mps']:,.1f} msg/s ({row['produce_duration_sec']:.3f}s) | "
                 f"consume={row['consumer_throughput_mps']:,.1f} msg/s ({row['consume_duration_sec']:.3f}s) | "
-                f"consumed={row['messages_consumed']} (valid={row['valid_count']}, dlq={row['quarantine_dlq_count']}, lag={row['consumer_lag']}) | "
+                f"consumed={row['messages_consumed']} (valid={row['valid_count']}, dlq={row['quarantine_dlq_count']}) | "
+                f"lag(start/peak/end)={row['lag_at_start']}/{row['peak_consumer_lag']}/{row['lag_at_end']} | "
+                f"unaccounted={row['messages_unaccounted']} | "
                 f"val_lat(p50/p95/p99)={row['validation_latency_p50_ms']}/{row['validation_latency_p95_ms']}/{row['validation_latency_p99_ms']}ms | "
                 f"sink_lat_with_buffering(p50/p95/p99)={row['durable_sink_latency_p50_ms']}/{row['durable_sink_latency_p95_ms']}/{row['durable_sink_latency_p99_ms']}ms | "
                 f"timing_errs={row['timing_measurement_errors']} | "
@@ -1158,13 +1253,19 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
         "> 1. **Validation Latency ($L_{\\text{val}, i} = t_{\\text{val}, i} - t_{\\text{sent}, i}$):** Measured per message from producer dispatch to completed schema & envelope validation.",
         "> 2. **Durable Sink Latency ($L_{\\text{sink}, i} = t_{\\text{sink}, i} - t_{\\text{sent}, i}$):** Measured upon confirmed persistence of the message batch into Bronze storage or DLQ (*includes consumer batch buffering*).",
         "> 3. **Measurement Error Accounting:** Non-positive latencies or missing timestamps are counted strictly under `Timing Errs` instead of being clamped via `max(0.01, ...)`.",
+        "> 4. **Dynamic Consumer Backlog & Peak Lag:** Periodically samples consumer backlog throughout concurrent execution, reporting `Lag (Start/Peak/End)` and verifying `Unaccounted == 0` (Sent == Valid + DLQ).",
         "",
-        "| Seed | Transport | Target (msg/s) | Sent | Consumed | Valid (Bronze) | DLQ | Lag | Produce Rate (msg/s) | Consume Rate (msg/s) | Val Latency p50 (ms) | Val Latency p95 (ms) | Sink Latency p50 (ms)* | Sink Latency p95 (ms)* | Timing Errs | E2E Time (s) | E2E Rate (msg/s) | Bronze (B) |",
-        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
+        "| Seed | Transport | Target (msg/s) | Sent | Consumed | Valid (Bronze) | DLQ | Lag (Start/Peak/End) | Unaccounted | Produce Rate (msg/s) | Consume Rate (msg/s) | Val Latency p50 (ms) | Val Latency p95 (ms) | Sink Latency p50 (ms)* | Sink Latency p95 (ms)* | Timing Errs | E2E Time (s) | E2E Rate (msg/s) | Bronze (B) |",
+        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
     ])
     for v in vel_rows:
         cmps = v.get("consumer_throughput_mps", 0.0)
         lag = v.get("consumer_lag", 0)
+        lag_at_start = v.get("lag_at_start", 0)
+        peak_lag = v.get("peak_consumer_lag", lag)
+        lag_at_end = v.get("lag_at_end", lag)
+        lag_str = f"{lag_at_start} / {peak_lag} / {lag_at_end}"
+        unaccounted = v.get("messages_unaccounted", 0)
         vp50 = v.get("validation_latency_p50_ms", v.get("latency_p50_ms", 0.0))
         vp95 = v.get("validation_latency_p95_ms", v.get("latency_p95_ms", 0.0))
         sp50 = v.get("durable_sink_latency_p50_ms", vp50)
@@ -1173,7 +1274,7 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
         lines.append(
             f"| {v['seed']} | {v['transport_mode']} | {v['target_rate_mps']:,} | "
             f"{v['messages_sent']:,} | {v['messages_consumed']:,} | {v['valid_count']:,} | "
-            f"{v['quarantine_dlq_count']:,} | {lag} | {v['actual_produce_rate_mps']:,.1f} | "
+            f"{v['quarantine_dlq_count']:,} | {lag_str} | {unaccounted} | {v['actual_produce_rate_mps']:,.1f} | "
             f"{cmps:,.1f} | {vp50}ms | {vp95}ms | {sp50}ms | {sp95}ms | {terrs} | "
             f"{v['e2e_duration_sec']:.4f}s | {v['e2e_throughput_mps']:,.1f} | {v['bronze_bytes']:,} |"
         )
@@ -1322,13 +1423,19 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
         "> 1. **Validation Latency ($L_{\\text{val}, i} = t_{\\text{val}, i} - t_{\\text{sent}, i}$):** Đo lường thời gian từ lúc gửi đến khi consumer hoàn tất validate schema cho từng message.",
         "> 2. **Durable Sink Latency ($L_{\\text{sink}, i} = t_{\\text{sink}, i} - t_{\\text{sent}, i}$):** Đo lường thời gian từ lúc gửi đến khi batch chứa message được xác nhận lưu thành công vào Bronze Parquet/JSON hoặc DLQ (*bao gồm cả thời gian gom batch / batch buffering*).",
         "> 3. **Kỷ luật dữ liệu đo lường:** Loại bỏ hoàn toàn `max(0.01, ...)`. Mọi trường hợp timestamp sai thứ tự hoặc không hợp lệ được đếm chính xác thành `Lỗi Đo Lường`, không tự ép thành latency hợp lệ giả tạo.",
+        "> 4. **Đo Lường Backlog & Peak Lag Định Kỳ:** Lấy mẫu định kỳ liên tục trong lúc producer và consumer chạy đồng thời để phát hiện backlog đỉnh (`Lag Đầu/Đỉnh/Cuối`), đối soát chặt chẽ `Đã Gửi == Hợp Lệ + DLQ` (`Thất Thoát == 0`).",
         "",
-        "| Seed | Transport | Mục Tiêu (msg/s) | Đã Gửi | Đã Nhận | Hợp Lệ (Bronze) | DLQ | Lag | Tốc Độ Gửi (msg/s) | Tốc Độ Nhận (msg/s) | Độ Trễ Val p50 (ms) | Độ Trễ Val p95 (ms) | Độ Trễ Lưu Trữ p50 (ms)* | Độ Trễ Lưu Trữ p95 (ms)* | Lỗi Đo Lường | Thời Gian E2E (s) | Throughput E2E (msg/s) | Dung Lượng Bronze (B) |",
-        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
+        "| Seed | Transport | Mục Tiêu (msg/s) | Đã Gửi | Đã Nhận | Hợp Lệ (Bronze) | DLQ | Lag (Đầu/Đỉnh/Cuối) | Thất Thoát | Tốc Độ Gửi (msg/s) | Tốc Độ Nhận (msg/s) | Độ Trễ Val p50 (ms) | Độ Trễ Val p95 (ms) | Độ Trễ Lưu Trữ p50 (ms)* | Độ Trễ Lưu Trữ p95 (ms)* | Lỗi Đo Lường | Thời Gian E2E (s) | Throughput E2E (msg/s) | Dung Lượng Bronze (B) |",
+        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
     ])
     for v in vel_rows:
         cmps = v.get("consumer_throughput_mps", 0.0)
         lag = v.get("consumer_lag", 0)
+        lag_at_start = v.get("lag_at_start", 0)
+        peak_lag = v.get("peak_consumer_lag", lag)
+        lag_at_end = v.get("lag_at_end", lag)
+        lag_str = f"{lag_at_start} / {peak_lag} / {lag_at_end}"
+        unaccounted = v.get("messages_unaccounted", 0)
         vp50 = v.get("validation_latency_p50_ms", v.get("latency_p50_ms", 0.0))
         vp95 = v.get("validation_latency_p95_ms", v.get("latency_p95_ms", 0.0))
         sp50 = v.get("durable_sink_latency_p50_ms", vp50)
@@ -1337,7 +1444,7 @@ def generate_markdown_report(results: Dict[str, Any]) -> None:
         doc_lines.append(
             f"| {v['seed']} | {v['transport_mode']} | {v['target_rate_mps']:,} | "
             f"{v['messages_sent']:,} | {v['messages_consumed']:,} | {v['valid_count']:,} | "
-            f"{v['quarantine_dlq_count']:,} | {lag} | {v['actual_produce_rate_mps']:,.1f} | "
+            f"{v['quarantine_dlq_count']:,} | {lag_str} | {unaccounted} | {v['actual_produce_rate_mps']:,.1f} | "
             f"{cmps:,.1f} | {vp50}ms | {vp95}ms | {sp50}ms | {sp95}ms | {terrs} | "
             f"{v['e2e_duration_sec']:.4f}s | {v['e2e_throughput_mps']:,.1f} | {v['bronze_bytes']:,} |"
         )

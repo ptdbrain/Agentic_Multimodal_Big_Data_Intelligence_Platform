@@ -30,6 +30,9 @@ class RawConsumer:
         self.group_id = group_id
         self.auto_offset_reset = auto_offset_reset
         self.consumer = None
+        self.current_consumed_count: int = 0
+        self.current_broker_lag: int = 0
+        self.peak_broker_lag: int = 0
 
     def _init_consumer(self, topics: List[str]):
         from kafka import KafkaConsumer
@@ -306,6 +309,9 @@ class RawConsumer:
         total_consumed = 0
         total_valid = 0
         total_dlq = 0
+        self.current_consumed_count = 0
+        self.current_broker_lag = 0
+        self.peak_broker_lag = 0
         batches_written = []
         batches_by_topic: Dict[str, List[str]] = {}
         topic_counts: Dict[str, int] = {}
@@ -338,6 +344,17 @@ class RawConsumer:
                     for tp, recs in batch.items():
                         polled.setdefault(tp, []).extend(recs)
                         fetched_total += len(recs)
+                    if self.consumer.assignment():
+                        try:
+                            end_offsets = self.consumer.end_offsets(self.consumer.assignment())
+                            cur_lag = 0
+                            for tp in self.consumer.assignment():
+                                pos = self.consumer.position(tp)
+                                cur_lag += max(0, end_offsets.get(tp, pos) - pos)
+                            self.current_broker_lag = cur_lag
+                            self.peak_broker_lag = max(self.peak_broker_lag, cur_lag)
+                        except Exception:
+                            pass
                 elif fetched_total > 0 and self.consumer.assignment() and not live_stream:
                     empty_polls += 1
                     if empty_polls >= 2:
@@ -378,6 +395,7 @@ class RawConsumer:
                     highest_offset = -1
                     for record in records:
                         total_consumed += 1
+                        self.current_consumed_count = total_consumed
                         highest_offset = max(highest_offset, record.offset)
                         is_valid, errors, canonical_env = self.validate_message(topic, record.value)
 
@@ -515,6 +533,7 @@ class RawConsumer:
                         consumed_idx += 1
                         topic = item.get("topic") or target_topics[0]
                         total_consumed += 1
+                        self.current_consumed_count = total_consumed
                         offset = item.get("offset", total_consumed - 1)
                         partition = item.get("partition", 0)
                         highest_offset_by_topic[topic] = max(highest_offset_by_topic.get(topic, -1), offset)
@@ -633,6 +652,7 @@ class RawConsumer:
 
                     for item in items:
                         total_consumed += 1
+                        self.current_consumed_count = total_consumed
                         offset = item.get("offset", total_consumed - 1)
                         partition = item.get("partition", 0)
                         highest_offset = max(highest_offset, offset)
@@ -747,6 +767,8 @@ class RawConsumer:
             "durable_sink_latencies_ms": durable_sink_latencies_ms,
             "timing_measurement_errors": timing_measurement_errors,
             "message_latencies": message_latencies,
+            "lag_at_end": self.current_broker_lag,
+            "peak_broker_lag": self.peak_broker_lag,
         }
 
     def consume_to_bronze(

@@ -23,6 +23,7 @@ class StreamProducer:
         self.enable_offline_buffer = enable_offline_buffer
         self.virtual_queue: List[Dict[str, Any]] = []
         self.producer = None
+        self.current_batch_sent: int = 0
         self._init_producer()
 
     def _init_producer(self):
@@ -138,6 +139,7 @@ class StreamProducer:
         target_rate = rate if rate is not None else settings.ingestion.rate_limit_rps
         interval = 1.0 / target_rate if target_rate > 0 else 0
         sent = 0
+        self.current_batch_sent = 0
         t0 = time.time()
         pending_futures = []
 
@@ -162,6 +164,7 @@ class StreamProducer:
                 pending_futures.append(delivery_result)
 
             sent += 1
+            self.current_batch_sent = sent
             if interval > 0:
                 time.sleep(interval)
 
