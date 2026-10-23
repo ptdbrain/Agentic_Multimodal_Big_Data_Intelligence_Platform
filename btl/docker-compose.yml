@@ -42,7 +42,10 @@ services:
 
   # MinIO S3-compatible Data Lake
   minio:
-    image: minio/minio:RELEASE.2024-03-30T09-41-56Z
+    image: sentinel-minio-source:20240330
+    build:
+      context: ./docker
+      dockerfile: minio.Dockerfile
     container_name: sentinel-minio
     ports:
       - "9000:9000"

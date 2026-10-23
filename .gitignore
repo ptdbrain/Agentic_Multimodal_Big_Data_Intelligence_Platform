@@ -28,3 +28,6 @@ storage/minio_root/
 hadoop/jars/
 docs/reports/backup_*/
 
+
+# Persistent, local verification environment (never source code).
+.runtime/

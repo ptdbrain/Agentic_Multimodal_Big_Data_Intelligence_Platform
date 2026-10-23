@@ -5,8 +5,19 @@ from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+def resolve_env_file(project_root: Path) -> Path:
+    """Prefer project configuration, then the containing Git repository's .env."""
+    local = project_root / ".env"
+    if local.is_file():
+        return local
+    parent = project_root.parent
+    if (parent / ".git").exists() and (parent / ".env").is_file():
+        return parent / ".env"
+    return local
+
+
 def _load_env_file():
-    env_file = REPO_ROOT / ".env"
+    env_file = resolve_env_file(REPO_ROOT)
     if env_file.exists():
         try:
             with open(env_file, "r", encoding="utf-8") as f:
@@ -55,7 +66,6 @@ class StorageSettings:
         is_docker = (
             os.path.exists("/.dockerenv")
             or os.environ.get("RUNNING_IN_DOCKER", "false").lower() == "true"
-            or os.environ.get("SPARK_MASTER", "").startswith("spark://")
         )
         if is_docker:
             return self.endpoint_docker
@@ -136,6 +146,8 @@ class DatabaseSettings:
 
 @dataclass
 class AnalyticsSettings:
+    strict_analytics_time: bool = get_env("STRICT_ANALYTICS_TIME", "true").strip().lower() == "true"
+    allow_local_analytics_fallback: bool = get_env("ALLOW_LOCAL_ANALYTICS_FALLBACK", "false").strip().lower() == "true"
     price_zscore_threshold: float = float(get_env("PRICE_ZSCORE_THRESHOLD", "3.0"))
     price_iqr_k: float = float(get_env("PRICE_IQR_K", "1.5"))
     price_min_data_points: int = int(get_env("PRICE_MIN_DATA_POINTS", "3"))

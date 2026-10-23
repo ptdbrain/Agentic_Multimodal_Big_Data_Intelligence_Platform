@@ -5,6 +5,9 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 markers = [
     "unit: Unit tests verifying isolated component logic without external service dependencies",
+    "spark: Tests requiring a working Spark JVM",
+    "airflow: Requires the real Airflow scheduler and executor",
+    "live: Tests requiring a public network source",
     "integration: End-to-end and external infrastructure integration tests",
 ]
 

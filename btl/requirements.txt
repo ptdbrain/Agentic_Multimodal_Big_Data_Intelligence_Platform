@@ -1,10 +1,11 @@
-pandas>=2.0.0
-pyarrow>=14.0.0
+pandas>=2.0.0,<3
+numpy>=1.24,<2
+pyarrow==14.0.2
 pydantic>=2.0.0
 pyyaml>=6.0.0
 requests>=2.31.0
-kafka-python>=2.0.0
-pyspark>=3.5.0
+kafka-python==3.0.11
+pyspark==3.5.0
 minio>=7.2.0
 psycopg2-binary>=2.9.0
 jsonschema>=4.20.0

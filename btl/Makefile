@@ -2,6 +2,8 @@
 
 VOLUME ?= 5000
 RATE ?= 0
+COMPOSE_ENV ?= $(firstword $(wildcard .env ../.env))
+COMPOSE = docker compose $(if $(COMPOSE_ENV),--env-file "$(COMPOSE_ENV)",)
 
 help:
 	@echo "SentinelAI Platform Management Commands:"
@@ -10,7 +12,7 @@ help:
 	@echo "  make demo       - Execute complete end-to-end data pipeline"
 	@echo "  make simulate   - Simulate pushing existing dataset with 3V (VOLUME=5000 RATE=0)"
 	@echo "  make test       - Run full pytest verification suite"
-	@echo "  make test-unit  - Run isolated unit test suite (pytest -m unit -v)"
+	@echo "  make test-unit  - Run isolated unit test suite (pytest -m "unit and not spark and not integration and not live" -v)"
 	@echo "  make lint       - Run syntax compilation and ruff static analysis"
 	@echo "  make benchmark  - Run 3V Big Data benchmark suite"
 	@echo "  make health     - Run infrastructure connectivity health checks"
@@ -19,10 +21,10 @@ help:
 	@echo "  make reset      - Clean local data lake and reset database"
 
 up:
-	docker compose up -d
+	$(COMPOSE) up -d
 
 down:
-	docker compose down
+	$(COMPOSE) down
 
 demo:
 	python scripts/run_e2e_pipeline.py
@@ -38,7 +40,7 @@ test:
 	pytest -v
 
 test-unit:
-	pytest -m unit -v
+	pytest -m "unit and not spark and not integration and not live" -v
 
 acceptance-kafka:
 	python scripts/verify_kafka_bronze_acceptance.py
@@ -58,3 +60,13 @@ metrics:
 reset:
 	python -c "import shutil, pathlib; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('storage/datalake').glob('*') if p.is_dir() and p.name != 'quarantine']; print('Data Lake tiers reset.')"
 
+
+.PHONY: test-spark test-integration test-live
+test-spark:
+	pytest -m "spark and not integration and not live" -v
+
+test-integration:
+	pytest -m "integration and not airflow and not live" -v
+
+test-live:
+	pytest -m live -v

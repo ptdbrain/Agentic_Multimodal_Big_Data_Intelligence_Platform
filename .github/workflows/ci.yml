@@ -7,6 +7,10 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+defaults:
+  run:
+    working-directory: btl
+
 jobs:
   lint:
     name: 1. Lint & Static Syntax Verification
@@ -19,6 +23,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache-dependency-path: btl/requirements.txt
 
       - name: Install Linter Tools
         run: |
@@ -45,6 +50,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache-dependency-path: btl/requirements.txt
           cache: "pip"
 
       - name: Install Dependencies
@@ -54,11 +60,38 @@ jobs:
 
       - name: Run Isolated Unit Test Suite (Gate 1)
         run: |
-          pytest -m unit -v
+          make test-unit
+
+  spark-tests:
+    name: Spark local correctness
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache-dependency-path: btl/requirements.txt
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: pip install -r requirements.txt
+      - run: make test-spark
+        env:
+          SPARK_MASTER: local[2]
+          SPARK_DRIVER_MEMORY: 2g
+          SPARK_LOCAL_IP: 127.0.0.1
+          RUNTIME_MODE: test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spark-test-evidence
+          path: btl/docs/reports/remediation_status.md
 
   integration-tests:
     name: 3. End-to-End Integration & 3V Benchmark Tests
-    needs: unit-tests
+    needs: spark-tests
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -104,6 +137,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache-dependency-path: btl/requirements.txt
           cache: "pip"
 
       - name: Install Dependencies
@@ -111,10 +145,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Start S3-Compatible MinIO Object Storage Server
+      - name: Start real MinIO and Elasticsearch
         run: |
-          nohup python scripts/standalone_s3_server.py > /tmp/s3_server.log 2>&1 &
-          sleep 3
+          docker build -f docker/minio.Dockerfile -t sentinel-minio-source:20240330 docker
+          docker run -d --name sentinel-ci-minio -p 9000:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin sentinel-minio-source:20240330 server /data
+          docker run -d --name sentinel-ci-es -p 9200:9200 -e discovery.type=single-node -e xpack.security.enabled=false -e ES_JAVA_OPTS="-Xms512m -Xmx512m" elasticsearch:8.13.0
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:9000/minio/health/live && curl -fsS http://localhost:9200; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:9000/minio/health/live
+          curl -fsS http://localhost:9200
 
       - name: Verify All Integration Services (Kafka, MinIO S3, PostgreSQL, Spark)
         env:
@@ -129,20 +170,29 @@ jobs:
         run: |
           python scripts/health_check.py
 
-      - name: Run Canonical E2E Pipeline (Dataset, Public Dataset & Crawler Modes)
+      - name: Create clean synthetic acceptance inputs
+        run: |
+          python scripts/create_acceptance_dataset.py /tmp/sentinel-acceptance
+          echo "SOURCE_PRODUCTS_PATH=/tmp/sentinel-acceptance/products.json" >> "$GITHUB_ENV"
+          echo "SOURCE_REVIEWS_PATH=/tmp/sentinel-acceptance/reviews.json" >> "$GITHUB_ENV"
+          echo "SOURCE_PRICES_PATH=/tmp/sentinel-acceptance/prices.json" >> "$GITHUB_ENV"
+
+      - name: Run E2E twice with DQ gate enabled
         env:
           RUNTIME_MODE: integration
           KAFKA_BOOTSTRAP_SERVERS: localhost:9092
-          MINIO_ENDPOINT: localhost:9000
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_DB: sentinel_dw
-          POSTGRES_USER: sentinel
           POSTGRES_PASSWORD: sentinel_password
         run: |
-          python scripts/run_e2e_pipeline.py --mode integration --source-type dataset
-          python scripts/run_e2e_pipeline.py --mode integration --source-type public_dataset
-          python scripts/run_e2e_pipeline.py --mode integration --source-type crawler --crawler-platform tiki --crawler-max-products 3 --crawler-reviews-per-prod 5
+          python scripts/run_e2e_pipeline.py --mode integration
+          python scripts/run_e2e_pipeline.py --mode integration
+
+      - name: Run real service and Kafka streaming gates
+        env:
+          RUNTIME_MODE: integration
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          POSTGRES_PASSWORD: sentinel_password
+          SPARK_CONNECTOR_PACKAGES: org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4
+        run: pytest tests/integration tests/test_api_live.py -m "integration and not airflow and not live" -v
 
       - name: Run Streaming & Advanced DQ Acceptance Verification
         env:
@@ -169,3 +219,47 @@ jobs:
           POSTGRES_PASSWORD: sentinel_password
         run: |
           python scripts/benchmark.py --mode integration --seed 42 --volume-sizes 100,1000 --velocity-rates 50,200 --variety-count 100
+
+  airflow-tests:
+    name: Airflow LocalExecutor end-to-end
+    needs: spark-tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: airflow
+          POSTGRES_PASSWORD: airflow_test_password
+          POSTGRES_DB: airflow_test
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    env:
+      AIRFLOW_HOME: /tmp/sentinel-airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_test_password@localhost:5432/airflow_test
+      RUNTIME_MODE: test
+      SPARK_MASTER: local[2]
+      SPARK_DRIVER_MEMORY: 1g
+      SPARK_LOCAL_IP: 127.0.0.1
+      LOCAL_DATA_DIR: /tmp/sentinel-airflow-lake
+      SQLITE_DB_PATH: /tmp/sentinel-airflow-warehouse.sqlite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache-dependency-path: btl/requirements.txt
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: pip install -r requirements.txt -r requirements-airflow.txt
+      - run: |
+          python scripts/create_acceptance_dataset.py /tmp/sentinel-airflow-input
+          echo "AIRFLOW__CORE__DAGS_FOLDER=$GITHUB_WORKSPACE/btl/orchestration/dags" >> "$GITHUB_ENV"
+          echo "SOURCE_PRODUCTS_PATH=/tmp/sentinel-airflow-input/products.json" >> "$GITHUB_ENV"
+          echo "SOURCE_REVIEWS_PATH=/tmp/sentinel-airflow-input/reviews.json" >> "$GITHUB_ENV"
+          echo "SOURCE_PRICES_PATH=/tmp/sentinel-airflow-input/prices.json" >> "$GITHUB_ENV"
+          airflow db migrate
+      - run: pytest tests/integration/test_airflow_execution.py -v
