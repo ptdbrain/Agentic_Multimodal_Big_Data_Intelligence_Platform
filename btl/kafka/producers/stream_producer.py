@@ -10,6 +10,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 from config.settings import settings
+from ingestion.identity import make_event_id
 
 from typing import List, Dict, Any, Optional, Tuple
 
@@ -68,14 +69,14 @@ class StreamProducer:
         )
         entity_key = key or value.get("product_id") or value.get("review_id") or value.get("price_id") or value.get("event_id") or value.get("id") or "entity"
         resolved_key = str(key) if key is not None else str(entity_key)
-        det_hash = hashlib.sha256(f"{source}|{entity_key}|{event_time}".encode("utf-8")).hexdigest()[:24]
+        event_id = make_event_id(event_type, source, value)
 
         # Record precise dispatch timestamps (monotonic clock for single-host profiling, epoch for distributed)
         t_sent_mono = time.perf_counter()
         t_sent_epoch_ms = time.time() * 1000.0
 
         envelope = {
-            "event_id": f"evt_{det_hash}",
+            "event_id": event_id,
             "event_type": event_type,
             "schema_version": "1.0",
             "source": source,

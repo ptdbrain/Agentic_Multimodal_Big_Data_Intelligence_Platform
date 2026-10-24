@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ingestion.identity import make_price_id
 
 import datetime
 import hashlib
@@ -724,7 +725,7 @@ class TikiCrawler(BaseEcommerceCrawler):
         ts = std_product.get("updated_at") or utc_now()
         clean_pid = pid.replace("tiki_", "")
         return {
-            "price_id": f"pr_tiki_{clean_pid}_{index:04d}",
+            "price_id": make_price_id("tiki_crawler", pid, str(std_product.get("seller", "Tiki Trading")), ts),
             "product_id": pid,
             "price": float(std_product.get("price", 0.0)),
             "currency": str(std_product.get("currency", "VND")),
@@ -736,7 +737,7 @@ class TikiCrawler(BaseEcommerceCrawler):
     def standardize_review(self, raw_review: Dict[str, Any], product_id: Optional[str] = None) -> Dict[str, Any]:
         """Maps genuine Tiki raw review JSON to SentinelAI canonical Review schema (raw.reviews).
         Hashes customer_id / created_by.id immediately at ingest for PII protection.
-        Guarantees non-empty review_text and valid rating within [1.0, 5.0].
+        Missing/invalid raw fields remain invalid for the pre-Spark contract guard.
         """
         rev_id = raw_review.get("id")
         tiki_p_id = raw_review.get("product_id")
@@ -753,39 +754,35 @@ class TikiCrawler(BaseEcommerceCrawler):
         elif isinstance(created_at_val, str) and created_at_val:
             rev_time = created_at_val
         else:
-            rev_time = utc_now()
+            rev_time = None
 
         title = str(raw_review.get("title") or "Đánh giá từ khách hàng").strip()
         raw_content = str(raw_review.get("content") or "").strip()
-        # Ensure review_text is non-empty to comply with schema minLength=1
-        if raw_content:
-            text = raw_content
-        elif title and title != "Đánh giá từ khách hàng":
-            text = title
-        else:
-            r_val = raw_review.get("rating", 5)
-            text = f"Đánh giá {r_val} sao từ khách hàng Tiki."
+        # Preserve only text that actually exists in the source response.
+        text = raw_content or (title if title != "Đánh giá từ khách hàng" else "")
+        text_origin = "content" if raw_content else ("title" if text else "missing")
 
         created_by = raw_review.get("created_by") if isinstance(raw_review.get("created_by"), dict) else {}
         raw_uid = raw_review.get("customer_id") or created_by.get("id") or raw_review.get("user_id")
 
-        raw_rating = float(raw_review.get("rating") or 5.0)
-        clamped_rating = max(1.0, min(5.0, raw_rating))
+        raw_rating = raw_review.get("rating")
+        if isinstance(raw_rating, str):
+            try:
+                raw_rating = float(raw_rating)
+            except ValueError:
+                pass
+        verified = raw_review.get("purchased") is True or raw_review.get("verified_purchase") is True
 
-        verified = bool(
-            raw_review.get("purchased")
-            or raw_review.get("status") == "approved"
-            or raw_review.get("verified_purchase", True)
-        )
         helpful = int(raw_review.get("thank_count") or raw_review.get("helpful_count") or 0)
 
         return {
-            "review_id": f"tiki_rv_{rev_id}" if rev_id else f"tiki_rv_{int(datetime.datetime.now().timestamp() * 1000)}",
+            "review_id": f"tiki_rv_{rev_id}" if rev_id is not None else None,
             "product_id": resolved_pid,
             "user_id": anonymize_user_id(raw_uid, remove=self.remove_user_id),
-            "rating": clamped_rating,
+            "rating": raw_rating,
             "review_title": title,
             "review_text": text,
+            "review_text_origin": text_origin,
             "review_date": rev_time,
             "verified_purchase": verified,
             "helpful_count": max(0, helpful),

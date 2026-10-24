@@ -1,3 +1,4 @@
+from ingestion.identity import make_price_id
 import time
 import datetime
 import requests
@@ -131,7 +132,7 @@ class BaseEcommerceCrawler(ABC):
             pid = std_p["product_id"]
 
             all_prices.append({
-                "price_id": f"pr_{self.platform_name.lower()}_{pid}_{idx+1:04d}",
+                "price_id": make_price_id(str(std_p.get("source") or self.platform_name.lower()), pid, str(std_p.get("seller", "Official Store")), str(std_p.get("updated_at") or now_iso)),
                 "product_id": pid,
                 "price": float(std_p.get("price", 0.0)),
                 "currency": str(std_p.get("currency", "VND")),
