@@ -69,16 +69,18 @@ def check_postgres(strict: bool = False) -> bool:
         return False
 
 def check_spark() -> bool:
-    print(f"Checking Spark ({settings.spark.master})...")
+    """Health means a real JVM action completed, not merely a configured master."""
+    from spark.spark_session import SparkSessionFactory
     try:
-        if settings.spark.master.startswith("local"):
-            print("  [OK] Spark is configured for local[*] execution.")
-            return True
-        print(f"  [OK] Spark master configured at {settings.spark.master}.")
+        spark = SparkSessionFactory.get_spark_session()
+        if spark is None or spark.range(1).count() != 1:
+            raise RuntimeError("Spark could not execute the health action")
+        print(f"  [OK] Spark action succeeded on {settings.spark.master}")
         return True
-    except Exception as e:
-        print(f"  [FAIL] Spark check failed: {e}")
+    except Exception as exc:
+        print(f"  [FAIL] Spark health action failed: {exc}")
         return False
+
 
 def verify_integration_health(require_kafka: bool = False) -> Dict[str, bool]:
     """Performs mandatory pre-flight health checks for Integration Mode.
@@ -110,6 +112,8 @@ def verify_integration_health(require_kafka: bool = False) -> Dict[str, bool]:
             failures.append(f"Kafka ({settings.kafka.bootstrap_servers}): {e}")
 
     status["spark"] = check_spark()
+    if not status["spark"]:
+        failures.append("Spark action could not complete")
 
     if failures:
         joined = "\n  - ".join(failures)

@@ -38,6 +38,9 @@ class TopicManager:
         servers = bootstrap_servers or settings.kafka.bootstrap_servers
         resolved_mode = mode or settings.runtime_mode
         topic_configs = cls.get_topic_definitions()
+        if resolved_mode in ("local", "test"):
+            return {"status": "simulated", "transport": "offline", "broker": None,
+                    "created": [name for name, _ in topic_configs], "existing": []}
 
         try:
             from kafka.admin import KafkaAdminClient, NewTopic
@@ -47,6 +50,7 @@ class TopicManager:
                 bootstrap_servers=servers,
                 client_id="sentinel-admin",
                 request_timeout_ms=timeout_ms,
+                bootstrap_timeout_ms=timeout_ms,
             )
 
             existing_topics = set(admin_client.list_topics())

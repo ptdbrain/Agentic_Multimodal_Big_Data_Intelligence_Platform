@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # 1. Bootstrap Hadoop and Python environment on Windows
 hadoop_dir = REPO_ROOT / "hadoop"
-if hadoop_dir.exists() and "HADOOP_HOME" not in os.environ:
+if os.name == "nt" and hadoop_dir.exists() and "HADOOP_HOME" not in os.environ:
     os.environ["HADOOP_HOME"] = str(hadoop_dir)
     hadoop_bin = str(hadoop_dir / "bin")
     if hadoop_bin not in os.environ.get("PATH", ""):
@@ -119,6 +119,12 @@ class SparkSessionFactory:
             )
         )
 
+        if settings.is_integration_mode or os.environ.get("SPARK_CONNECTOR_PACKAGES"):
+            # Match the pinned Spark distribution, Scala binary and Hadoop versions.
+            builder = builder.config("spark.jars.packages", os.environ.get(
+                "SPARK_CONNECTOR_PACKAGES",
+                "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4"
+            ))
         for k, v in s3a_map.items():
             builder = builder.config(f"spark.hadoop.{k}", v)
 

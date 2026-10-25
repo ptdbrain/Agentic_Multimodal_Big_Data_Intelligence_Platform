@@ -35,7 +35,8 @@ def main():
             print("[Spark Streaming] Initializing streaming query from Kafka...")
             query = job.start_review_stream(
                 window_duration=args.window,
-                watermark_delay=args.watermark
+                watermark_delay=args.watermark,
+                topics=args.topic,
             )
             print("[Spark Streaming] Query active. Awaiting termination...")
             query.awaitTermination()

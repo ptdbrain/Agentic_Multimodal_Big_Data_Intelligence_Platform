@@ -14,6 +14,7 @@ from typing import Optional, Tuple, Dict, Any, List
 from config.settings import settings
 from spark.spark_session import SparkSessionFactory
 from spark.storage_safe import SafeParquetIO
+from storage.write_lock import synchronized_path
 
 try:
     from pyspark.sql import SparkSession, DataFrame
@@ -120,7 +121,7 @@ class SparkStreamingJob:
         kafka_df = (
             self.spark.readStream
             .format("kafka")
-            .option("kafka.bootstrap.servers", settings.kafka.get_bootstrap_servers())
+            .option("kafka.bootstrap.servers", settings.kafka.bootstrap_servers)
             .option("subscribe", topic_list)
             .option("startingOffsets", starting_offsets)
             .option("failOnDataLoss", "false")
@@ -364,6 +365,7 @@ class SparkStreamingJob:
             )
         )
 
+    @synchronized_path("output_path")
     def _upsert_window_metrics_batch(self, batch_df: "DataFrame", batch_id: int) -> None:
         """Idempotent foreachBatch sink for 'update'/'complete' output modes.
         Merges updated (window_start, window_end, product_id) rows into target Parquet storage
@@ -403,6 +405,7 @@ class SparkStreamingJob:
             expected_count=final_count,
         )
 
+    @synchronized_path("quarantine_path")
     def _write_quarantine_batch(self, batch_df: "DataFrame", batch_id: int) -> None:
         """Idempotent foreachBatch sink for streaming quarantine records."""
         if batch_df.rdd.isEmpty():
@@ -436,6 +439,7 @@ class SparkStreamingJob:
         source_path: Optional[str] = None,
         trigger_available_now: bool = False,
         processing_time: str = "30 seconds",
+        topics: Optional[str] = None,
     ):
         """Start the full streaming pipeline: Source (Kafka or S3A/File) -> Parse/Cast -> Validate -> Dedup & Window -> Sink.
         Supports clean stop and restart from persistent checkpointLocation.
@@ -454,12 +458,13 @@ class SparkStreamingJob:
             "source_path": source_path,
             "trigger_available_now": trigger_available_now,
             "processing_time": processing_time,
+            "topics": topics,
         }
 
         raw = (
             self.create_file_stream(source_path)
             if source_path
-            else self.create_kafka_stream(topics=settings.kafka.topic_reviews)
+            else self.create_kafka_stream(topics=topics or settings.kafka.topic_reviews)
         )
         parsed = self.parse_review_stream(raw)
         valid_stream, invalid_stream = self.validate_review_stream(parsed)
