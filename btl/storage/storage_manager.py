@@ -259,10 +259,10 @@ class StorageManager:
 
         return pd.DataFrame()
 
-    def write_gold_parquet(self, mart_name: str, df: Any):
+    def write_gold_parquet(self, mart_name: str, df: Any, allow_empty: bool = False, replace_snapshot: bool = False):
         if df is None:
             return
-        if hasattr(df, "empty") and df.empty:
+        if hasattr(df, "empty") and df.empty and not allow_empty:
             print(f"Storage: Skipping empty DataFrame for Gold ({mart_name})")
             return
         # If Spark DataFrame, convert to pandas if writing through standard backend
@@ -271,11 +271,39 @@ class StorageManager:
         else:
             df_to_write = df
             
-        if hasattr(df_to_write, "empty") and df_to_write.empty:
+        if hasattr(df_to_write, "empty") and df_to_write.empty and not allow_empty:
             print(f"Storage: Skipping empty DataFrame for Gold ({mart_name})")
             return
 
         path = f"gold/{mart_name}/{mart_name}.parquet"
+        if replace_snapshot:
+            if not isinstance(self.backend, LocalBackend):
+                raise ValueError('Pandas snapshot replacement is only supported by the explicit local backend')
+            import shutil
+            import uuid
+            target = self.backend._get_full_path(f'gold/{mart_name}')
+            stage = target.with_name(target.name + '__stage_' + uuid.uuid4().hex)
+            backup = target.with_name(target.name + '__backup_' + uuid.uuid4().hex)
+            stage.mkdir(parents=True)
+            moved = False
+            try:
+                df_to_write.to_parquet(stage / f'{mart_name}.parquet', index=False)
+                if len(pd.read_parquet(stage)) != len(df_to_write):
+                    raise RuntimeError('Staged pandas snapshot count mismatch')
+                if target.exists():
+                    os.replace(target, backup)
+                    moved = True
+                os.replace(stage, target)
+            except Exception:
+                if moved:
+                    if target.exists():
+                        shutil.rmtree(target)
+                    os.replace(backup, target)
+                raise
+            finally:
+                shutil.rmtree(stage, ignore_errors=True)
+            shutil.rmtree(backup, ignore_errors=True)
+            return path
         self.backend.write_parquet(path, df_to_write)
         print(f"Storage: Written {len(df_to_write)} rows to Gold Mart ({mart_name})")
 

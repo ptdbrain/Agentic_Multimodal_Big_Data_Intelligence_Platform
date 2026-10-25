@@ -60,7 +60,14 @@ class MinIOBackend:
         """
         try:
             if not self.client.bucket_exists(self.bucket):
-                self.client.make_bucket(self.bucket)
+                try:
+                    self.client.make_bucket(self.bucket)
+                except S3Error as exc:
+                    # Another client can create our bucket after the existence
+                    # check. Only an owned, now-readable bucket is success;
+                    # permission, transport and foreign-owner errors propagate.
+                    if exc.code != 'BucketAlreadyOwnedByYou' or not self.client.bucket_exists(self.bucket):
+                        raise
             self.is_connected = True
             self._bucket_verified = True
             return True

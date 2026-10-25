@@ -4,6 +4,7 @@ Guarantees data integrity and prevents data loss:
 2. Aborts immediately on any storage or read error; never overwrites existing data with partial batches.
 3. Performs staged writes, post-write count validation, and atomic directory swap with rollback.
 """
+from storage.write_lock import synchronized_path
 import os
 import uuid
 import shutil
@@ -17,6 +18,17 @@ except ImportError:
     HAS_PYSPARK = False
     SparkSession = None
     DataFrame = None
+
+
+class ParquetPublishError(RuntimeError):
+    """Publication failed; backup location is retained when recovery needs intervention."""
+
+    def __init__(self, message, target_path, backup_path, stage_path, recovery_required=False):
+        super().__init__(message)
+        self.target_path = target_path
+        self.backup_path = backup_path
+        self.stage_path = stage_path
+        self.recovery_required = recovery_required
 
 
 class SafeParquetIO:
@@ -187,6 +199,23 @@ class SafeParquetIO:
                         pass
 
     @classmethod
+    def _copy_storage_backup(cls, spark, src, dst):
+        """Copy without deleting the original; a partial copy is never a valid backup."""
+        if str(src).startswith(("s3a://", "hdfs://")):
+            original = spark.read.parquet(src)
+            count = original.count()
+            original.write.mode("errorifexists").parquet(dst)
+            if spark.read.parquet(dst).count() != count:
+                raise RuntimeError("Backup record count verification failed")
+        else:
+            src_local = str(src).removeprefix("file://")
+            dst_local = str(dst).removeprefix("file://")
+            shutil.copytree(src_local, dst_local)
+            if spark.read.parquet(dst).count() != spark.read.parquet(src).count():
+                raise RuntimeError("Backup record count verification failed")
+
+    @classmethod
+    @synchronized_path("target_path")
     def publish_parquet_atomic(
         cls,
         spark: Any,
@@ -196,8 +225,8 @@ class SafeParquetIO:
         expected_count: Optional[int] = None,
     ) -> None:
         """Writes DataFrame to a staging directory, verifies staged record count,
-        and atomically swaps it into target_path with rollback capability.
-        Avoids non-atomic in-place directory deletion on object storage.
+        and publishes it with verified rollback capability.
+        Requires a single writer; concurrent readers may observe a rename gap.
         """
         uid = uuid.uuid4().hex[:8]
         clean_target = str(target_path).rstrip("/").rstrip("\\")
@@ -237,37 +266,42 @@ class SafeParquetIO:
                 f"Target path '{target_path}' was not modified."
             ) from val_err
 
-        # 3. Atomic Publish / Swap
+        # Recoverable publication. Directory rename is not a multi-reader transaction.
         target_exists = cls.check_path_exists(spark, target_path)
-
+        backup_verified = False
+        try:
+            if target_exists:
+                cls._copy_storage_backup(spark, target_path, backup_path)
+                backup_verified = True
+                cls._delete_storage_path(spark, target_path)
+            if not cls._rename_storage_path(spark, stage_path, target_path):
+                raise RuntimeError("Promotion rename returned False")
+            if spark.read.parquet(target_path).count() != actual_staged_count:
+                raise RuntimeError("Published row count differs from validated stage")
+        except Exception as publish_error:
+            recovery_error = None
+            try:
+                if backup_verified and cls.check_path_exists(spark, backup_path):
+                    # A failed remote rename may leave a partial target.
+                    cls._delete_storage_path(spark, target_path)
+                    if not cls._rename_storage_path(spark, backup_path, target_path):
+                        raise RuntimeError("Rollback rename returned False")
+                    if not cls.check_path_exists(spark, target_path):
+                        raise RuntimeError("Rollback target is missing")
+                elif target_exists and not cls.check_path_exists(spark, target_path):
+                    raise RuntimeError("Neither original target nor backup can be found")
+                elif not target_exists:
+                    cls._delete_storage_path(spark, target_path)
+            except Exception as exc:
+                recovery_error = exc
+            if recovery_error is None:
+                cls._delete_storage_path(spark, stage_path)
+            raise ParquetPublishError(
+                f"Parquet publish failed: {publish_error}. "
+                + (f"RECOVERY REQUIRED: {recovery_error}; backup={backup_path}; stage={stage_path}"
+                   if recovery_error else "Original state restored."),
+                target_path, backup_path, stage_path,
+                recovery_required=recovery_error is not None,
+            ) from publish_error
         if target_exists:
-            # Step A: Move target to backup
-            backed_up = cls._rename_storage_path(spark, target_path, backup_path)
-            if not backed_up:
-                cls._delete_storage_path(spark, stage_path)
-                raise RuntimeError(
-                    f"Failed to create backup of existing dataset from '{target_path}' to '{backup_path}'. "
-                    f"Publish aborted; existing dataset preserved."
-                )
-
-            # Step B: Move stage to target
-            promoted = cls._rename_storage_path(spark, stage_path, target_path)
-            if promoted:
-                # Promotion succeeded; remove backup directory
-                cls._delete_storage_path(spark, backup_path)
-            else:
-                # Promotion failed; roll back target from backup
-                cls._rename_storage_path(spark, backup_path, target_path)
-                cls._delete_storage_path(spark, stage_path)
-                raise RuntimeError(
-                    f"Failed to promote staged data from '{stage_path}' to '{target_path}'. "
-                    f"Rolled back existing dataset from backup; original data intact."
-                )
-        else:
-            # Initial table creation: directly promote stage to target
-            promoted = cls._rename_storage_path(spark, stage_path, target_path)
-            if not promoted:
-                cls._delete_storage_path(spark, stage_path)
-                raise RuntimeError(
-                    f"Failed to promote staged data to initial target path '{target_path}'."
-                )
+            cls._delete_storage_path(spark, backup_path)
