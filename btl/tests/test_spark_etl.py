@@ -3,7 +3,6 @@ import shutil
 from pathlib import Path
 from unittest.mock import patch
 import pytest
-from pyspark.sql.readwriter import DataFrameReader
 from spark.etl.cleaner import DataCleaner
 from spark.etl.normalizer import EntityNormalizer
 from spark.etl.deduplicator import Deduplicator
@@ -73,6 +72,15 @@ def test_normalize_currency_and_timestamp():
     assert EntityNormalizer.normalize_timestamp("2026/09/24 08:30:00") == "2026-09-24T08:30:00Z"
     assert EntityNormalizer.normalize_timestamp("2026-09-24") == "2026-09-24T00:00:00Z"
     assert EntityNormalizer.normalize_timestamp("not-a-timestamp") is None
+
+
+def test_normalize_product_preserves_invalid_price_provenance():
+    item = EntityNormalizer.normalize_product({
+        "product_id": "p1", "product_name": "Demo", "price": "not-a-price"
+    })
+    assert item["price"] is None
+    assert item["price_raw"] == "not-a-price"
+    assert "INVALID_PRICE" in item["normalization_errors"]
 
 
 def test_deduplicate_reviews():
@@ -150,6 +158,7 @@ def test_deduplicate_retains_latest_record_by_timestamp_and_tiebreaker():
     assert unique_tied[0]["price"] == 200.0
 
 
+@pytest.mark.spark
 def test_silver_read_failure_aborts_pipeline_and_preserves_existing_data():
     """Verify that when reading existing Silver Parquet fails (simulating connection loss,
     auth failure, or storage error), the pipeline raises RuntimeError and aborts immediately,
@@ -157,7 +166,7 @@ def test_silver_read_failure_aborts_pipeline_and_preserves_existing_data():
     """
     spark = SparkSessionFactory.get_spark_session()
     if spark is None:
-        pytest.skip("PySpark not available")
+        pytest.fail("Required Spark runtime could not initialize")
 
     job = SparkBatchETLJob(spark=spark)
 
@@ -183,6 +192,7 @@ def test_silver_read_failure_aborts_pipeline_and_preserves_existing_data():
         new_batch_df = spark.createDataFrame(new_records)
 
         # 3. Simulate storage / connection read failure on the existing Silver dataset
+        from pyspark.sql.readwriter import DataFrameReader
         with patch.object(
             DataFrameReader,
             "parquet",
@@ -210,13 +220,14 @@ def test_silver_read_failure_aborts_pipeline_and_preserves_existing_data():
         assert "rv_new_2" not in preserved_ids
 
 
+@pytest.mark.spark
 def test_silver_non_existent_path_initializes_table_normally():
     """Verify that when the Silver path truly does not exist yet, the pipeline treats it
     as initial table creation and successfully writes the new batch.
     """
     spark = SparkSessionFactory.get_spark_session()
     if spark is None:
-        pytest.skip("PySpark not available")
+        pytest.fail("Required Spark runtime could not initialize")
 
     job = SparkBatchETLJob(spark=spark)
 
@@ -246,13 +257,14 @@ def test_silver_non_existent_path_initializes_table_normally():
         assert written_ids == {"rv_init_1", "rv_init_2"}
 
 
+@pytest.mark.spark
 def test_silver_atomic_swap_and_reconciliation_success():
     """Verify that under normal operation, new batch is reconciled with existing Silver
     via atomic publish swap, deduplicating records by primary key and latest timestamp.
     """
     spark = SparkSessionFactory.get_spark_session()
     if spark is None:
-        pytest.skip("PySpark not available")
+        pytest.fail("Required Spark runtime could not initialize")
 
     job = SparkBatchETLJob(spark=spark)
 
@@ -299,6 +311,7 @@ def test_silver_atomic_swap_and_reconciliation_success():
         assert extra_dirs == [], f"Temporary staging/backup dirs were not cleaned up: {extra_dirs}"
 
 
+@pytest.mark.spark
 def test_periodic_cross_batch_reconciliation_accounting_metrics():
     """Verify that when processing a new batch against an existing historical Silver dataset:
     1. valid_input_count, intra_batch_duplicate_count, cross_batch_duplicate_count,
@@ -310,7 +323,7 @@ def test_periodic_cross_batch_reconciliation_accounting_metrics():
     """
     spark = SparkSessionFactory.get_spark_session()
     if spark is None:
-        pytest.skip("PySpark not available")
+        pytest.fail("Required Spark runtime could not initialize")
 
     orig_mode = settings.runtime_mode
     settings.runtime_mode = "local"

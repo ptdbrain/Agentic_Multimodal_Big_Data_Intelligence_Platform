@@ -19,6 +19,18 @@ from scripts.run_e2e_pipeline import (
 )
 
 
+from orchestration.run_manifest import canonical_writer
+
+
+@canonical_writer
+def run_from_bronze(mode=None):
+    effective_mode=configure_pipeline_mode(mode)
+    s4=stage_4_spark_batch_silver_dq(batches_by_topic=None,include_prices=True)
+    metrics=[s4["etl_res"][key] for key in ("products_dq","reviews_dq","prices_dq") if s4["etl_res"].get(key)]
+    stage_5_spark_gold_marts(dq_metrics=metrics,run_id=s4["etl_res"]["run_id"],required_datasets=["products","reviews","prices"])
+    return stage_6_warehouse_and_dashboard(effective_mode=effective_mode)
+
+
 def main():
     parser = argparse.ArgumentParser(description="SentinelAI Canonical Batch Pipeline Runner")
     parser.add_argument(
@@ -39,18 +51,7 @@ def main():
 
     try:
         if args.from_bronze:
-            effective_mode = configure_pipeline_mode(args.mode)
-            print("=" * 60)
-            print(f"  SENTINELAI SPARK BATCH RUNNER (FROM BRONZE, MODE: {effective_mode.upper()})")
-            print("=" * 60)
-            s4 = stage_4_spark_batch_silver_dq(batches_by_topic=None, include_prices=True)
-            stage_5_spark_gold_marts(
-                df_prods=s4["df_prods"],
-                df_revs=s4["df_revs"],
-                df_prices=s4["df_prices"]
-            )
-            stage_6_warehouse_and_dashboard(effective_mode=effective_mode)
-            print("\n[Done] Canonical Bronze -> Silver -> Gold -> Warehouse batch execution completed.")
+            run_from_bronze(mode=args.mode)
         else:
             ok = run_end_to_end(
                 products_path=args.products,

@@ -9,16 +9,11 @@ class PricePipeline:
     @staticmethod
     def clean_prices(raw_prices: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Clean price records."""
+        from spark.etl.normalizer import EntityNormalizer
         cleaned = []
-        for r in raw_prices:
-            item = dict(r)
-            if 'price' in item and isinstance(item['price'], str):
-                try:
-                    item['price'] = float(item['price'].replace(',', '').replace('$', '').strip())
-                except ValueError:
-                    pass
-            if 'currency' not in item or not item['currency']:
-                item['currency'] = 'USD'
+        for record in raw_prices:
+            item = EntityNormalizer.normalize_record(record, 'prices')
+            item['currency'] = EntityNormalizer.normalize_currency(item.get('currency'))
             cleaned.append(item)
         return cleaned
     
@@ -31,12 +26,13 @@ class PricePipeline:
             p = r.get('price')
             pid = r.get('product_id')
             
-            is_valid = True
+            is_valid = not r.get('normalization_errors') and r.get('normalization_status') != 'invalid'
             if pid is None or p is None:
                 is_valid = False
             else:
                 try:
-                    if float(p) <= 0:
+                    import math
+                    if not math.isfinite(float(p)) or float(p) <= 0:
                         is_valid = False
                 except (ValueError, TypeError):
                     is_valid = False
@@ -64,5 +60,6 @@ class PricePipeline:
             'invalid': len(invalid),
             'prices_processed': len(valid),
             'prices_invalid': len(invalid),
+            'invalid_records': invalid,
             'silver_records': valid
         }

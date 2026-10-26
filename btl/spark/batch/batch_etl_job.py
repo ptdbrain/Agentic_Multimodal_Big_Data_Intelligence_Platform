@@ -5,7 +5,6 @@ from typing import Dict, Any, Union, List, Optional
 
 from spark.etl.cleaner import DataCleaner
 from spark.etl.normalizer import EntityNormalizer
-from spark.etl.deduplicator import Deduplicator
 from spark.quality.metrics import DataQualityEvaluator
 from spark.quality.rules import RuleRegistry, REVIEW_QUALITY_RULES, PRODUCT_QUALITY_RULES
 from storage.storage_manager import storage
@@ -46,7 +45,7 @@ class BatchETLJob:
         print(f"Bronze Raw Ingested: {len(raw_products)} products, {len(raw_reviews)} reviews")
 
         # 2. Products ETL
-        cleaned_prods = DataCleaner.clean_products(raw_products)
+        cleaned_prods = DataCleaner.clean_text_fields(raw_products, ["product_id", "product_name", "brand", "category"])
         norm_prods = [EntityNormalizer.normalize_product(p) for p in cleaned_prods]
         p_rules = product_rules or RuleRegistry.get_rules("products") or PRODUCT_QUALITY_RULES
         dq_prods = DataQualityEvaluator.evaluate_batch("products", norm_prods, p_rules)
@@ -55,10 +54,10 @@ class BatchETLJob:
             storage.write_silver_parquet("products", df_silver_prods)
 
         # 3. Reviews ETL
-        cleaned_revs = DataCleaner.clean_reviews(raw_reviews)
-        dedup_revs, dup_count = Deduplicator.deduplicate_reviews(cleaned_revs)
+        cleaned_revs = DataCleaner.clean_text_fields(raw_reviews, ["review_id", "product_id", "review_text", "review_title"])
+        normalized_revs = [EntityNormalizer.normalize_record(r, "reviews") for r in cleaned_revs]
         r_rules = review_rules or RuleRegistry.get_rules("reviews") or REVIEW_QUALITY_RULES
-        dq_revs = DataQualityEvaluator.evaluate_batch("reviews", dedup_revs, r_rules)
+        dq_revs = DataQualityEvaluator.evaluate_batch("reviews", normalized_revs, r_rules, primary_key="review_id")
         df_silver_revs = pd.DataFrame(dq_revs["valid_records"])
         if save_silver:
             storage.write_silver_parquet("reviews", df_silver_revs)

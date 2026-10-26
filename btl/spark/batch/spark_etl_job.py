@@ -6,6 +6,8 @@ and applies cross-batch deduplication before persisting to Silver Parquet.
 Zero toPandas() in dataset processing; strict Spark DataFrame execution with mathematical reconciliation.
 """
 import os
+import time
+import uuid
 import json
 import tempfile
 from pathlib import Path
@@ -13,6 +15,7 @@ from typing import List, Dict, Any, Tuple, Optional, Union
 from config.settings import settings
 from spark.spark_session import SparkSessionFactory
 from spark.storage_safe import SafeParquetIO
+from storage.write_lock import synchronized_path
 
 try:
     from pyspark.sql import SparkSession, DataFrame
@@ -70,51 +73,53 @@ class SparkBatchETLJob:
             StructField("payload", StringType(), True)
         ])
 
-        # 1. Handle list input: either list of file/S3A paths or in-memory list of record dicts
-        if isinstance(source, list):
-            if not source:
-                return self.spark.createDataFrame([], empty_schema)
-
-            if all(isinstance(x, (str, Path)) for x in source):
-                resolved_paths = []
-                for p in source:
-                    ps = str(p)
-                    if not (ps.startswith("s3a://") or ps.startswith("file://") or Path(ps).exists()):
-                        ps = SparkSessionFactory.resolve_storage_path(ps, layer="bronze")
-                    resolved_paths.append(ps)
-                df = (
-                    self.spark.read
-                    .option("recursiveFileLookup", "true")
-                    .option("multiline", "true")
-                    .json(resolved_paths)
-                )
-                return self.unpack_envelope(df)
-
-            # Dump in-memory dicts to temporary JSON file for consistent Spark multiline JSON reading
+        if isinstance(source, list) and not source:
+            return self.spark.createDataFrame([], empty_schema)
+        if isinstance(source, list) and not all(isinstance(item, (str, Path)) for item in source):
             temp_dir = tempfile.mkdtemp(prefix="spark_bronze_tmp_")
             temp_file = Path(temp_dir) / "batch.json"
-            with open(temp_file, "w", encoding="utf-8") as f:
-                json.dump(source, f, ensure_ascii=False)
-            source_path = str(temp_file)
+            with temp_file.open('w', encoding='utf-8') as stream:
+                json.dump(source, stream, ensure_ascii=False)
+            sources = [str(temp_file)]
         else:
-            source_path = str(source)
+            sources = [str(item) for item in source] if isinstance(source, list) else [str(source)]
 
-        # 2. Resolve path to S3A URL or local path
-        if not (source_path.startswith("s3a://") or source_path.startswith("file://") or Path(source_path).exists()):
-            # Assume it's a Bronze topic name or relative Bronze path (e.g. 'raw.reviews')
-            source_path = SparkSessionFactory.resolve_storage_path(source_path, layer="bronze")
-
-        # 3. Read multiline JSON with Spark (supports both single file and partitioned directory trees)
-        df = (
-            self.spark.read
-            .option("recursiveFileLookup", "true")
-            .option("multiline", "true")
-            .json(source_path)
-        )
-
-        # 4. Parse Envelope: if 'payload' is a struct, flatten payload.* while keeping envelope metadata
-        df = self.unpack_envelope(df)
-        return df
+        # Discover files through Hadoop for both local and remote storage. A single
+        # multiline=True read silently consumes only the first object of JSONL.
+        groups = {True: [], False: []}
+        conf = self.spark.sparkContext._jsc.hadoopConfiguration()
+        PathClass = self.spark.sparkContext._gateway.jvm.org.apache.hadoop.fs.Path
+        for source_path in sources:
+            if not (source_path.startswith(('s3a://', 'file://', 'hdfs://')) or Path(source_path).exists()):
+                source_path = SparkSessionFactory.resolve_storage_path(source_path, layer="bronze")
+            path = PathClass(source_path)
+            fs = path.getFileSystem(conf)
+            if not fs.exists(path):
+                raise FileNotFoundError(f'Bronze source not found: {source_path}')
+            files = []
+            if fs.isDirectory(path):
+                iterator = fs.listFiles(path, True)
+                while iterator.hasNext():
+                    files.append(iterator.next().getPath())
+            else:
+                files.append(path)
+            for file_path in files:
+                name = file_path.getName()
+                if name.startswith(('.', '_')):
+                    continue
+                multiline = not name.lower().endswith(('.jsonl', '.ndjson', '.jsonl.gz', '.ndjson.gz'))
+                groups[multiline].append(file_path.toString())
+        frames = []
+        for multiline, paths in groups.items():
+            if paths:
+                frames.append(self.spark.read.option('multiline', str(multiline).lower())
+                              .option('mode', 'FAILFAST').json(sorted(paths)))
+        if not frames:
+            return self.spark.createDataFrame([], empty_schema)
+        df = frames[0]
+        for other in frames[1:]:
+            df = df.unionByName(other, allowMissingColumns=True)
+        return self.unpack_envelope(df)
 
     def unpack_envelope(self, df: DataFrame) -> DataFrame:
         """Extracts fields from the message envelope (event_id, event_type, source, ingested_at)
@@ -152,11 +157,19 @@ class SparkBatchETLJob:
         "prices": ["price_id", "product_id", "price"]
     }
 
+    @classmethod
+    def _with_required_columns(cls, df: DataFrame, dataset_type: str) -> DataFrame:
+        for name in cls.REQUIRED_COLUMNS.get(dataset_type, []):
+            if name not in df.columns:
+                df = df.withColumn(name, F.lit(None).cast(StringType()))
+        return df
+
     def compute_field_null_stats(self, df: DataFrame, dataset_type: str) -> Dict[str, Any]:
         """Computes field-level null/empty statistics across all columns (field_null_counts)
         separately from row-level missing required field count (null_row_count).
         Must be called BEFORE type casting so type cast failures are not conflated with nulls.
         """
+        df = self._with_required_columns(df, dataset_type)
         user_cols = [c for c in df.columns if not c.startswith("__")]
         if not user_cols:
             return {"field_null_counts": {}, "total_field_nulls": 0, "null_row_count": 0}
@@ -196,112 +209,120 @@ class SparkBatchETLJob:
         """
         return self.standardize_schema(df, dataset_type)
 
+    @staticmethod
+    def _parse_price(value: Any) -> Any:
+        """Parse the supported US/Vietnamese/EU formats using distributed SQL expressions."""
+        from spark.etl.normalizer import PRICE_TEXT_PATTERN
+        raw = F.trim(value.cast(StringType()))
+        clean = F.regexp_replace(raw, r"[^0-9.,]", "")
+        last_separator = F.regexp_extract(clean, r"([.,])[^.,]*$", 1)
+        commas, dots = F.split(clean, ","), F.split(clean, r"\.")
+        parsed_text = (F.when(clean.contains(",") & clean.contains("."),
+                              F.when(last_separator == ".", F.regexp_replace(clean, ",", ""))
+                               .otherwise(F.regexp_replace(F.regexp_replace(clean, r"\.", ""), ",", ".")))
+                       .when(clean.contains(","),
+                             F.when((F.size(commas) == 2) & F.length(commas[1]).isin(1, 2),
+                                    F.regexp_replace(clean, ",", "."))
+                              .otherwise(F.regexp_replace(clean, ",", "")))
+                       .when(clean.contains("."),
+                             F.when((F.size(dots) > 2) | ((F.size(dots) == 2) & (F.length(dots[1]) == 3) & (F.length(dots[0]) <= 3)),
+                                    F.regexp_replace(clean, r"\.", "")).otherwise(clean))
+                       .otherwise(clean))
+        number = F.when(raw.rlike(r"^[+-]?\d+(?:\.\d+)?[eE][+-]?\d+$"), raw.cast(DoubleType())).otherwise(
+            parsed_text.cast(DoubleType()) * F.when(raw.contains("-"), -1).otherwise(1))
+        return F.when(raw.rlike(PRICE_TEXT_PATTERN), number)
+
+    @staticmethod
+    def _parse_timestamp(value: Any) -> Any:
+        raw = F.trim(value.cast(StringType()))
+        iso = F.regexp_replace(raw, r"^(\d{4})/(\d{2})/(\d{2})", "$1-$2-$3")
+        numeric = raw.cast(DoubleType())
+        seconds = F.when(F.abs(numeric) > 1e11, numeric / 1000).otherwise(numeric)
+        # Match Python datetime's representable UTC years, 1 through 9999.
+        epoch = F.when(seconds.between(-62135596800, 253402300799), F.timestamp_seconds(seconds))
+        return F.when(raw.rlike(r"^[+-]?\d+(?:\.\d+)?$"), epoch).otherwise(F.coalesce(
+            F.try_to_timestamp(iso),
+            F.try_to_timestamp(raw, F.lit("dd/MM/yyyy HH:mm:ss")),
+            F.try_to_timestamp(raw, F.lit("dd/MM/yyyy")),
+        ))
+
     def standardize_schema(self, df: DataFrame, dataset_type: str) -> DataFrame:
-        """Standardizes data types, trims strings, and parses timestamps via PySpark SQL.
-        Tracks parse/cast failures on non-null inputs before validation runs.
-        """
-        cols = set(df.columns)
+        """Normalize without repairing invalid values or replacing unavailable clocks."""
+        df = self._with_required_columns(df, dataset_type)
+        business_field = {"reviews": "review_date", "products": "created_at", "prices": "timestamp"}[dataset_type]
+        numeric_field = "rating" if dataset_type == "reviews" else "price"
+        time_fields = {business_field, "ingested_at"} | (set(df.columns) & {"created_at", "updated_at", "timestamp", "review_date"})
+        raw_fields = time_fields | {numeric_field}
+        # Capture before trimming; retain earlier raw evidence during replay.
+        for field in raw_fields:
+            if f"{field}_raw" not in df.columns:
+                value = F.col(field).cast(StringType()) if field in df.columns else F.lit(None).cast(StringType())
+                df = df.withColumn(f"{field}_raw", value)
+        for field, dtype in df.dtypes:
+            if dtype == "string" and not field.startswith("__") and not field.endswith("_raw"):
+                df = df.withColumn(field, F.trim(F.col(field)))
 
-        # Common string trim
-        for col_name, dtype in df.dtypes:
-            if dtype == "string" and not col_name.startswith("__"):
-                df = df.withColumn(col_name, F.trim(F.col(col_name)))
-
-        def _raw_present(col_name: str):
-            return F.col(col_name).isNotNull() & (F.length(F.trim(F.col(col_name).cast(StringType()))) > 0)
-
+        errors = []
+        numeric_raw = F.col(f"{numeric_field}_raw")
+        present = numeric_raw.isNotNull() & (F.length(F.trim(numeric_raw)) > 0)
+        numeric_type = dict(df.dtypes)[numeric_field]
+        if numeric_field == 'price' and (numeric_type in {'double','float','bigint','int','smallint','tinyint'} or numeric_type.startswith('decimal')):
+            # Numeric JSON/Parquet values already have a decimal interpretation.
+            # Locale separator rules apply to text, never to a typed 25.555 float.
+            parsed = F.col(numeric_field).cast(DoubleType())
+        else:
+            parsed = self._parse_price(numeric_raw) if numeric_field == "price" else numeric_raw.cast(DoubleType())
+        cast_failed = present & (parsed.isNull() | F.isnan(parsed))
+        finite = parsed.isNotNull() & ~F.isnan(parsed) & (F.abs(parsed) < float("inf"))
+        in_domain = parsed.between(1, 5) if numeric_field == "rating" else parsed > 0
+        numeric_valid = finite & in_domain
+        df = df.withColumn(f"__cast_err_{numeric_field}", cast_failed)
+        df = df.withColumn(numeric_field, F.when(numeric_valid, parsed).otherwise(F.lit(None).cast(DoubleType())))
+        errors.append(F.when(~present, F.lit(f"MISSING_{numeric_field.upper()}"))
+                       .when(~F.coalesce(numeric_valid, F.lit(False)), F.lit(f"INVALID_{numeric_field.upper()}")))
+        for field in sorted(time_fields):
+            raw = F.col(f"{field}_raw")
+            parsed_time = self._parse_timestamp(raw)
+            failed = raw.isNotNull() & (F.length(F.trim(raw)) > 0) & parsed_time.isNull()
+            flag = "__cast_err_timestamp" if field == business_field else f"__cast_err_{field}"
+            df = df.withColumn(flag, failed).withColumn(field, parsed_time)
+            errors.append(F.when(failed, F.lit(f"INVALID_{field.upper()}")))
+        df = df.withColumn("time_available", F.col(business_field).isNotNull())
+        df = df.withColumn("ingestion_time_available", F.col("ingested_at").isNotNull())
         if dataset_type == "reviews":
-            if "rating" in cols:
-                raw_ok = _raw_present("rating")
-                casted = F.col("rating").cast(DoubleType())
-                df = (
-                    df.withColumn("__cast_err_rating", raw_ok & (casted.isNull() | F.isnan(casted)))
-                    .withColumn("rating", casted)
-                )
-            if "verified_purchase" in cols:
+            if "verified_purchase" in df.columns:
                 df = df.withColumn("verified_purchase", F.col("verified_purchase").cast(BooleanType()))
-            if "user_id" in cols:
-                uid_trimmed = F.trim(F.col("user_id").cast(StringType()))
-                df = df.withColumn(
-                    "user_id",
-                    F.when(
-                        uid_trimmed.isNull() | (uid_trimmed == "") | uid_trimmed.isin("None", "null", "nan"),
-                        F.lit("anon_redacted"),
-                    )
-                    .when(
-                        uid_trimmed.rlike(r"^anon_[0-9a-f]{16}$|^anon_redacted$"),
-                        uid_trimmed,
-                    )
-                    .otherwise(
-                        F.concat(
-                            F.lit("anon_"),
-                            F.substring(F.sha2(F.concat(F.lit("sentinel-pii-v1:"), uid_trimmed), 256), 1, 16),
-                        )
-                    ),
-                )
-            if "review_date" in cols:
-                raw_ok = _raw_present("review_date")
-                casted_ts = F.to_timestamp(F.col("review_date").cast(StringType()))
-                df = (
-                    df.withColumn("__cast_err_timestamp", raw_ok & casted_ts.isNull())
-                    .withColumn("review_date", casted_ts)
-                )
-            if "ingested_at" in cols:
-                df = df.withColumn(
-                    "ingested_at",
-                    F.coalesce(F.to_timestamp(F.col("ingested_at").cast(StringType())), F.current_timestamp())
-                )
-
-        elif dataset_type == "products":
-            if "price" in cols:
-                raw_ok = _raw_present("price")
-                casted = F.col("price").cast(DoubleType())
-                df = (
-                    df.withColumn("__cast_err_price", raw_ok & (casted.isNull() | F.isnan(casted)))
-                    .withColumn("price", casted)
-                )
-            if "brand" in cols:
-                df = df.withColumn("brand", F.initcap(F.trim(F.col("brand"))))
-            if "category" in cols:
-                df = df.withColumn("category", F.initcap(F.trim(F.col("category"))))
-            if "created_at" in cols:
-                raw_ok = _raw_present("created_at")
-                casted_ts = F.to_timestamp(F.col("created_at").cast(StringType()))
-                df = (
-                    df.withColumn("__cast_err_timestamp", raw_ok & casted_ts.isNull())
-                    .withColumn("created_at", casted_ts)
-                )
-            if "ingested_at" in cols:
-                df = df.withColumn(
-                    "ingested_at",
-                    F.coalesce(F.to_timestamp(F.col("ingested_at").cast(StringType())), F.current_timestamp())
-                )
-
-        elif dataset_type == "prices":
-            if "price" in cols:
-                raw_ok = _raw_present("price")
-                casted = F.col("price").cast(DoubleType())
-                df = (
-                    df.withColumn("__cast_err_price", raw_ok & (casted.isNull() | F.isnan(casted)))
-                    .withColumn("price", casted)
-                )
-            if "currency" in cols:
-                df = df.withColumn("currency", F.coalesce(F.upper(F.trim(F.col("currency"))), F.lit("VND")))
-            if "timestamp" in cols:
-                raw_ok = _raw_present("timestamp")
-                casted_ts = F.to_timestamp(F.col("timestamp").cast(StringType()))
-                df = (
-                    df.withColumn("__cast_err_timestamp", raw_ok & casted_ts.isNull())
-                    .withColumn("timestamp", casted_ts)
-                )
-            if "ingested_at" in cols:
-                df = df.withColumn(
-                    "ingested_at",
-                    F.coalesce(F.to_timestamp(F.col("ingested_at").cast(StringType())), F.current_timestamp())
-                )
-
-        df = df.withColumn("__parsed_and_casted", F.lit(True))
-        return df
+            if "user_id" in df.columns:
+                user = F.trim(F.col("user_id").cast(StringType()))
+                df = df.withColumn("user_id", F.when(user.isNull() | user.isin("", "None", "null", "nan"), "anon_redacted")
+                                   .when(user.rlike(r"^anon_[0-9a-f]{16}$|^anon_redacted$"), user)
+                                   .otherwise(F.concat(F.lit("anon_"), F.substring(F.sha2(F.concat(F.lit("sentinel-pii-v1:"), user), 256), 1, 16))))
+        if dataset_type == "products":
+            from spark.etl.normalizer import DEFAULT_BRAND_MAP, DEFAULT_CATEGORY_MAP
+            for field, aliases, fallback in [("brand", DEFAULT_BRAND_MAP, "Unknown"),
+                                              ("category", DEFAULT_CATEGORY_MAP, "Other")]:
+                value = F.trim(F.col(field)) if field in df.columns else F.lit(None).cast(StringType())
+                mapping = F.create_map(*[F.lit(item) for pair in aliases.items() for item in pair])
+                df = df.withColumn(field, F.when(value.isNull() | (value == ""), fallback)
+                                   .otherwise(F.coalesce(F.element_at(mapping, F.lower(value)), F.initcap(value))))
+        if dataset_type in {"products", "prices"}:
+            from spark.etl.normalizer import EntityNormalizer
+            value = F.trim(F.col("currency")) if "currency" in df.columns else F.lit(None).cast(StringType())
+            mapping = F.create_map(*[F.lit(item) for pair in EntityNormalizer.CURRENCY_ALIASES.items() for item in pair])
+            df = df.withColumn("currency", F.coalesce(
+                F.element_at(mapping, F.lower(value)),
+                F.when(F.upper(value).rlike(r"^[A-Z]{3}$"), F.upper(value)),
+                F.lit(settings.analytics.default_currency),
+            ))
+        new_errors = F.filter(F.array(*errors), lambda code: code.isNotNull())
+        if "normalization_errors" in df.columns:
+            previous = F.col("normalization_errors")
+            if dict(df.dtypes)["normalization_errors"] == "string":
+                previous = F.from_json(previous, "array<string>")
+            new_errors = F.array_union(F.coalesce(previous, F.array().cast("array<string>")), new_errors)
+        df = df.withColumn("normalization_errors", F.sort_array(new_errors))
+        df = df.withColumn("normalization_status", F.when(F.size("normalization_errors") > 0, "invalid").otherwise("valid"))
+        return df.withColumn("__parsed_and_casted", F.lit(True))
 
     def validate(self, df: DataFrame, dataset_type: str) -> Tuple[DataFrame, DataFrame]:
         """Validates records strictly against schema contracts AFTER parsing and casting types.
@@ -373,6 +394,10 @@ class SparkBatchETLJob:
             reason_col = F.lit("UNRECOGNIZED_DATASET_TYPE")
             is_valid = F.lit(True)
 
+        normalization_invalid = F.col("normalization_status") == "invalid"
+        is_valid = is_valid & ~normalization_invalid
+        reason_col = F.when(normalization_invalid & (reason_col == "UNKNOWN_VALIDATION_ERROR"),
+                            F.lit("NORMALIZATION_ERROR")).otherwise(reason_col)
         helper_cols = [c for c in df.columns if c.startswith("__")]
         valid_df = df.filter(is_valid).drop(*helper_cols)
         invalid_df = (
@@ -419,6 +444,7 @@ class SparkBatchETLJob:
         quarantine routing, and Silver write.
         Returns audited mathematical reconciliation metrics.
         """
+        processing_started = time.perf_counter()
         pk = self.PRIMARY_KEYS.get(dataset_name, f"{dataset_name.rstrip('s')}_id")
         order_col = self.ORDER_COLUMNS.get(dataset_name, "ingested_at")
 
@@ -428,7 +454,8 @@ class SparkBatchETLJob:
 
         if input_count == 0:
             return {
-                "dataset_name": dataset_name,
+                "processing_time_ms": int((time.perf_counter() - processing_started) * 1000),
+            "dataset_name": dataset_name,
                 "input_count": 0,
                 "valid_count": 0,
                 "valid_input_count": 0,
@@ -445,6 +472,10 @@ class SparkBatchETLJob:
                 "total_field_nulls": 0,
                 "null_row_count": 0,
                 "cast_error_count": 0,
+                "records_missing_observation_time": 0,
+                "untimed_silver_count": None,
+                "normalization_error_counts": {},
+                "quarantine_reason_counts": {},
                 "reconciled": True,
                 "reconciled_batch": True,
                 "reconciled_silver": True,
@@ -457,6 +488,12 @@ class SparkBatchETLJob:
 
         # 3. Parse & Cast Data Types BEFORE Validation
         typed_df = self.standardize_schema(raw_df, dataset_name)
+        missing_observation_time = typed_df.filter(~F.col("time_available")).count()
+        normalization_error_counts = {
+            row['code']: row['count'] for row in typed_df.select(
+                F.explode('normalization_errors').alias('code')
+            ).groupBy('code').count().collect()
+        }
         cast_err_cols = [c for c in typed_df.columns if c.startswith("__cast_err_")]
         if cast_err_cols:
             cast_err_cond = F.lit(False)
@@ -473,6 +510,10 @@ class SparkBatchETLJob:
         valid_count = valid_df.count()
         valid_input_count = valid_count
         quarantine_count = invalid_df.count()
+        quarantine_reason_counts = {
+            row['quarantine_reason']: row['count']
+            for row in invalid_df.groupBy('quarantine_reason').count().collect()
+        }
 
         # Strict Mathematical Check: input == valid + quarantine
         assert input_count == valid_input_count + quarantine_count, (
@@ -510,6 +551,7 @@ class SparkBatchETLJob:
         cross_batch_duplicate_count = cross_metrics["cross_batch_duplicate_count"]
         new_inserts_count = cross_metrics["new_inserts_count"]
         silver_written_count = cross_metrics["silver_written_count"]
+        untimed_silver_count = final_silver_df.filter(F.col("time_available") == F.lit(False)).count()
 
         # Dual Reconciliation Invariants:
         # Invariant A (Batch Invariant): Every input record is definitively accounted for
@@ -535,6 +577,7 @@ class SparkBatchETLJob:
         dq_score = round((unique_valid_count / input_count * 100.0), 2) if input_count > 0 else 100.0
 
         return {
+            "processing_time_ms": int((time.perf_counter() - processing_started) * 1000),
             "dataset_name": dataset_name,
             "input_count": input_count,
             "valid_count": valid_count,
@@ -552,6 +595,10 @@ class SparkBatchETLJob:
             "total_field_nulls": null_stats["total_field_nulls"],
             "null_row_count": null_stats["null_row_count"],
             "cast_error_count": cast_error_count,
+            "records_missing_observation_time": missing_observation_time,
+            "untimed_silver_count": untimed_silver_count,
+            "normalization_error_counts": normalization_error_counts,
+            "quarantine_reason_counts": quarantine_reason_counts,
             "reconciled": (reconciled_batch and reconciled_silver),
             "reconciled_batch": reconciled_batch,
             "reconciled_silver": reconciled_silver,
@@ -562,6 +609,7 @@ class SparkBatchETLJob:
             "quarantine_df": invalid_df,
         }
 
+    @synchronized_path("silver_path")
     def _cross_batch_dedup_and_write(
         self,
         new_batch_df: DataFrame,
@@ -650,10 +698,12 @@ class SparkBatchETLJob:
         prices_source: Optional[Union[str, Path, List[Union[str, Path, Dict[str, Any]]]]] = None,
         enforce_dq_gate: bool = False,
         min_dq_score: Optional[float] = None,
+        run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Executes full Bronze -> Silver Batch ETL across all entity types, persists DQ reports,
         and optionally enforces the DQ threshold gate.
         """
+        run_id = run_id or str(uuid.uuid4())
         print(">>> Starting SentinelAI Real Spark Batch ETL (Bronze -> Silver)")
 
         effective_products_source = products_source if products_source is not None else settings.kafka.topic_products
@@ -670,14 +720,27 @@ class SparkBatchETLJob:
         if prices_source is not None:
             price_res = self.process_dataset("prices", prices_source)
 
+        for name, result in [('products',prod_res),('reviews',rev_res),('prices',price_res)]:
+            if result is not None and 'silver_path' in result:
+                from storage.storage_manager import storage
+                storage.write_json(f'silver/_snapshot_{name}.json', {
+                    'run_id':run_id,'rows':result['silver_written_count'],'path':result['silver_path'],
+                })
+
         def _build_dq_dict(res: Dict[str, Any]) -> Dict[str, Any]:
             return {
+                "run_id": run_id,
+                "processing_time_ms": res["processing_time_ms"],
                 "dataset_name": res["dataset_name"],
                 "records_received": res["input_count"],
                 "records_valid": res["unique_valid_count"],
                 "records_invalid": res["row_invalid_count"],
                 "records_quarantined": res["quarantine_count"],
-                "records_duplicate": res["intra_batch_duplicate_count"] + res["cross_batch_duplicate_count"],
+                "records_missing_observation_time": res["records_missing_observation_time"],
+                "untimed_silver_count": res["untimed_silver_count"],
+                "normalization_error_counts": res["normalization_error_counts"],
+                "quarantine_reason_counts": res["quarantine_reason_counts"],
+                "records_duplicate": res["intra_batch_duplicate_count"],
                 "intra_batch_duplicate_count": res["intra_batch_duplicate_count"],
                 "cross_batch_duplicate_count": res["cross_batch_duplicate_count"],
                 "valid_input_count": res["valid_input_count"],
@@ -698,11 +761,11 @@ class SparkBatchETLJob:
         # 4. Persist Data Quality Scorecards to Gold Layer (idempotent batch_id per dataset)
         from spark.quality.spark_dq import SparkDataQualityEvaluator
         dq_reports = [
-            SparkDataQualityEvaluator.generate_report(products_dq, batch_id="dq_products"),
-            SparkDataQualityEvaluator.generate_report(reviews_dq, batch_id="dq_reviews"),
+            SparkDataQualityEvaluator.generate_report(products_dq, batch_id=f"dq:{run_id}:products"),
+            SparkDataQualityEvaluator.generate_report(reviews_dq, batch_id=f"dq:{run_id}:reviews"),
         ]
         if prices_dq:
-            dq_reports.append(SparkDataQualityEvaluator.generate_report(prices_dq, batch_id="dq_prices"))
+            dq_reports.append(SparkDataQualityEvaluator.generate_report(prices_dq, batch_id=f"dq:{run_id}:prices"))
         SparkDataQualityEvaluator.save_reports_to_gold(dq_reports)
 
         dq_list = [products_dq, reviews_dq] + ([prices_dq] if prices_dq else [])
@@ -710,10 +773,13 @@ class SparkBatchETLJob:
             dq_list,
             min_dq_score=min_dq_score,
             raise_on_failure=enforce_dq_gate,
+            required_datasets=["products", "reviews"] + (["prices"] if prices_source is not None else []),
+            run_id=run_id,
         )
 
         # Construct backward-compatible metrics summary
         return {
+            "run_id": run_id,
             "products_processed": prod_res["valid_count"],
             "reviews_processed": rev_res["valid_count"],
             "prices_processed": price_res["valid_count"] if price_res else 0,

@@ -35,7 +35,9 @@ class DataCleaner:
                 continue
             try:
                 numeric_rating = float(raw_rating)
-                item[rating_field] = max(min_rating, min(max_rating, numeric_rating))
+                if not min_rating <= numeric_rating <= max_rating:
+                    continue
+                item[rating_field] = numeric_rating
             except (ValueError, TypeError):
                 continue
 
@@ -57,15 +59,9 @@ class DataCleaner:
             p_name = p.get(name_field)
             if not p_id or not p_name:
                 continue
-            item = dict(p)
-            price = item.get(price_field)
-            if price is not None:
-                try:
-                    item[price_field] = max(min_price, float(price))
-                except (ValueError, TypeError):
-                    item[price_field] = default_price
-            else:
-                item[price_field] = default_price
+            from spark.etl.normalizer import EntityNormalizer
+            item = EntityNormalizer.normalize_product(dict(p, price=p.get(price_field)))
+            item[price_field] = item['price']
             cleaned.append(item)
         return cleaned
 

@@ -1,4 +1,6 @@
 import re
+import math
+import json
 from typing import Dict, Any, List, Optional
 from config.settings import settings
 
@@ -30,10 +32,36 @@ DEFAULT_CATEGORY_MAP = {
     "headphone": "Accessories"
 }
 
+PRICE_CURRENCY = r"(?:US\$|USD|VND|VNĐ|DONG|Đ|₫|EUR|GBP|JPY|\$|€|£|¥)"
+PRICE_NUMBER = r"(?:\d+|\d+[.]\d+|\d+,\d{1,2}|\d{1,3}(?:,\d{3})+(?:[.]\d+)?|\d{1,3}(?:[.]\d{3})+(?:,\d{1,2})?)"
+PRICE_TEXT_PATTERN = (rf"(?i)^(?:[+-]?{PRICE_NUMBER}|[+-]?\s*{PRICE_CURRENCY}\s*{PRICE_NUMBER}|"
+                      rf"{PRICE_CURRENCY}\s*[+-]?{PRICE_NUMBER}|[+-]?{PRICE_NUMBER}\s*{PRICE_CURRENCY}|"
+                      r"[+-]?\d+(?:[.]\d+)?[eE][+-]?\d+)$")
+
 class EntityNormalizer:
     """Normalizes brands, categories, currency, and formats (Section 18 in plan.md).
     Fully parameterized to handle international formats and custom business rules.
     """
+
+    @staticmethod
+    def normalization_error_codes(value: Any) -> List[str]:
+        """Accept array metadata from Parquet and its JSON representation in SQL."""
+        if hasattr(value, 'tolist'):
+            value = value.tolist()
+        if value is None or (isinstance(value, float) and math.isnan(value)):
+            return []
+        if isinstance(value, str):
+            if not value.strip():
+                return []
+            try:
+                value = json.loads(value)
+            except (ValueError, TypeError):
+                return ['INVALID_NORMALIZATION_METADATA']
+            if value is None:
+                return []
+        if not isinstance(value, (list, tuple)) or any(not isinstance(code, str) for code in value):
+            return ['INVALID_NORMALIZATION_METADATA']
+        return sorted(set(code for code in value if code))
 
     @staticmethod
     def normalize_brand(raw_brand: str, custom_map: Optional[Dict[str, str]] = None) -> str:
@@ -62,7 +90,12 @@ class EntityNormalizer:
             return float(price_val)
         if isinstance(price_val, str):
             val = price_val.strip()
+            if not re.fullmatch(PRICE_TEXT_PATTERN, val):
+                return 0.0
+            if re.fullmatch(r"[+-]?\d+(?:\.\d+)?[eE][+-]?\d+", val):
+                return float(val)
             # Strip currency symbols and letters
+            negative = '-' in val
             cleaned = re.sub(r"[^\d.,]", "", val)
             if not cleaned:
                 return 0.0
@@ -90,12 +123,12 @@ class EntityNormalizer:
             elif "." in cleaned:
                 parts = cleaned.split(".")
                 # If multiple dots or 3 digits after dot (e.g. 19.990.000 or 25.000) -> thousands separator
-                if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3):
+                if len(parts) > 2 or (len(parts) == 2 and len(parts[1]) == 3 and len(parts[0]) <= 3):
                     cleaned = cleaned.replace(".", "")
                 # Otherwise standard decimal (e.g. 19.99) -> keep as is
 
             try:
-                return float(cleaned)
+                return -float(cleaned) if negative else float(cleaned)
             except ValueError:
                 return 0.0
         return 0.0
@@ -187,22 +220,47 @@ class EntityNormalizer:
         return None
 
     @staticmethod
+    def normalize_record(record: Dict[str, Any], dataset_type: str) -> Dict[str, Any]:
+        """Preserve raw evidence; invalid values remain null, with explicit errors."""
+        if dataset_type not in {"products", "reviews", "prices"}:
+            raise ValueError(f"Unknown dataset: {dataset_type}")
+        item = dict(record)
+        errors = set(EntityNormalizer.normalization_error_codes(item.get("normalization_errors")))
+        numeric = "rating" if dataset_type == "reviews" else "price"
+        raw = item.setdefault(f"{numeric}_raw", item.get(numeric))
+        missing = raw is None or (isinstance(raw, str) and not raw.strip())
+        try:
+            parsed = EntityNormalizer.normalize_price(raw) if numeric == "price" else float(raw)
+            valid = not isinstance(raw, bool) and math.isfinite(parsed) and (1 <= parsed <= 5 if numeric == "rating" else parsed > 0)
+        except (TypeError, ValueError, OverflowError):
+            parsed, valid = None, False
+        item[numeric] = parsed if valid else None
+        if missing or not valid:
+            errors.add(f"{'MISSING' if missing else 'INVALID'}_{numeric.upper()}")
+
+        business_time = {"products": "created_at", "reviews": "review_date", "prices": "timestamp"}[dataset_type]
+        time_fields = {business_time, "ingested_at"} | (set(item) & {"created_at", "updated_at", "timestamp", "review_date"})
+        for field in time_fields:
+            raw = item.setdefault(f"{field}_raw", item.get(field))
+            parsed = EntityNormalizer.normalize_timestamp(raw)
+            item[field] = parsed
+            if raw is not None and str(raw).strip() and parsed is None:
+                errors.add(f"INVALID_{field.upper()}")
+        item['time_available'] = item[business_time] is not None
+        item['ingestion_time_available'] = item['ingested_at'] is not None
+        item['normalization_errors'] = sorted(errors)
+        item['normalization_status'] = 'invalid' if errors else 'valid'
+        return item
+
+    @staticmethod
     def normalize_product(
         product: Dict[str, Any],
         brand_map: Optional[Dict[str, str]] = None,
         category_map: Optional[Dict[str, str]] = None,
-        default_currency: Optional[str] = None
+        default_currency: Optional[str] = None,
     ) -> Dict[str, Any]:
-        item = dict(product)
-        item["brand"] = EntityNormalizer.normalize_brand(item.get("brand", ""), custom_map=brand_map)
-        item["category"] = EntityNormalizer.normalize_category(item.get("category", ""), custom_map=category_map)
-        item["price"] = EntityNormalizer.normalize_price(item.get("price", 0))
-        item["currency"] = EntityNormalizer.normalize_currency(item.get("currency"), default_currency=default_currency)
-        for ts_field in ("created_at", "updated_at", "timestamp"):
-            if ts_field in item and item[ts_field] is not None:
-                norm_ts = EntityNormalizer.normalize_timestamp(item[ts_field])
-                if norm_ts is not None:
-                    item[ts_field] = norm_ts
+        item = EntityNormalizer.normalize_record(product, 'products')
+        item['brand'] = EntityNormalizer.normalize_brand(item.get('brand', ''), custom_map=brand_map)
+        item['category'] = EntityNormalizer.normalize_category(item.get('category', ''), custom_map=category_map)
+        item['currency'] = EntityNormalizer.normalize_currency(item.get('currency'), default_currency=default_currency)
         return item
-
-
