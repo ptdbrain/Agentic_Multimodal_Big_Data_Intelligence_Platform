@@ -67,9 +67,9 @@ class SparkDataQualityEvaluator:
         required_fields: Optional[List[str]] = None
     ) -> List[str]:
         if required_fields is not None:
-            return [c for c in required_fields if c in columns]
+            return list(required_fields)
         if dataset_name in cls.REQUIRED_FIELDS:
-            return [c for c in cls.REQUIRED_FIELDS[dataset_name] if c in columns]
+            return list(cls.REQUIRED_FIELDS[dataset_name])
         # Generic dataset fallback: all columns except internal metadata columns
         return [c for c in columns if not c.startswith("__")]
 
@@ -122,6 +122,9 @@ class SparkDataQualityEvaluator:
         type_casts: Optional[Dict[str, str]],
         t0: float,
     ) -> Dict[str, Any]:
+        for name in cls.get_required_fields(dataset_name, df.columns, required_fields):
+            if name not in df.columns:
+                df = df.withColumn(name, F.lit(None).cast(StringType()))
         user_cols = [c for c in df.columns if not c.startswith("__")]
         total_count = df.count()
         if total_count == 0 or not user_cols:
@@ -220,7 +223,7 @@ class SparkDataQualityEvaluator:
             row_range_err_cond = (
                 F.col("price").isNotNull()
                 & (~F.isnan(F.col("price")))
-                & (F.col("price") <= 0.0)
+                & ((F.col("price") <= 0.0) | (F.abs(F.col("price")) == float('inf')))
             )
 
         work_df = work_df.withColumn("__row_range_err", row_range_err_cond)
@@ -237,9 +240,17 @@ class SparkDataQualityEvaluator:
             w_all = Window.partitionBy(*user_cols).orderBy(F.monotonically_increasing_id())
             work_df = work_df.withColumn("__row_is_dup", F.row_number().over(w_all) > 1)
 
+        normalization_invalid = F.lit(False)
+        if 'normalization_status' in user_cols:
+            normalization_invalid = F.coalesce(F.col('normalization_status') == 'invalid', F.lit(False))
+        if 'normalization_errors' in user_cols:
+            codes = F.col('normalization_errors')
+            if dtypes_map['normalization_errors'] == 'string':
+                codes = F.from_json(codes, 'array<string>')
+            normalization_invalid = normalization_invalid | F.coalesce(F.size(codes) > 0, F.lit(False))
         work_df = work_df.withColumn(
             "__row_quarantined",
-            F.col("__row_missing_req") | F.col("__row_cast_err") | F.col("__row_range_err")
+            F.col("__row_missing_req") | F.col("__row_cast_err") | F.col("__row_range_err") | normalization_invalid
         ).withColumn(
             "__row_invalid",
             F.col("__row_quarantined") | F.col("__row_is_dup")
@@ -292,6 +303,9 @@ class SparkDataQualityEvaluator:
         type_casts: Optional[Dict[str, str]],
         t0: float,
     ) -> Dict[str, Any]:
+        for name in cls.get_required_fields(dataset_name, list(pdf.columns), required_fields):
+            if name not in pdf.columns:
+                pdf[name] = None
         user_cols = [c for c in pdf.columns if not str(c).startswith("__")]
         total_count = len(pdf)
         if total_count == 0 or not user_cols:
@@ -376,7 +390,7 @@ class SparkDataQualityEvaluator:
             row_range_err_mask = r_num.notna() & ((r_num < 1.0) | (r_num > 5.0))
         elif dataset_name in ("products", "prices") and "price" in user_cols:
             p_num = casted_cols.get("price", pd.to_numeric(pdf["price"], errors="coerce"))
-            row_range_err_mask = p_num.notna() & (p_num <= 0.0)
+            row_range_err_mask = p_num.notna() & ((p_num <= 0.0) | p_num.abs().eq(float('inf')))
 
         # Step 5: Primary key duplicate detection at row level
         pk = primary_key or cls.PRIMARY_KEYS.get(dataset_name) or user_cols[0]
@@ -385,7 +399,15 @@ class SparkDataQualityEvaluator:
         else:
             row_dup_mask = pdf.duplicated(subset=user_cols, keep="first")
 
-        row_quarantined_mask = row_missing_mask | row_cast_err_mask | row_range_err_mask
+        from spark.etl.normalizer import EntityNormalizer
+        normalization_invalid = pd.Series(False, index=pdf.index)
+        if 'normalization_status' in pdf:
+            normalization_invalid |= pdf['normalization_status'].eq('invalid')
+        if 'normalization_errors' in pdf:
+            normalization_invalid |= pdf['normalization_errors'].apply(
+                lambda value: bool(EntityNormalizer.normalization_error_codes(value))
+            )
+        row_quarantined_mask = row_missing_mask | row_cast_err_mask | row_range_err_mask | normalization_invalid
         row_invalid_mask = row_quarantined_mask | row_dup_mask
 
         null_row_count = int(row_missing_mask.sum())
@@ -424,6 +446,8 @@ class SparkDataQualityEvaluator:
         max_duplicate_ratio: Optional[float] = None,
         max_missing_ratio: Optional[float] = None,
         raise_on_failure: bool = True,
+        required_datasets: Optional[List[str]] = None,
+        run_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Evaluates DQ metrics against configured thresholds and optionally raises DataQualityGateError
         to block downstream Gold mart generation when data quality is insufficient.
@@ -448,21 +472,96 @@ class SparkDataQualityEvaluator:
         violations: List[str] = []
         failed_datasets: List[str] = []
 
+        required = set(required_datasets or [])
+        present = {m.get("dataset_name") for m in items if m}
+        if not items:
+            violations.append("Missing DQ metrics")
+        for name in sorted(required - present):
+            violations.append(f"[{name}] Missing required dataset metrics")
+            failed_datasets.append(name)
         for m in items:
             if not m:
                 continue
             ds_name = str(m.get("dataset_name", "unknown"))
+            import math
+            numeric_fields = ("dq_score", "duplicate_ratio", "missing_ratio", "records_received",
+                              "records_valid", "records_invalid", "records_duplicate", "records_missing",
+                              "total_count", "valid_count", "invalid_count", "duplicate_count", "null_row_count",
+                              "intra_batch_duplicate_count", "cross_batch_duplicate_count")
+            bad = []
+            for name in numeric_fields:
+                if name not in m:
+                    continue
+                value = m[name]
+                try:
+                    number = float(value)
+                    if isinstance(value, bool) or not math.isfinite(number) or number < 0:
+                        bad.append(name)
+                    elif name == "dq_score" and number > 100:
+                        bad.append(name)
+                    elif name.endswith("ratio") and number > 1:
+                        bad.append(name)
+                    elif name not in ("dq_score", "duplicate_ratio", "missing_ratio") and number != int(number):
+                        bad.append(name)
+                except (TypeError, ValueError, OverflowError):
+                    bad.append(name)
+            if bad:
+                violations.append(f"[{ds_name}] Invalid/nonfinite metrics: {bad}")
+                failed_datasets.append(ds_name)
+                continue
+            measurements = {
+                'received': ('total_count', 'records_received'),
+                'valid': ('valid_count', 'records_valid'),
+                'duplicate': ('intra_batch_duplicate_count', 'duplicate_count', 'records_duplicate', 'duplicate_ratio'),
+                'missing': ('null_row_count', 'records_missing', 'null_count', 'missing_ratio'),
+                'score': ('dq_score',),
+            }
+            absent = [name for name, aliases in measurements.items() if not any(key in m and m[key] is not None for key in aliases)]
+            if absent:
+                violations.append(f'[{ds_name}] Missing measured DQ fields: {absent}')
+                failed_datasets.append(ds_name)
+                continue
+            if run_id is not None and m.get("run_id") != run_id:
+                violations.append(f"[{ds_name}] Metrics belong to another run")
             total = int(m.get("total_count", m.get("records_received", 0)) or 0)
+            valid = int(m.get('valid_count', m.get('records_valid')))
+            invalid = int(m.get('invalid_count', m.get('records_invalid', total - valid)))
+            if valid > total or invalid > total or valid + invalid != total:
+                violations.append(f'[{ds_name}] DQ counts do not reconcile')
+                failed_datasets.append(ds_name)
+                continue
+            expected_score = round(100 * valid / total, 2) if total else 100.0
+            if abs(float(m['dq_score']) - expected_score) > .011:
+                violations.append(f'[{ds_name}] DQ score contradicts measured valid/received counts')
+                failed_datasets.append(ds_name)
+                continue
             if total == 0:
+                if ds_name in required:
+                    violations.append(f"[{ds_name}] Required dataset has no observations")
                 continue
 
             score = float(m.get("dq_score", 0.0))
-            dups = int(m.get("duplicate_count", m.get("records_duplicate", 0)) or 0)
+            dups = int(m.get("intra_batch_duplicate_count", m.get("duplicate_count", m.get("records_duplicate", 0))) or 0)
             missing_rows = int(
                 m.get("null_row_count", m.get("records_missing", m.get("null_count", 0))) or 0
             )
-            dup_ratio = float(m.get("duplicate_ratio", dups / total if total > 0 else 0.0))
+            dup_ratio = (dups / total) if "intra_batch_duplicate_count" in m else float(m.get("duplicate_ratio", dups / total))
             miss_ratio = float(m.get("missing_ratio", missing_rows / total if total > 0 else 0.0))
+
+            consistency_errors = []
+            for label, count, aliases in [
+                ('duplicate',dups,('intra_batch_duplicate_count','duplicate_count','records_duplicate')),
+                ('missing',missing_rows,('null_row_count','records_missing','null_count')),
+            ]:
+                if any(key in m for key in aliases):
+                    if count > invalid:
+                        consistency_errors.append(f'{label} count exceeds invalid rows')
+                    if label+'_ratio' in m and abs(float(m[label+'_ratio']) - count/total) > .00011:
+                        consistency_errors.append(f'{label} ratio contradicts count')
+            if consistency_errors:
+                violations.append(f'[{ds_name}] Inconsistent DQ measurements: {consistency_errors}')
+                failed_datasets.append(ds_name)
+                continue
 
             ds_failed = False
             if score < eff_min_score:
@@ -505,19 +604,34 @@ class SparkDataQualityEvaluator:
     def generate_report(metrics: Dict[str, Any], batch_id: Optional[str] = None) -> Dict[str, Any]:
         """Generates standard warehouse-compatible Data Quality record."""
         ds_name = metrics.get("dataset_name", "unknown")
-        bid = batch_id or f"dq_{ds_name}"
+        import uuid
+        run_id = metrics.get("run_id") or str(uuid.uuid4())
+        bid = batch_id or f"dq:{run_id}:{ds_name}"
+        import json
+        def category_counts(name: str) -> Optional[str]:
+            value = metrics.get(name)
+            return json.dumps(value, ensure_ascii=False, sort_keys=True) if isinstance(value, dict) else value
         return {
             "batch_id": bid,
+            "run_id": run_id,
+            "intra_batch_duplicate_count": int(metrics.get("intra_batch_duplicate_count", metrics.get("records_duplicate", 0))),
+            "cross_batch_duplicate_count": int(metrics.get("cross_batch_duplicate_count", 0)),
             "dataset_name": ds_name,
-            "records_received": int(metrics.get("total_count", metrics.get("records_received", 0))),
-            "records_valid": int(metrics.get("valid_count", metrics.get("records_valid", 0))),
-            "records_invalid": int(metrics.get("invalid_count", metrics.get("records_invalid", 0))),
-            "records_duplicate": int(metrics.get("duplicate_count", metrics.get("records_duplicate", 0))),
+            "records_received": int(metrics.get("total_count", metrics.get("records_received", metrics.get("input_count", 0)))),
+            "records_valid": int(metrics.get("unique_valid_count", metrics.get("valid_count", metrics.get("records_valid", 0)))),
+            "records_invalid": int(metrics.get("invalid_count", metrics.get("records_invalid", metrics.get("row_invalid_count", 0)))),
+            "records_quarantined": metrics.get("records_quarantined", metrics.get("quarantine_count")),
+            "records_missing_observation_time": metrics.get("records_missing_observation_time"),
+            "untimed_silver_count": metrics.get("untimed_silver_count"),
+            "normalization_error_counts": category_counts("normalization_error_counts"),
+            "quarantine_reason_counts": category_counts("quarantine_reason_counts"),
+            "records_duplicate": int(metrics.get("intra_batch_duplicate_count", metrics.get("duplicate_count", metrics.get("records_duplicate", 0)))),
             "records_missing": int(
                 metrics.get("null_row_count", metrics.get("records_missing", metrics.get("null_count", 0)))
             ),
             "dq_score": float(metrics.get("dq_score", 0.0)),
-            "processing_time_ms": int(metrics.get("processing_time_ms", 10)),
+            "processing_time_ms": metrics.get("processing_time_ms"),
+            "timing_status": "measured" if metrics.get("processing_time_ms") is not None else "unavailable",
             "timestamp": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
         }
 

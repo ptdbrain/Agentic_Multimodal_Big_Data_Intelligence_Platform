@@ -64,7 +64,8 @@ class PositiveNumberRule(QualityRule):
             return False, f"Field '{self.field_name}' is None"
         try:
             num = float(val)
-            valid = (num >= 0) if self.allow_zero else (num > 0)
+            import math
+            valid = math.isfinite(num) and ((num >= 0) if self.allow_zero else (num > 0))
             if not valid:
                 desc = "non-negative" if self.allow_zero else "positive"
                 return False, f"Field '{self.field_name}' must be {desc}, got {num}"

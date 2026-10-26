@@ -151,7 +151,11 @@ class DataQualityEvaluator:
                 error_counts_by_code["INVALID_TYPE_CAST"] = error_counts_by_code.get("INVALID_TYPE_CAST", 0) + 1
 
             # 4. Evaluate all rules on parsed/casted record
-            rec_valid = not row_has_cast_err
+            from spark.etl.normalizer import EntityNormalizer
+            normalization_errors = EntityNormalizer.normalization_error_codes(rec.get('normalization_errors'))
+            rec_valid = not row_has_cast_err and not normalization_errors and rec.get('normalization_status') != 'invalid'
+            for code in normalization_errors:
+                error_counts_by_code[code] = error_counts_by_code.get(code, 0) + 1
             row_has_missing_req = False
             for rule in rules:
                 rule_stats[rule.name]["evaluated"] += 1
