@@ -21,9 +21,16 @@ class ReviewBurstDetector:
         product_id_col: str = "product_id",
         review_date_col: str = "review_date",
         rating_col: str = "rating",
-        review_id_col: str = "review_id"
+        review_id_col: str = "review_id",
+        baseline_window_hours: int = 24,
+        run_id: Optional[str] = None,
+        data_quality_status: str = "unverified",
     ) -> List[Dict[str, Any]]:
         anomalies = []
+        # Offline exploratory analysis is explicitly unverified; failed/stale DQ
+        # must never produce an incident presented as a successful evaluation.
+        if data_quality_status not in {"valid", "unverified"}:
+            return anomalies
         req_cols = [product_id_col, review_date_col, rating_col]
         if df_reviews.empty or any(c not in df_reviews.columns for c in req_cols):
             return anomalies
@@ -34,10 +41,21 @@ class ReviewBurstDetector:
         bomb_thresh = bombing_rating_threshold if bombing_rating_threshold is not None else settings.analytics.bombing_rating_threshold
 
         df = df_reviews.copy()
-        try:
-            df["hour_dt"] = pd.to_datetime(df[review_date_col]).dt.floor(f"{w_hours}h")
-        except Exception:
+        if w_hours <= 0 or baseline_window_hours <= 0:
+            raise ValueError("Window durations must be positive")
+        df["hour_dt"] = pd.to_datetime(
+            df[review_date_col], utc=True, format="mixed", errors="coerce"
+        ).dt.floor(f"{w_hours}h")
+        df[rating_col] = pd.to_numeric(df[rating_col], errors="coerce")
+        df = df[
+            df["hour_dt"].notna()
+            & df[rating_col].between(1.0, 5.0, inclusive="both")
+        ].copy()
+        if df.empty:
             return anomalies
+
+        if review_id_col in df.columns:
+            df = df[df[review_id_col].notna() & df[review_id_col].astype(str).str.strip().ne('')].copy()
 
         # Count column can be review_id if present, else synthesize
         count_col = review_id_col if review_id_col in df.columns else rating_col
@@ -54,9 +72,16 @@ class ReviewBurstDetector:
 
             for idx, row in group.iterrows():
                 # Baseline calculation strictly excludes the current point being evaluated (Plancheck item 115)
-                baseline_group = group.drop(idx)
-                baseline_counts = baseline_group["review_count"]
-                if len(baseline_counts) < 1:
+                past = group[group["hour_dt"] < row["hour_dt"]]
+                if len(past) < min_history_points:
+                    continue
+                lower = max(group["hour_dt"].min(), row["hour_dt"] - pd.Timedelta(hours=baseline_window_hours))
+                past = past[past["hour_dt"] >= lower]
+                if len(past) < min_history_points:
+                    continue
+                index = pd.date_range(lower, row["hour_dt"] - pd.Timedelta(hours=w_hours), freq=f"{w_hours}h")
+                baseline_counts = past.set_index("hour_dt")["review_count"].reindex(index, fill_value=0)
+                if baseline_counts.empty:
                     continue
                 mean_vol = float(baseline_counts.mean())
                 std_vol = float(baseline_counts.std()) if len(baseline_counts) > 1 else 0.0
@@ -87,6 +112,15 @@ class ReviewBurstDetector:
                         "baseline_volume": round(mean_vol, 4),
                         "current_volume": int(row["review_count"]),
                         "timestamp": ts_str,
+                        "run_id": run_id,
+                        "data_quality_status": data_quality_status,
+                        "baseline_window_hours": int(baseline_window_hours),
+                        "baseline_sample_size": int(len(baseline_counts)),
+                        "baseline_sample_unit": "time_buckets",
+                        "baseline_method": "past_calendar_window",
+                        "baseline_start": lower.isoformat(),
+                        "baseline_end": row["hour_dt"].isoformat(),
+                        "current_sample_size": int(row["review_count"]),
                         "description": desc
                     })
 

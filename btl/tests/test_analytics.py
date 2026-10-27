@@ -3,6 +3,7 @@ import pandas as pd
 from analytics.descriptive.stats import DescriptiveStats
 from analytics.descriptive.comparative import ComparativeAnalytics
 from analytics.trend.trends import TrendAnalyzer
+from analytics.trend.price_tracker import PriceTracker
 from analytics.anomaly.price_anomaly import PriceAnomalyDetector
 from spark.etl.gold_aggregator import GoldAggregator
 
@@ -31,6 +32,16 @@ def test_descriptive_stats(sample_data):
     assert summary["avg_rating"] == 4.0
 
 
+def test_descriptive_stats_excludes_out_of_range_ratings():
+    reviews = pd.DataFrame([
+        {"rating": 5.0}, {"rating": 99.0}, {"rating": "bad"}
+    ])
+    summary = DescriptiveStats.compute_summary(pd.DataFrame(), reviews)
+    assert summary["total_reviews"] == 3
+    assert summary["avg_rating"] == 5.0
+    assert summary["rating_sample_size"] == 1
+
+
 def test_comparative_analytics(sample_data):
     prods, revs = sample_data
     b_df = ComparativeAnalytics.brand_comparison(prods, revs)
@@ -38,11 +49,47 @@ def test_comparative_analytics(sample_data):
     assert "brand" in b_df.columns
 
 
+def test_comparative_analytics_excludes_invalid_ratings_and_prices():
+    products = pd.DataFrame([
+        {"product_id": "p1", "brand": "A", "price": 10.0},
+        {"product_id": "p2", "brand": "A", "price": -5.0},
+    ])
+    reviews = pd.DataFrame([
+        {"review_id": "r1", "product_id": "p1", "rating": 5.0},
+        {"review_id": "r2", "product_id": "p1", "rating": 99.0},
+    ])
+    result = ComparativeAnalytics.brand_comparison(products, reviews)
+    row = result.iloc[0]
+    assert row["review_count"] == 1
+    assert row["avg_rating"] == 5.0
+
+
 def test_trends_analyzer(sample_data):
     _, revs = sample_data
     daily = TrendAnalyzer.daily_review_trends(revs)
     assert len(daily) == 2
     assert "rolling_avg_count" in daily.columns
+
+
+def test_trends_drop_only_invalid_dates_and_ratings():
+    rows = pd.DataFrame([
+        {"review_id": "r1", "rating": 5.0, "review_date": "2026-09-20T10:00:00Z"},
+        {"review_id": "r2", "rating": 99.0, "review_date": "2026-09-21T10:00:00Z"},
+        {"review_id": "r3", "rating": 4.0, "review_date": "not-a-date"},
+    ])
+    result = TrendAnalyzer.daily_review_trends(rows)
+    assert result["review_count"].tolist() == [1]
+    assert result["data_quality_status"].tolist() == ["valid"]
+
+
+def test_price_trajectory_keeps_valid_rows_when_one_timestamp_is_invalid():
+    prices = pd.DataFrame([
+        {"product_id": "p1", "price": 10.0, "timestamp": "2026-09-20T10:00:00Z"},
+        {"product_id": "p1", "price": 11.0, "timestamp": "bad"},
+    ])
+    result = PriceTracker.product_price_trajectory(prices, "p1")
+    assert len(result) == 1
+    assert result.iloc[0]["price"] == 10.0
 
 
 def test_price_anomaly_detector():
@@ -71,6 +118,27 @@ def test_price_anomaly_detector():
     assert len(iqr_anomalies) == 1
     assert iqr_anomalies[0]["baseline_median"] == 20000000.0
     assert iqr_anomalies[0]["observed_price"] == 2000000.0
+
+
+def test_price_anomaly_detector_excludes_non_positive_prices():
+    prices = pd.DataFrame([
+        {"product_id": "p1", "price": 20.0, "timestamp": "2026-09-01"},
+        {"product_id": "p1", "price": 21.0, "timestamp": "2026-09-02"},
+        {"product_id": "p1", "price": 19.0, "timestamp": "2026-09-03"},
+        {"product_id": "p1", "price": 0.0, "timestamp": "2026-09-04"},
+        {"product_id": "p1", "price": -100.0, "timestamp": "2026-09-05"},
+    ])
+    valid = prices.iloc[:3].copy()
+    for detect in [PriceAnomalyDetector.detect_zscore_anomalies, PriceAnomalyDetector.detect_iqr_anomalies]:
+        assert detect(prices, min_points=3) == detect(valid, min_points=3)
+
+
+def test_price_analytics_ignore_non_finite_values():
+    valid = pd.DataFrame([{"product_id": "p1", "price": float(p), "timestamp": f"2026-09-0{i+1}"} for i,p in enumerate([19,20,21])])
+    dirty = pd.concat([valid, pd.DataFrame([{"product_id": "p1", "price": float("inf"), "timestamp": "2026-09-04"}])], ignore_index=True)
+    for detect in [PriceAnomalyDetector.detect_zscore_anomalies, PriceAnomalyDetector.detect_iqr_anomalies]:
+        assert detect(dirty, min_points=3) == detect(valid, min_points=3)
+    assert PriceTracker.calculate_price_volatility(dirty).to_dict("records") == PriceTracker.calculate_price_volatility(valid).to_dict("records")
 
 
 def test_gold_analytics_known_aggregation_results():
@@ -134,3 +202,13 @@ def test_gold_analytics_known_aggregation_results():
     assert pr_p1["min_price"] == 24000000.0
     assert pr_p1["max_price"] == 26000000.0
     assert pr_p1["avg_price"] == 25000000.0
+
+
+def test_pandas_gold_keeps_valid_rows_when_timestamp_is_invalid():
+    products = pd.DataFrame([{"product_id": "p1", "brand": "A", "category": "Phone", "price": 10.0}])
+    reviews = pd.DataFrame([
+        {"review_id": "r1", "product_id": "p1", "rating": 5.0, "review_date": "2026-09-20"},
+        {"review_id": "r2", "product_id": "p1", "rating": 4.0, "review_date": "bad"},
+    ])
+    marts = GoldAggregator.build_gold_marts(products, reviews, save_to_storage=False)
+    assert marts["product_daily_stats"]["review_count"].tolist() == [1]

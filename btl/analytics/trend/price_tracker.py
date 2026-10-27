@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from typing import Optional
 
 class PriceTracker:
@@ -22,9 +23,14 @@ class PriceTracker:
         if filtered.empty:
             return pd.DataFrame()
 
-        try:
-            filtered["date"] = pd.to_datetime(filtered[timestamp_col]).dt.date
-        except Exception:
+        filtered["date"] = pd.to_datetime(
+            filtered[timestamp_col], errors="coerce", utc=True
+        ).dt.date
+        filtered[price_col] = pd.to_numeric(filtered[price_col], errors="coerce")
+        filtered = filtered[
+            filtered["date"].notna() & filtered[price_col].gt(0) & np.isfinite(filtered[price_col])
+        ].copy()
+        if filtered.empty:
             return pd.DataFrame()
 
         daily = filtered.groupby("date").agg(
@@ -44,7 +50,13 @@ class PriceTracker:
         if df_prices.empty or product_id_col not in df_prices.columns or price_col not in df_prices.columns:
             return pd.DataFrame()
 
-        stats = df_prices.groupby(product_id_col).agg(
+        clean = df_prices.copy()
+        clean[price_col] = pd.to_numeric(clean[price_col], errors="coerce")
+        clean = clean[clean[price_col].gt(0) & np.isfinite(clean[price_col])].dropna(subset=[price_col])
+        if clean.empty:
+            return pd.DataFrame()
+
+        stats = clean.groupby(product_id_col).agg(
             mean_price=(price_col, "mean"),
             std_price=(price_col, "std"),
             min_price=(price_col, "min"),
@@ -52,10 +64,10 @@ class PriceTracker:
             data_points=(price_col, "count")
         ).reset_index()
 
-        stats["std_price"] = stats["std_price"].fillna(0.0)
         # Avoid division by zero
         stats["volatility_ratio"] = (
             stats["std_price"] / stats["mean_price"].replace(0, float("nan"))
-        ).fillna(0.0).round(4)
+        ).round(4)
+        stats["volatility_status"] = np.where(stats["data_points"] >= 2, "available", "insufficient_data")
         return stats.sort_values(by="volatility_ratio", ascending=False)
 

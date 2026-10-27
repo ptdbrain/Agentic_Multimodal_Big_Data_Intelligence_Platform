@@ -19,9 +19,15 @@ class RatingAnomalyDetector:
         product_id_col: str = "product_id",
         review_date_col: str = "review_date",
         rating_col: str = "rating",
-        review_id_col: str = "review_id"
+        review_id_col: str = "review_id",
+        run_id: Optional[str] = None,
+        data_quality_status: str = "unverified",
     ) -> List[Dict[str, Any]]:
         anomalies = []
+        # Offline exploratory analysis is explicitly unverified; failed/stale DQ
+        # must never produce an incident presented as a successful evaluation.
+        if data_quality_status not in {"valid", "unverified"}:
+            return anomalies
         req_cols = [product_id_col, review_date_col, rating_col]
         if df_reviews.empty or any(c not in df_reviews.columns for c in req_cols):
             return anomalies
@@ -31,10 +37,21 @@ class RatingAnomalyDetector:
         min_revs = min_daily_reviews if min_daily_reviews is not None else settings.analytics.rating_drop_min_reviews
 
         df = df_reviews.copy()
-        try:
-            df["date"] = pd.to_datetime(df[review_date_col]).dt.date
-        except Exception:
+        if w_days <= 0:
+            raise ValueError("window_days must be positive")
+        df["date"] = pd.to_datetime(
+            df[review_date_col], utc=True, format="mixed", errors="coerce"
+        ).dt.floor("D")
+        df[rating_col] = pd.to_numeric(df[rating_col], errors="coerce")
+        df = df[
+            df["date"].notna()
+            & df[rating_col].between(1.0, 5.0, inclusive="both")
+        ].copy()
+        if df.empty:
             return anomalies
+
+        if review_id_col in df.columns:
+            df = df[df[review_id_col].notna() & df[review_id_col].astype(str).str.strip().ne('')].copy()
 
         count_col = review_id_col if review_id_col in df.columns else rating_col
 
@@ -48,9 +65,17 @@ class RatingAnomalyDetector:
                 continue
 
             group_sorted = group.sort_values("date").copy()
-            group_sorted["baseline_rating"] = (
-                group_sorted["avg_rating"].rolling(window=w_days, min_periods=min_periods).mean().shift(1)
-            )
+            group_sorted = group_sorted.set_index("date")
+            window = f"{w_days}D"
+            minimum = max(min_periods, min_history_days)
+            rating_sum = (group_sorted["avg_rating"] * group_sorted["count"]).rolling(window, closed="left", min_periods=minimum).sum()
+            review_count = group_sorted["count"].rolling(window, closed="left", min_periods=minimum).sum()
+            group_sorted["baseline_rating"] = rating_sum / review_count
+            group_sorted["baseline_sample_size"] = review_count
+            group_sorted["baseline_observed_days"] = group_sorted["count"].rolling(
+                window, closed="left", min_periods=minimum
+            ).count()
+            group_sorted = group_sorted.reset_index()
             group_sorted["rating_delta"] = group_sorted["baseline_rating"] - group_sorted["avg_rating"]
 
             drops = group_sorted[(group_sorted["rating_delta"] >= threshold) & (group_sorted["count"] >= min_revs)]
@@ -70,6 +95,16 @@ class RatingAnomalyDetector:
                     "baseline_rating": round(base_r, 4),
                     "current_rating": round(curr_r, 4),
                     "timestamp": ts_str,
+                    "run_id": run_id,
+                    "data_quality_status": data_quality_status,
+                    "baseline_window_days": int(w_days),
+                    "baseline_sample_size": int(row["baseline_sample_size"]),
+                    "baseline_observed_days": int(row["baseline_observed_days"]),
+                    "baseline_sample_unit": "reviews",
+                    "baseline_method": "past_calendar_window",
+                    "baseline_start": (row["date"] - pd.Timedelta(days=w_days)).isoformat(),
+                    "baseline_end": row["date"].isoformat(),
+                    "current_sample_size": int(row["count"]),
                     "description": (
                         f"Rating drop from {w_days}-day baseline {base_r:.2f} "
                         f"to {curr_r:.2f} (delta: -{delta_r:.2f}, {int(row['count'])} reviews)"

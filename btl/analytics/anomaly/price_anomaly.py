@@ -17,9 +17,15 @@ class PriceAnomalyDetector:
         product_id_col: str = "product_id",
         price_col: str = "price",
         timestamp_col: str = "timestamp",
-        currency_symbol: Optional[str] = None
+        currency_symbol: Optional[str] = None,
+        run_id: Optional[str] = None,
+        data_quality_status: str = "unverified"
     ) -> List[Dict[str, Any]]:
         anomalies = []
+        # Offline exploratory analysis is explicitly unverified; failed/stale DQ
+        # must never produce an incident presented as a successful evaluation.
+        if data_quality_status not in {"valid", "unverified"}:
+            return anomalies
         if df_prices.empty or product_id_col not in df_prices.columns or price_col not in df_prices.columns:
             return anomalies
 
@@ -30,10 +36,13 @@ class PriceAnomalyDetector:
         # Clean prices to numeric
         df = df_prices.copy()
         df[price_col] = pd.to_numeric(df[price_col], errors="coerce")
-        df = df.dropna(subset=[price_col])
+        df = df[df[price_col].gt(0) & np.isfinite(df[price_col])].dropna(subset=[price_col])
 
         for prod_id, group in df.groupby(product_id_col):
+            group = group.reset_index(drop=True)
             prices = group[price_col]
+            times = (pd.to_datetime(group[timestamp_col], utc=True, format="mixed", errors="coerce")
+                     if timestamp_col in group else pd.Series(pd.NaT, index=group.index))
             if len(prices) < min_pts:
                 continue
 
@@ -42,6 +51,9 @@ class PriceAnomalyDetector:
                 baseline_prices = prices.drop(idx)
                 if len(baseline_prices) < 2:
                     continue
+                baseline_times = times.drop(idx).dropna()
+                baseline_start = baseline_times.min().isoformat() if not baseline_times.empty else None
+                baseline_end = baseline_times.max().isoformat() if not baseline_times.empty else None
 
                 base_mean = float(baseline_prices.mean())
                 base_std = float(baseline_prices.std())
@@ -71,6 +83,14 @@ class PriceAnomalyDetector:
                         "baseline_std": round(0.0 if np.isnan(base_std) else base_std, 2),
                         "observed_price": round(candidate_price, 2),
                         "timestamp": ts_str,
+                        "run_id": run_id,
+                        "data_quality_status": data_quality_status,
+                        "baseline_sample_size": int(len(baseline_prices)),
+                        "baseline_sample_unit": "price_observations",
+                        "baseline_method": "leave_one_out",
+                        "baseline_start": baseline_start,
+                        "baseline_end": baseline_end,
+                        "current_sample_size": 1,
                         "description": f"Price outlier: {row[price_col]:,.0f} {curr} (baseline: {base_mean:,.0f}, Z-Score: {z_val})"
                     })
 
@@ -84,9 +104,15 @@ class PriceAnomalyDetector:
         product_id_col: str = "product_id",
         price_col: str = "price",
         timestamp_col: str = "timestamp",
-        currency_symbol: Optional[str] = None
+        currency_symbol: Optional[str] = None,
+        run_id: Optional[str] = None,
+        data_quality_status: str = "unverified"
     ) -> List[Dict[str, Any]]:
         anomalies = []
+        # Offline exploratory analysis is explicitly unverified; failed/stale DQ
+        # must never produce an incident presented as a successful evaluation.
+        if data_quality_status not in {"valid", "unverified"}:
+            return anomalies
         if df_prices.empty or product_id_col not in df_prices.columns or price_col not in df_prices.columns:
             return anomalies
 
@@ -96,10 +122,13 @@ class PriceAnomalyDetector:
 
         df = df_prices.copy()
         df[price_col] = pd.to_numeric(df[price_col], errors="coerce")
-        df = df.dropna(subset=[price_col])
+        df = df[df[price_col].gt(0) & np.isfinite(df[price_col])].dropna(subset=[price_col])
 
         for prod_id, group in df.groupby(product_id_col):
+            group = group.reset_index(drop=True)
             prices = group[price_col]
+            times = (pd.to_datetime(group[timestamp_col], utc=True, format="mixed", errors="coerce")
+                     if timestamp_col in group else pd.Series(pd.NaT, index=group.index))
             if len(prices) < min_pts:
                 continue
 
@@ -108,6 +137,9 @@ class PriceAnomalyDetector:
                 baseline_prices = prices.drop(idx)
                 if len(baseline_prices) < 2:
                     continue
+                baseline_times = times.drop(idx).dropna()
+                baseline_start = baseline_times.min().isoformat() if not baseline_times.empty else None
+                baseline_end = baseline_times.max().isoformat() if not baseline_times.empty else None
 
                 q25 = float(baseline_prices.quantile(0.25))
                 q75 = float(baseline_prices.quantile(0.75))
@@ -136,6 +168,14 @@ class PriceAnomalyDetector:
                         "upper_bound": round(upper_bound, 2),
                         "observed_price": round(candidate_price, 2),
                         "timestamp": ts_str,
+                        "run_id": run_id,
+                        "data_quality_status": data_quality_status,
+                        "baseline_sample_size": int(len(baseline_prices)),
+                        "baseline_sample_unit": "price_observations",
+                        "baseline_method": "leave_one_out",
+                        "baseline_start": baseline_start,
+                        "baseline_end": baseline_end,
+                        "current_sample_size": 1,
                         "description": f"Price outside IQR bounds [{lower_bound:,.0f}, {upper_bound:,.0f}]: {row[price_col]:,.0f} {curr}"
                     })
 

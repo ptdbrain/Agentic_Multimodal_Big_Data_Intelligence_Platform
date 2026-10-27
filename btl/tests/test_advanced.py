@@ -360,7 +360,7 @@ class TestReviewBurstDetector:
         assert anomalies[0]["entity_id"] == "p1"
         assert anomalies[0]["current_volume"] == 20
         # Baseline of the 10 normal hours is strictly 3.0 (excludes the 20-review spike hour)
-        assert anomalies[0]["baseline_volume"] == 3.0
+        assert anomalies[0]["baseline_volume"] == round(30 / 11, 4)  # Empty hour 10 counts as zero
 
     def test_detect_empty_reviews(self):
         df = pd.DataFrame(columns=["review_id", "product_id", "rating", "review_date"])
@@ -533,7 +533,7 @@ class TestDataCleanerRobustness:
         cleaned = DataCleaner.clean_products(products)
         assert len(cleaned) == 2
         assert cleaned[0]["price"] == 15000000.0
-        assert cleaned[1]["price"] == 0.0
+        assert cleaned[1]["price"] is None  # Unavailable prices remain null.
 
 
 # ============================================================
