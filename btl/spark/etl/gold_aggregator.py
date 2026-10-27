@@ -1,12 +1,34 @@
+"""Local pandas Gold implementation with the same statistical contract as Spark."""
+import uuid
+from typing import Dict, Optional
+
+import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional
-from storage.storage_manager import storage, StorageManager
+
 from config.settings import settings
+from analytics.rounding import round_series
+from storage.storage_manager import storage, StorageManager
+
 
 class GoldAggregator:
-    """Generates Gold analytical data marts from Silver layer Parquet (Section 38).
-    Dynamically configurable with flexible inputs and defensive against schema variations.
-    """
+    @staticmethod
+    def _dated(frame: pd.DataFrame, candidates: tuple[str, ...], allow_ingestion_time: bool = False) -> pd.DataFrame:
+        result = frame.copy()
+        dates = pd.Series(pd.NaT, index=result.index, dtype='datetime64[ns, UTC]')
+        for name in dict.fromkeys(('date',) + candidates):
+            if name in result:
+                parsed = pd.to_datetime(result[name], errors='coerce', utc=True, format='mixed')
+                dates = dates.fillna(parsed)
+        result['time_available'] = dates.notna()
+        if allow_ingestion_time and 'ingested_at' in result:
+            dates = dates.fillna(pd.to_datetime(result['ingested_at'], errors='coerce', utc=True, format='mixed'))
+        result['date'] = dates.dt.date
+        return result[result['date'].notna()].copy()
+
+    @staticmethod
+    def _prices(values: pd.Series) -> pd.Series:
+        numeric = pd.to_numeric(values, errors='coerce')
+        return numeric.where(np.isfinite(numeric) & numeric.gt(0))
 
     @staticmethod
     def build_gold_marts(
@@ -16,132 +38,128 @@ class GoldAggregator:
         storage_mgr: Optional[StorageManager] = None,
         positive_threshold: Optional[float] = None,
         negative_threshold: Optional[float] = None,
-        save_to_storage: bool = True
+        save_to_storage: bool = True,
+        run_id: Optional[str] = None,
+        source_run_id: Optional[str] = None,
     ) -> Dict[str, pd.DataFrame]:
         mgr = storage_mgr or storage
-        pos_thresh = positive_threshold if positive_threshold is not None else settings.analytics.sentiment_positive_threshold
-        neg_thresh = negative_threshold if negative_threshold is not None else settings.analytics.sentiment_negative_threshold
-
-        prods = df_products if df_products is not None else mgr.read_silver_parquet("products")
-        revs = df_reviews if df_reviews is not None else mgr.read_silver_parquet("reviews")
+        products = (df_products if df_products is not None else mgr.read_silver_parquet('products')).copy()
+        reviews = df_reviews if df_reviews is not None else mgr.read_silver_parquet('reviews')
         prices = df_prices if df_prices is not None else pd.DataFrame()
+        positive = positive_threshold if positive_threshold is not None else settings.analytics.sentiment_positive_threshold
+        negative = negative_threshold if negative_threshold is not None else settings.analytics.sentiment_negative_threshold
+        marts = {}
+        if not products.empty:
+            if ('product_id' not in products or products['product_id'].isna().any()
+                    or products['product_id'].astype(str).str.strip().eq('').any()
+                    or products['product_id'].duplicated().any()):
+                raise ValueError('Catalog product_id must be present and unique')
+            products['price'] = GoldAggregator._prices(products['price']) if 'price' in products else np.nan
 
-        if prods.empty or revs.empty or "review_date" not in revs.columns:
-            return {}
-
-        revs_df = revs.copy()
-        revs_df["date"] = pd.to_datetime(revs_df["review_date"]).dt.date
-
-        # 0. Price Daily Stats (if df_prices is provided)
-        price_daily = pd.DataFrame()
-        if not prices.empty and "product_id" in prices.columns and "price" in prices.columns:
-            p_df = prices.copy()
-            ts_col = "timestamp" if "timestamp" in p_df.columns else "date"
-            if ts_col in p_df.columns:
-                p_df["date"] = pd.to_datetime(p_df[ts_col]).dt.date
-                price_daily = p_df.groupby(["date", "product_id"]).agg(
-                    min_price=("price", "min"),
-                    max_price=("price", "max"),
-                    avg_price=("price", "mean"),
-                    price_std=("price", "std"),
+        if not prices.empty:
+            observed = GoldAggregator._dated(prices, ('timestamp', 'created_at'))
+            observed['price'] = GoldAggregator._prices(observed['price'])
+            observed = observed[observed['price'].notna() & observed['product_id'].notna()]
+            if not observed.empty:
+                daily = observed.groupby(['date', 'product_id']).agg(
+                    min_price=('price', 'min'), max_price=('price', 'max'), avg_price=('price', 'mean'),
+                    price_std=('price', 'std'), data_points=('price', 'count'),
                 ).reset_index()
-                price_daily["min_price"] = price_daily["min_price"].round(2)
-                price_daily["max_price"] = price_daily["max_price"].round(2)
-                price_daily["avg_price"] = price_daily["avg_price"].round(2)
-                price_daily["price_std"] = price_daily["price_std"].fillna(0.0).round(2)
-                if save_to_storage:
-                    mgr.write_gold_parquet("price_daily_stats", price_daily)
+                daily[['min_price', 'max_price', 'avg_price', 'price_std']] = daily[
+                    ['min_price', 'max_price', 'avg_price', 'price_std']
+                ].apply(round_series)
+                marts['price_daily_stats'] = daily
 
-        # 1. Product Daily Stats
-        prod_daily = revs_df.groupby(["date", "product_id"]).agg(
-            review_count=("review_id", "count"),
-            avg_rating=("rating", "mean"),
-            rating_std=("rating", "std"),
-            positive_count=("rating", lambda x: (x >= pos_thresh).sum()),
-            negative_count=("rating", lambda x: (x <= neg_thresh).sum())
-        ).reset_index()
+        if not reviews.empty:
+            valid = GoldAggregator._dated(reviews, ('review_date', 'timestamp', 'created_at'),
+                                          allow_ingestion_time=not settings.analytics.strict_analytics_time)
+            valid['rating'] = pd.to_numeric(valid['rating'], errors='coerce')
+            valid = valid[valid['rating'].between(1, 5) & valid['product_id'].notna() & valid['review_id'].notna()
+                          & valid['review_id'].astype(str).str.strip().ne('')]
+            if not valid.empty:
+                daily = valid.groupby(['date', 'product_id']).agg(
+                    time_available=('time_available', 'min'),
+                    review_count=('review_id', 'count'), rating_sample_size=('rating', 'count'),
+                    avg_rating=('rating', 'mean'), rating_std=('rating', 'std'),
+                    positive_ratio=('rating', lambda x: (x >= positive).mean()),
+                    negative_ratio=('rating', lambda x: (x <= negative).mean()),
+                ).reset_index()
+                daily['avg_rating'] = round_series(daily['avg_rating'])
+                daily['weighted_avg_rating'] = daily['avg_rating']
+                daily['rating_std'] = round_series(daily['rating_std'])
+                for ratio in ['positive_ratio', 'negative_ratio']:
+                    daily[ratio] = round_series(daily[ratio],4)
+                daily['high_rating_ratio'] = daily['positive_ratio']
+                daily['low_rating_ratio'] = daily['negative_ratio']
+                metric_names = ['min_price', 'max_price', 'avg_price']
+                if 'price_daily_stats' in marts:
+                    daily = daily.merge(marts['price_daily_stats'][['date', 'product_id'] + metric_names],
+                                        on=['date', 'product_id'], how='left', validate='one_to_one')
+                else:
+                    daily[metric_names] = np.nan
+                daily['price_source'] = np.where(daily['avg_price'].notna(), 'observed', 'unavailable')
+                if not products.empty:
+                    daily = daily.merge(products[['product_id', 'price']], on='product_id',
+                                        how='left', validate='many_to_one')
+                    fallback = daily['avg_price'].isna() & daily['price'].notna()
+                    daily.loc[fallback, 'price_source'] = 'catalog_fallback'
+                    for name in metric_names:
+                        daily[name] = round_series(daily[name].fillna(daily['price']))
+                    daily = daily.drop(columns='price')
+                marts['product_daily_stats'] = daily
 
-        prod_daily["rating_std"] = prod_daily["rating_std"].fillna(0.0).round(2)
-        prod_daily["avg_rating"] = prod_daily["avg_rating"].round(2)
-        prod_daily["positive_ratio"] = (prod_daily["positive_count"] / prod_daily["review_count"]).round(4)
-        prod_daily["negative_ratio"] = (prod_daily["negative_count"] / prod_daily["review_count"]).round(4)
+                for dimension, name in [('brand', 'brand_daily_stats'), ('category', 'category_daily_stats')]:
+                    if products.empty or dimension not in products:
+                        continue
+                    joined = valid.merge(products[['product_id', dimension, 'price']], on='product_id',
+                                         how='inner', validate='many_to_one')
+                    groups = ['date', dimension]
+                    stats = joined.groupby(groups).agg(
+                        time_available=('time_available', 'min'),
+                        product_count=('product_id', 'nunique'), review_count=('review_id', 'count'),
+                        rating_sample_size=('rating', 'count'), avg_rating=('rating', 'mean'),
+                    ).reset_index()
+                    stats['avg_rating'] = round_series(stats['avg_rating'])
+                    stats['weighted_avg_rating'] = stats['avg_rating']
+                    # One catalog price per reviewed product, irrespective of its review volume.
+                    catalog_mean = joined.drop_duplicates(groups + ['product_id']).groupby(groups)['price'].mean()
+                    stats = stats.merge(round_series(catalog_mean.rename('avg_price')), on=groups, validate='one_to_one')
+                    marts[name] = stats
 
-        # Merge price from price_daily_stats first, falling back to products table
-        avail_prod_cols = [c for c in ["product_id", "price"] if c in prods.columns]
-        if not price_daily.empty:
-            merged_p = pd.merge(
-                prod_daily,
-                price_daily[["date", "product_id", "min_price", "max_price", "avg_price"]],
-                on=["date", "product_id"],
-                how="left",
-            )
-            if "price" in avail_prod_cols:
-                merged_p = pd.merge(merged_p, prods[avail_prod_cols], on="product_id", how="left")
-                merged_p["min_price"] = merged_p["min_price"].fillna(merged_p["price"])
-                merged_p["max_price"] = merged_p["max_price"].fillna(merged_p["price"])
-                merged_p["avg_price"] = merged_p["avg_price"].fillna(merged_p["price"])
-                merged_p.drop(columns=["price"], inplace=True)
-            merged_p.drop(columns=["positive_count", "negative_count"], inplace=True)
-        elif "price" in avail_prod_cols:
-            merged_p = pd.merge(prod_daily, prods[avail_prod_cols], on="product_id", how="left")
-            merged_p["min_price"] = merged_p["price"]
-            merged_p["max_price"] = merged_p["price"]
-            merged_p["avg_price"] = merged_p["price"]
-            merged_p.drop(columns=["price", "positive_count", "negative_count"], inplace=True)
-        else:
-            merged_p = prod_daily.drop(columns=["positive_count", "negative_count"])
-
+        effective_run = run_id or f'gold-{uuid.uuid4().hex}'
+        for name, frame in marts.items():
+            frame['run_id'] = effective_run
+            frame['source_run_id'] = source_run_id
+            if 'time_available' not in frame:
+                frame['time_available'] = frame['date'].notna()
+            observed_dates = frame.loc[frame['time_available'], 'date']
+            frame['data_as_of'] = observed_dates.max() if not observed_dates.empty else None
         if save_to_storage:
-            mgr.write_gold_parquet("product_daily_stats", merged_p)
-
-        # 2. Brand Daily Stats
-        brand_cols = [c for c in ["product_id", "brand", "price"] if c in prods.columns]
-        if "brand" in prods.columns:
-            rev_with_brand = pd.merge(revs_df, prods[brand_cols], on="product_id", how="inner")
-            agg_dict = {
-                "product_count": ("product_id", "nunique"),
-                "review_count": ("review_id", "count"),
-                "avg_rating": ("rating", "mean")
-            }
-            if "price" in prods.columns:
-                agg_dict["avg_price"] = ("price", "mean")
-            brand_daily = rev_with_brand.groupby(["date", "brand"]).agg(**agg_dict).reset_index()
-            brand_daily["avg_rating"] = brand_daily["avg_rating"].round(2)
-            if "avg_price" in brand_daily.columns:
-                brand_daily["avg_price"] = brand_daily["avg_price"].round(2)
-            if save_to_storage:
-                mgr.write_gold_parquet("brand_daily_stats", brand_daily)
-        else:
-            brand_daily = pd.DataFrame()
-
-        # 3. Category Daily Stats
-        if "category" in prods.columns:
-            cat_cols = [c for c in ["product_id", "category", "price"] if c in prods.columns]
-            rev_with_cat = pd.merge(revs_df, prods[cat_cols], on="product_id", how="inner")
-            agg_dict_cat = {
-                "product_count": ("product_id", "nunique"),
-                "review_count": ("review_id", "count"),
-                "avg_rating": ("rating", "mean")
-            }
-            if "price" in prods.columns:
-                agg_dict_cat["avg_price"] = ("price", "mean")
-            cat_daily = rev_with_cat.groupby(["date", "category"]).agg(**agg_dict_cat).reset_index()
-            cat_daily["avg_rating"] = cat_daily["avg_rating"].round(2)
-            if "avg_price" in cat_daily.columns:
-                cat_daily["avg_price"] = cat_daily["avg_price"].round(2)
-            if save_to_storage:
-                mgr.write_gold_parquet("category_daily_stats", cat_daily)
-        else:
-            cat_daily = pd.DataFrame()
-
-        print("[OK] Gold Data Marts successfully generated.")
-        result = {
-            "product_daily_stats": merged_p,
-            "brand_daily_stats": brand_daily,
-            "category_daily_stats": cat_daily,
-        }
-        if not price_daily.empty:
-            result["price_daily_stats"] = price_daily
-        return result
-
-
+            for name, dimension in [('product_daily_stats','product_id'),('brand_daily_stats','brand'),
+                                    ('category_daily_stats','category'),('price_daily_stats','product_id')]:
+                if name not in marts:
+                    columns = {'date':'datetime64[ns]',dimension:'str','run_id':'str','source_run_id':'str',
+                               'data_as_of':'datetime64[ns]','time_available':'bool'}
+                    if name == 'price_daily_stats':
+                        columns.update({key:'float64' for key in ['min_price','max_price','avg_price','price_std']})
+                        columns['data_points'] = 'int64'
+                    else:
+                        columns.update({key:'int64' for key in ['review_count','rating_sample_size']})
+                        columns.update({key:'float64' for key in ['avg_rating','weighted_avg_rating','rating_std',
+                                                                 'positive_ratio','negative_ratio','avg_price']})
+                        if name == 'product_daily_stats':
+                            columns.update(min_price='float64',max_price='float64',price_source='str')
+                        else:
+                            columns['product_count'] = 'int64'
+                    marts[name] = pd.DataFrame({key:pd.Series(dtype=kind) for key,kind in columns.items()})
+            from storage.write_lock import write_lock
+            from spark.spark_session import SparkSessionFactory
+            with write_lock(SparkSessionFactory.resolve_storage_path('', layer='gold')):
+                snapshot = {'run_id':effective_run,'source_run_id':source_run_id,'status':'publishing',
+                            'rows':{name:len(frame) for name,frame in marts.items()}}
+                mgr.write_json('gold/_snapshot.json', snapshot)
+                for name, frame in marts.items():
+                    mgr.write_gold_parquet(name, frame, allow_empty=True, replace_snapshot=True)
+                snapshot['status'] = 'complete'
+                mgr.write_json('gold/_snapshot.json', snapshot)
+        return marts
