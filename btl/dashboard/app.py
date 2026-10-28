@@ -20,16 +20,19 @@ render_sidebar_source()
 db = DashboardDB()
 st.caption(f"Active Warehouse Source: `{db.get_active_source_label()}`")
 kpis = db.get_kpi_summary()
+db.close()
+rating_label = str(kpis['avg_rating']) if kpis['avg_rating'] is not None else 'Unavailable'
+dq_label = f"{kpis['avg_dq_score']:.1f}%" if kpis['avg_dq_score'] is not None else 'Unavailable'
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.markdown(create_kpi_card("Total Products", f"{kpis['total_products']:,}", "Catalog Active"), unsafe_allow_html=True)
 with col2:
-    st.markdown(create_kpi_card("Total Reviews", f"{kpis['total_reviews']:,}", f"Avg Rating: {kpis['avg_rating']}"), unsafe_allow_html=True)
+    st.markdown(create_kpi_card("Total Reviews", f"{kpis['total_reviews']:,}", f"Avg Rating: {rating_label}"), unsafe_allow_html=True)
 with col3:
     st.markdown(create_kpi_card("Active Brands", f"{kpis['total_brands']}", "Multi-vendor sync"), unsafe_allow_html=True)
 with col4:
-    st.markdown(create_kpi_card("Data Quality Score", f"{kpis['avg_dq_score']:.1%}", "Verified Silver Layer"), unsafe_allow_html=True)
+    st.markdown(create_kpi_card("Data Quality Score", dq_label, "Recorded pipeline reports"), unsafe_allow_html=True)
 
 st.divider()
 

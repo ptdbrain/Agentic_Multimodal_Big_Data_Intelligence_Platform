@@ -1,19 +1,36 @@
+from dashboard.utils import render_analytics_quality
 import streamlit as st
 import pandas as pd
 from dashboard.utils import load_reviews_data, load_catalog_data, create_kpi_card, render_sidebar_source
 from spark.quality.metrics import DataQualityEvaluator
 from spark.quality.rules import RuleRegistry, REVIEW_QUALITY_RULES, PRODUCT_QUALITY_RULES
+from dashboard.db_connector import DashboardDB
 
 st.set_page_config(page_title="Data Quality & Lineage", page_icon="🛡️", layout="wide")
 st.title("🛡️ Data Quality Scorecard & End-to-End Lineage")
 
 render_sidebar_source()
 
-revs = load_reviews_data()
-prods = load_catalog_data()
+db = DashboardDB()
+try:
+    revs = load_reviews_data(db=db)
+    prods = load_catalog_data(db=db)
+    pipeline_reports = db.get_data_quality_metrics()
+finally:
+    db.close()
+render_analytics_quality(revs)
 
 # Evaluate Quality Dynamically
 selected_dataset = st.radio("Select Target Dataset for Audit", ["Reviews", "Products"], horizontal=True)
+
+st.subheader('Persisted Pipeline Quality Reports')
+st.caption('Bronze input, quarantine and unavailable observation times from recorded pipeline runs. '
+           'Legacy null values mean unmeasured. Normalization codes can overlap on one record.')
+if not pipeline_reports.empty:
+    selected_reports = pipeline_reports[pipeline_reports['dataset_name'] == selected_dataset.lower()]
+    st.dataframe(selected_reports, use_container_width=True)
+else:
+    st.info('No persisted pipeline quality report is available.')
 
 if selected_dataset == "Reviews":
     records = revs.to_dict(orient="records") if not revs.empty else []
@@ -24,7 +41,8 @@ else:
     rules = RuleRegistry.get_rules("products") or PRODUCT_QUALITY_RULES
     eval_res = DataQualityEvaluator.evaluate_batch("products", records, rules, primary_key="product_id")
 
-st.subheader(f"Data Quality Scorecard ({selected_dataset})")
+st.subheader(f"Serving Data Validation ({selected_dataset})")
+st.caption('Rechecks currently served records; quarantined Bronze records are reported above.')
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.markdown(create_kpi_card("Records Received", f"{eval_res['records_received']:,}", f"Time: {eval_res['processing_time_ms']}ms"), unsafe_allow_html=True)

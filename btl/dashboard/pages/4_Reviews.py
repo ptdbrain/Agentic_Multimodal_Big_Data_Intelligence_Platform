@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from dashboard.utils import load_reviews_data, render_sidebar_source
+from dashboard.utils import load_reviews_data, render_sidebar_source, render_data_sources
 
 st.set_page_config(page_title="Review Analytics", page_icon="💬", layout="wide")
 st.title("💬 Review Analytics & Feedback Intelligence")
@@ -9,6 +9,7 @@ st.title("💬 Review Analytics & Feedback Intelligence")
 render_sidebar_source()
 
 revs = load_reviews_data()
+render_data_sources(revs)
 
 if revs.empty:
     st.warning("No review data available in Silver or sample datasets. Run the E2E pipeline to ingest reviews.")

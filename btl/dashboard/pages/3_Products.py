@@ -1,22 +1,31 @@
+from dashboard.utils import render_analytics_quality
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from dashboard.utils import load_catalog_data, load_reviews_data, render_sidebar_source
+from dashboard.utils import load_catalog_data, load_reviews_data, render_sidebar_source, render_data_sources
 from analytics.descriptive.stats import DescriptiveStats
+from dashboard.db_connector import DashboardDB
 
 st.set_page_config(page_title="Product Analytics", page_icon="📱", layout="wide")
 st.title("📱 Product Analytics Explorer")
 
 render_sidebar_source()
 
-prods = load_catalog_data()
-revs = load_reviews_data()
+db = DashboardDB()
+try:
+    prods = load_catalog_data(db=db)
+    revs = load_reviews_data(db=db)
+finally:
+    db.close()
+render_data_sources(prods, revs)
+render_analytics_quality(revs)
 
 if prods.empty:
     st.warning("No product data available. Please run the E2E pipeline first.")
     st.stop()
 
 metrics_df = DescriptiveStats.compute_product_metrics(revs, prods)
+render_analytics_quality(metrics_df)
 
 # Ensure required columns exist with defaults for empty data
 for col in ["review_count", "avg_rating"]:
@@ -38,7 +47,7 @@ if selected_brand != "All":
 if selected_cat != "All":
     filtered = filtered[filtered["category"] == selected_cat]
 
-display_cols = [c for c in ["product_id", "product_name", "brand", "category", "price", "avg_rating", "review_count"] if c in filtered.columns]
+display_cols = [c for c in ["product_id", "product_name", "brand", "category", "price", "avg_rating", "review_count", "rating_sample_size", "rating_availability_status"] if c in filtered.columns]
 st.subheader(f"Catalog Products ({len(filtered)} items)")
 st.dataframe(filtered[display_cols], use_container_width=True)
 

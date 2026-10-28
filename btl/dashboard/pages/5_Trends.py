@@ -1,7 +1,8 @@
+from dashboard.utils import render_analytics_quality
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from dashboard.utils import load_reviews_data, render_sidebar_source
+from dashboard.utils import load_reviews_data, render_sidebar_source, render_data_sources
 from analytics.trend.trends import TrendAnalyzer
 
 st.set_page_config(page_title="Trend Analytics", page_icon="📈", layout="wide")
@@ -10,6 +11,8 @@ st.title("📈 Temporal & Trend Analytics")
 render_sidebar_source()
 
 revs = load_reviews_data()
+render_data_sources(revs)
+render_analytics_quality(revs)
 
 if revs.empty:
     st.warning("No review data available to analyze trends. Please run the E2E pipeline.")
@@ -31,6 +34,15 @@ daily = TrendAnalyzer.daily_review_trends(
 
 st.subheader("Daily Review Volume & Positive/Negative Trajectory")
 if not daily.empty:
+    insufficient = daily["trend_status"] == "insufficient_data"
+    if insufficient.any():
+        st.warning("Insufficient calendar coverage or review sample; smoothed trend is hidden for those dates.")
+    st.caption("Rolling rating is weighted by review volume; missing calendar days are not invented observations.")
+    st.dataframe(daily[["date", "rating_sample_size", "rolling_rating_sample_size", "observed_days",
+                        "missing_days", "baseline_start", "baseline_end", "trend_status"]],
+                 use_container_width=True)
+    rating_plot = daily.copy()
+    rating_plot.loc[insufficient, "rolling_avg_rating"] = float("nan")
     fig_vol = px.line(daily, x="date", y=["positive_count", "negative_count"],
                       labels={"value": "Reviews Count", "date": "Date"},
                       title=f"Daily Sentiment Trajectory (>= {sentiment_cut}★ Positive vs <= 2.0★ Negative)",
@@ -38,7 +50,7 @@ if not daily.empty:
     st.plotly_chart(fig_vol, use_container_width=True)
 
     st.subheader(f"Average Rating Evolution ({window_days}-Day Moving Window)")
-    fig_rating = px.line(daily, x="date", y=["avg_rating", "rolling_avg_rating"],
+    fig_rating = px.line(rating_plot, x="date", y=["avg_rating", "rolling_avg_rating"],
                          labels={"value": "Rating", "date": "Date"},
                          title=f"Daily Average Rating & {window_days}-Day Smoothed Trend",
                          color_discrete_map={"avg_rating": "#94a3b8", "rolling_avg_rating": "#38bdf8"})

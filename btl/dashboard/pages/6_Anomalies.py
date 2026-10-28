@@ -14,7 +14,10 @@ Pre-computed analytical anomaly incidents served directly from **PostgreSQL DW (
 """)
 
 db = DashboardDB()
-df_anom = db.get_anomaly_events()
+try:
+    df_anom = db.get_anomaly_events()
+finally:
+    db.close()
 
 all_anomalies = df_anom.to_dict(orient="records") if not df_anom.empty else []
 
@@ -35,8 +38,8 @@ with c4:
 st.divider()
 
 if not df_anom.empty:
-    st.subheader(f"Active Incidents ({len(df_anom)} events recorded)")
-    display_cols = [c for c in ["event_id", "entity_type", "entity_id", "anomaly_type", "score", "timestamp", "description"] if c in df_anom.columns]
+    st.subheader(f"Recorded Incidents ({len(df_anom)} events recorded)")
+    display_cols = [c for c in ["event_id", "entity_type", "entity_id", "anomaly_type", "score", "timestamp", "run_id", "data_quality_status", "baseline_window_hours", "baseline_window_days", "baseline_sample_size", "baseline_sample_unit", "baseline_method", "baseline_start", "baseline_end", "current_sample_size", "description"] if c in df_anom.columns]
     st.dataframe(df_anom[display_cols] if display_cols else df_anom, use_container_width=True)
 
     # Dynamic Drill-Down
@@ -50,4 +53,4 @@ if not df_anom.empty:
             st.write(f"Audit log for **{selected_entity}**:")
             st.dataframe(entity_events, use_container_width=True)
 else:
-    st.success("✅ No anomalies detected in warehouse. All metrics operating within normal baseline bounds.")
+    st.info("No anomaly incidents are recorded. This does not establish normal behavior; detection may lack history or a successful quality check.")

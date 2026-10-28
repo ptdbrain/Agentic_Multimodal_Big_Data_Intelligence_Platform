@@ -43,6 +43,7 @@ class DashboardDB:
                     database=settings.database.database,
                     connect_timeout=10
                 )
+                self._conn.set_session(isolation_level='REPEATABLE READ', readonly=True)
                 self._source = "postgres"
                 return
             except Exception as e:
@@ -57,6 +58,7 @@ class DashboardDB:
             db_path = settings.database.sqlite_path
             db_path.parent.mkdir(parents=True, exist_ok=True)
             self._conn = sqlite3.connect(str(db_path))
+            self._conn.execute('BEGIN')
             self._source = "sqlite"
         except Exception as e:
             raise ConnectionError(
@@ -130,7 +132,7 @@ class DashboardDB:
         return self.query("SELECT * FROM anomaly_events ORDER BY timestamp DESC LIMIT 100")
     
     def get_data_quality_metrics(self) -> pd.DataFrame:
-        return self.query("SELECT * FROM data_quality_metrics ORDER BY timestamp DESC LIMIT 50")
+        return self.query("SELECT * FROM data_quality_metrics q WHERE NOT EXISTS (SELECT 1 FROM data_quality_metrics newer WHERE newer.dataset_name = q.dataset_name AND newer.timestamp > q.timestamp) ORDER BY timestamp DESC")
     
     def get_pipeline_metrics(self) -> pd.DataFrame:
         return self.query("SELECT * FROM pipeline_metrics ORDER BY timestamp DESC LIMIT 100")
@@ -140,17 +142,27 @@ class DashboardDB:
         total_products = 0
         total_reviews = 0
         total_brands = 0
-        avg_dq = 0.0
-        rating = 0.0
+        avg_dq = None
+        rating = None
+        sample_size = 0
 
         products = self.query("SELECT COUNT(*) as cnt FROM products")
         if not products.empty and products['cnt'].iloc[0] is not None:
             total_products = int(products['cnt'].iloc[0])
         
-        reviews = self.query("SELECT SUM(review_count) as total_rc, AVG(avg_rating) as ar FROM product_daily_stats")
+        reviews = self.query('''
+            SELECT SUM(review_count) AS total_rc,
+                   SUM(CASE WHEN avg_rating BETWEEN 1 AND 5 AND COALESCE(rating_sample_size,review_count) > 0
+                            THEN COALESCE(rating_sample_size,review_count) ELSE 0 END) AS sample_size,
+                   SUM(CASE WHEN avg_rating BETWEEN 1 AND 5 AND COALESCE(rating_sample_size,review_count) > 0
+                            THEN avg_rating * COALESCE(rating_sample_size,review_count) ELSE 0 END) AS rating_sum
+            FROM product_daily_stats
+        ''')
         if not reviews.empty and reviews['total_rc'].iloc[0] is not None:
             total_reviews = int(reviews['total_rc'].iloc[0])
-            rating = float(reviews['ar'].iloc[0]) if reviews['ar'].iloc[0] is not None else 0.0
+            sample_size = int(reviews['sample_size'].iloc[0] or 0)
+            if sample_size:
+                rating = float(reviews['rating_sum'].iloc[0]) / sample_size
         
         brands = self.query("SELECT COUNT(DISTINCT brand) as cnt FROM brand_daily_stats")
         if not brands.empty and brands['cnt'].iloc[0] is not None:
@@ -164,8 +176,9 @@ class DashboardDB:
             "total_products": total_products,
             "total_reviews": total_reviews,
             "total_brands": total_brands,
-            "avg_dq_score": round(avg_dq, 1),
-            "avg_rating": round(rating, 2)
+            "avg_dq_score": round(avg_dq, 1) if avg_dq is not None else None,
+            "avg_rating": round(rating, 2) if rating is not None else None,
+            "rating_sample_size": sample_size,
         }
 
     def close(self):
