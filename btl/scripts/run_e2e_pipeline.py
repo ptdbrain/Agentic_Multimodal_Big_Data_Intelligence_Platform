@@ -13,6 +13,7 @@ and guarantees idempotency (re-running with identical data produces zero duplica
 """
 import sys
 import os
+import uuid
 import hashlib
 import argparse
 from pathlib import Path
@@ -24,9 +25,11 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from config.settings import settings
+from orchestration.run_manifest import canonical_writer
 from storage.storage_manager import storage
 from storage.minio_backend import MinIOBackend
 from storage.local_backend import LocalBackend
+from spark.spark_session import SparkSessionFactory
 from ingestion.file_loader.loader import FileLoader
 from ingestion.crawler.registry import CrawlerRegistry
 from ingestion.crawler.validator import CrawlerDataValidator
@@ -78,6 +81,9 @@ def stage_1_ingest_sources(
     remove_user_id: bool = False,
 ) -> Dict[str, Any]:
     """Stage 1: Source / Dataset / Crawler ingestion with PII anonymization and content verification."""
+    products_path = products_path or os.environ.get("SOURCE_PRODUCTS_PATH")
+    reviews_path = reviews_path or os.environ.get("SOURCE_REVIEWS_PATH")
+    prices_path = prices_path or os.environ.get("SOURCE_PRICES_PATH")
     resolved_source_type = (source_type or "dataset").strip().lower()
     print(f"\n[Stage 1/6] Source / Dataset / Crawler Ingestion (source_type={resolved_source_type})...")
 
@@ -236,13 +242,42 @@ def stage_2_kafka_produce_and_consume(
     if prices_raw:
         topics_to_consume.append(settings.kafka.topic_prices)
 
+    counters = ['records_consumed', 'records_valid', 'records_dlq', 'timing_measurement_errors']
+    lists = ['batches_written', 'dlq_records', 'latencies_ms', 'validation_latencies_ms',
+             'durable_sink_latencies_ms', 'message_latencies']
+    consume_result = {name: 0 for name in counters}
+    consume_result.update({name: [] for name in lists})
+    consume_result.update(batches_by_topic={}, topic_counts={}, committed_offsets={},
+                          lag_at_end=0, peak_broker_lag=0)
     try:
-        consume_result = consumer.consume_batch_once(
-            topics=topics_to_consume,
-            max_records=max(total_sent * 10, 50000),
-            timeout_ms=4000,
-            offline_records=offline_items
-        )
+        while True:
+            batch = consumer.consume_batch_once(
+                topics=topics_to_consume,
+                max_records=max(total_sent * 10, 50000),
+                timeout_ms=4000,
+                offline_records=offline_items,
+            )
+            for name in counters:
+                consume_result[name] += batch.get(name, 0)
+            for name in lists:
+                consume_result[name].extend(batch.get(name, []))
+            for topic, paths in batch.get('batches_by_topic', {}).items():
+                consume_result['batches_by_topic'].setdefault(topic, []).extend(paths)
+            for topic, count in batch.get('topic_counts', {}).items():
+                consume_result['topic_counts'][topic] = consume_result['topic_counts'].get(topic, 0) + count
+            for partition, offset in batch.get('committed_offsets', {}).items():
+                consume_result['committed_offsets'][partition] = max(
+                    consume_result['committed_offsets'].get(partition, 0), offset,
+                )
+            consume_result['lag_at_end'] = batch.get('lag_at_end', 0)
+            consume_result['peak_broker_lag'] = max(
+                consume_result['peak_broker_lag'], batch.get('peak_broker_lag', 0),
+            )
+            # A fetch deadline limits one poll group, not the entire delivered
+            # source batch. Continue only while making measured progress; the
+            # verification below reports missing records after an empty fetch.
+            if is_local or consume_result['records_consumed'] >= expected_sent or batch['records_consumed'] <= 0:
+                break
     finally:
         consumer.close()
 
@@ -359,6 +394,8 @@ def stage_4_spark_batch_silver_dq(
     include_prices: bool = True,
     enforce_dq_gate: bool = True,
     min_dq_score: Optional[float] = None,
+    run_id: Optional[str] = None,
+    required_datasets: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """Stage 4: Spark Batch -> Silver / Quarantine / DQ.
     Reads directly from Bronze storage paths on MinIO/Data Lake (never in-memory lists)
@@ -385,6 +422,7 @@ def stage_4_spark_batch_silver_dq(
         prices_source=prices_source,
         enforce_dq_gate=enforce_dq_gate,
         min_dq_score=min_dq_score,
+        run_id=run_id,
     )
 
     # --- Stage 4 Verification: Reconciliation, Silver Counts & Content, DQ Metrics ---
@@ -460,9 +498,13 @@ def stage_5_spark_gold_marts(
     dq_metrics: Optional[Any] = None,
     enforce_dq_gate: bool = True,
     min_dq_score: Optional[float] = None,
+    run_id: Optional[str] = None,
+    required_datasets: Optional[List[str]] = None,
+    source_run_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Stage 5: Spark Gold Marts & Anomaly Detection with DQ Gate check and grain & content verification."""
     print("\n[Stage 5/6] Building Spark Gold Analytical Marts & Anomaly Events...")
+    implicit = {'products':df_prods is None,'reviews':df_revs is None,'prices':df_prices is None}
     if df_prods is None:
         df_prods = storage.read_silver_parquet("products")
     if df_revs is None:
@@ -470,35 +512,55 @@ def stage_5_spark_gold_marts(
     if df_prices is None:
         try:
             df_prices = storage.read_silver_parquet("prices")
-        except Exception:
+        except FileNotFoundError:
             df_prices = pd.DataFrame()
 
+    # Use one lineage identity for mart publication and every detector result.
+    effective_run_id = run_id or str(uuid.uuid4())
     gold_builder = SparkGoldBuilder()
+    def gold_input(name, frame):
+        if frame.empty:
+            return []
+        if implicit[name]:
+            return SparkSessionFactory.resolve_storage_path(name, layer='silver')
+        return frame
     # Let SparkGoldBuilder read Silver Parquet directly via Spark S3A/local Parquet reader, enforcing DQ Gate first
     marts = gold_builder.build_all(
-        silver_reviews=None,
-        silver_products=None,
-        silver_prices=None,
+        silver_reviews=gold_input('reviews',df_revs),
+        silver_products=gold_input('products',df_prods),
+        silver_prices=gold_input('prices',df_prices),
         save_gold=True,
         dq_metrics=dq_metrics,
+        run_id=effective_run_id,
+        source_run_id=source_run_id,
+        required_datasets=required_datasets,
         enforce_dq_gate=enforce_dq_gate,
         min_dq_score=min_dq_score,
     )
 
     # Compute Anomaly Events with deterministic event_id and deduplicate
     all_anomalies: List[Dict[str, Any]] = []
+    # build_all has already enforced the current-run DQ gate when requested.
+    # Disabling the gate permits exploratory results, never a false DQ pass.
+    anomaly_dq_status = "valid" if (enforce_dq_gate or min_dq_score is not None or dq_metrics is not None) else "unverified"
     if not df_revs.empty:
         bursts = ReviewBurstDetector.detect_bursts(
             df_revs,
             window_hours=burst_window_hours,
-            threshold_multiplier=burst_multiplier
+            threshold_multiplier=burst_multiplier,
+            run_id=effective_run_id,
+            data_quality_status=anomaly_dq_status,
         )
         all_anomalies.extend(bursts)
-        rating_drops = RatingAnomalyDetector.detect_rating_drops(df_revs)
+        rating_drops = RatingAnomalyDetector.detect_rating_drops(
+            df_revs, run_id=effective_run_id, data_quality_status=anomaly_dq_status
+        )
         all_anomalies.extend(rating_drops)
 
     if not df_prices.empty:
-        price_anoms = PriceAnomalyDetector.detect_zscore_anomalies(df_prices)
+        price_anoms = PriceAnomalyDetector.detect_zscore_anomalies(
+            df_prices, run_id=effective_run_id, data_quality_status=anomaly_dq_status
+        )
         all_anomalies.extend(price_anoms)
 
     if all_anomalies:
@@ -507,9 +569,14 @@ def stage_5_spark_gold_marts(
                 raw_key = f"{anom.get('entity_type')}|{anom.get('entity_id')}|{anom.get('anomaly_type')}|{anom.get('timestamp')}"
                 anom["event_id"] = f"anom_{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()[:20]}"
         df_anom = pd.DataFrame(all_anomalies).drop_duplicates(subset=["event_id"], keep="last")
-        storage.write_gold_parquet("anomaly_events", df_anom)
     else:
-        df_anom = pd.DataFrame()
+        df_anom = pd.DataFrame(columns=[
+            'event_id', 'entity_type', 'entity_id', 'anomaly_type', 'score', 'timestamp',
+            'run_id', 'data_quality_status', 'baseline_sample_size',
+        ])
+    # A verified empty current result replaces the previous snapshot. Warehouse
+    # incidents remain historical; never silently reuse old Gold as current output.
+    storage.write_gold_parquet("anomaly_events", df_anom, allow_empty=True)
 
     # --- Stage 5 Verification: Count, Schema, and Composite Grain Uniqueness ---
     expected_mart_grains = {
@@ -597,7 +664,8 @@ def stage_6_warehouse_and_dashboard(
             total_rows = int(total_df["total_rows"].iloc[0])
             distinct_rows = int(cnt_df["total_rows"].iloc[0]) if len(pk_cols) > 1 else int(cnt_df["distinct_pks"].iloc[0])
 
-            if total_rows <= 0:
+            optional_price_snapshot_empty = tbl == 'price_daily_stats' and synced_tables[tbl] == 0
+            if total_rows <= 0 and not optional_price_snapshot_empty:
                 raise RuntimeError(f"Stage 6 verification failed: Warehouse table '{tbl}' is empty.")
             if total_rows != distinct_rows:
                 raise RuntimeError(
@@ -659,6 +727,7 @@ def stage_6_warehouse_and_dashboard(
     }
 
 
+@canonical_writer
 def run_end_to_end(
     products_path: Optional[str] = None,
     reviews_path: Optional[str] = None,
@@ -719,12 +788,15 @@ def run_end_to_end(
 
     # Stage 5: Spark Gold Marts & Anomaly Events (blocked if DQ Gate failed)
     s5 = stage_5_spark_gold_marts(
-        df_prods=s4["df_prods"],
-        df_revs=s4["df_revs"],
-        df_prices=s4["df_prices"],
+        df_prods=None,
+        df_revs=None,
+        df_prices=None if s1["prices_raw"] else pd.DataFrame(),
         burst_window_hours=burst_window_hours,
         burst_multiplier=burst_multiplier,
-        dq_metrics=[s4["etl_res"]["products_dq"], s4["etl_res"]["reviews_dq"]],
+        dq_metrics=[m for m in [s4["etl_res"]["products_dq"], s4["etl_res"]["reviews_dq"], s4["etl_res"].get("prices_dq")] if m],
+        run_id=s4["etl_res"]["run_id"],
+        source_run_id=s4["etl_res"]["run_id"],
+        required_datasets=["products", "reviews"] + (["prices"] if s1["prices_raw"] else []),
         enforce_dq_gate=enforce_dq_gate,
         min_dq_score=min_dq_score,
     )
