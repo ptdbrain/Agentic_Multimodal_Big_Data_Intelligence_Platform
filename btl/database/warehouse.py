@@ -2,14 +2,33 @@ import datetime
 import json
 import logging
 import sqlite3
+from contextlib import contextmanager, nullcontext
 from decimal import Decimal
 from typing import Optional, List
 import pandas as pd
+import numpy as np
 from config.settings import settings
 
 sqlite3.register_adapter(Decimal, float)
 sqlite3.register_adapter(pd.Timestamp, lambda ts: str(ts))
 logger = logging.getLogger(__name__)
+
+
+def _database_value(value, sqlite: bool):
+    """Serialize nullable/nested Parquet scalars consistently for both drivers."""
+    if isinstance(value, np.ndarray):
+        value = value.tolist()
+    if isinstance(value, (dict, list, tuple)):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, np.generic):
+        value = value.item()
+    if value is None or pd.isna(value):
+        return None
+    if sqlite and isinstance(value, Decimal):
+        return float(value)
+    if sqlite and isinstance(value, (pd.Timestamp, datetime.datetime, datetime.date)):
+        return str(value)
+    return value
 
 
 class WarehouseManager:
@@ -63,6 +82,8 @@ class WarehouseManager:
         db_path = settings.database.sqlite_path
         db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(db_path))
+        # Allow serving readers to retain a consistent snapshot while an export commits.
+        self._conn.execute('PRAGMA journal_mode=WAL')
         self._engine_type = 'sqlite'
         logger.info(f"Connected to SQLite (explicit local/test mode) at {db_path}")
 
@@ -77,6 +98,19 @@ class WarehouseManager:
             return True
         except Exception as e:
             raise ConnectionError(f"Warehouse health check failed ({self._engine_type}): {e}") from e
+
+    @contextmanager
+    def transaction(self):
+        """Commit a complete export together; individual upserts join this scope."""
+        if getattr(self, '_export_transaction', False):
+            yield
+            return
+        self._export_transaction = True
+        try:
+            with self._conn:
+                yield
+        finally:
+            self._export_transaction = False
     
     def initialize_schema(self):
         """Run schema.sql to create tables."""
@@ -93,7 +127,131 @@ class WarehouseManager:
         else:
             cursor.execute(ddl)
         self._conn.commit()
-    
+        self._migrate_dq_schema()
+        self._migrate_anomaly_schema()
+        self._migrate_analytics_schema()
+        self._migrate_silver_schema()
+
+    def _postgres_columns(self, cursor, table: str) -> dict:
+        """Inspect the active schema without taking an ALTER TABLE lock."""
+        cursor.execute('''SELECT column_name,is_nullable FROM information_schema.columns
+                          WHERE table_schema=current_schema() AND table_name=%s''', (table,))
+        return dict(cursor.fetchall())
+
+    def _migrate_silver_schema(self):
+        """Preserve normalization evidence in serving; legacy values stay null."""
+        common = {"normalization_status": "VARCHAR(30)", "normalization_errors": "TEXT",
+                  "time_available": "BOOLEAN", "ingestion_time_available": "BOOLEAN",
+                  "ingested_at_raw": "TEXT"}
+        extras = {
+            "products": {"price_raw": "TEXT", "created_at_raw": "TEXT", "updated_at_raw": "TEXT",
+                         "timestamp_raw": "TEXT", "ingested_at": "TIMESTAMP"},
+            "reviews": {"rating_raw": "TEXT", "review_date_raw": "TEXT"},
+        }
+        with self._conn:
+            cur = self._conn.cursor()
+            for table, fields in extras.items():
+                additions = dict(common, **fields)
+                if self._engine_type == 'sqlite':
+                    existing = {row[1] for row in cur.execute(f'PRAGMA table_info({table})').fetchall()}
+                    for name, sql_type in additions.items():
+                        if name not in existing:
+                            cur.execute(f'ALTER TABLE {table} ADD COLUMN {name} {sql_type}')
+                else:
+                    existing = self._postgres_columns(cur, table)
+                    for name, sql_type in additions.items():
+                        if name not in existing:
+                            cur.execute(f'ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {name} {sql_type}')
+
+    def _migrate_analytics_schema(self):
+        """Keep Gold lineage available in serving; legacy values stay unknown."""
+        common = {"run_id": "VARCHAR(100)", "source_run_id": "VARCHAR(100)",
+                  "data_as_of": "DATE", "time_available": "BOOLEAN"}
+        tables = ("product_daily_stats", "brand_daily_stats", "category_daily_stats", "price_daily_stats")
+        with self._conn:
+            cur = self._conn.cursor()
+            for table in tables:
+                additions = dict(common)
+                if table != "price_daily_stats":
+                    additions.update(rating_sample_size="INTEGER", weighted_avg_rating="NUMERIC(3,2)")
+                if table == "product_daily_stats":
+                    additions["price_source"] = "VARCHAR(30)"
+                if self._engine_type == "sqlite":
+                    existing = {r[1] for r in cur.execute(f"PRAGMA table_info({table})").fetchall()}
+                    for name, sql_type in additions.items():
+                        if name not in existing:
+                            cur.execute(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}")
+                else:
+                    existing = self._postgres_columns(cur, table)
+                    for name, sql_type in additions.items():
+                        if name not in existing:
+                            cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {name} {sql_type}")
+
+    def _migrate_anomaly_schema(self):
+        """Add anomaly lineage fields without rewriting existing incidents."""
+        additions = {
+            "run_id": "VARCHAR(100)",
+            "data_quality_status": "VARCHAR(30)",
+            "baseline_window_hours": "INTEGER",
+            "baseline_window_days": "INTEGER",
+            "baseline_sample_size": "INTEGER",
+            "baseline_sample_unit": "VARCHAR(30)",
+            "baseline_method": "VARCHAR(30)",
+            "baseline_start": "TIMESTAMP",
+            "baseline_end": "TIMESTAMP",
+            "baseline_observed_days": "INTEGER",
+            "current_sample_size": "INTEGER",
+        }
+        with self._conn:
+            cur = self._conn.cursor()
+            if self._engine_type == "sqlite":
+                existing = {r[1] for r in cur.execute("PRAGMA table_info(anomaly_events)").fetchall()}
+                for name, sql_type in additions.items():
+                    if name not in existing:
+                        cur.execute(f"ALTER TABLE anomaly_events ADD COLUMN {name} {sql_type}")
+            else:
+                existing = self._postgres_columns(cur, 'anomaly_events')
+                for name, sql_type in additions.items():
+                    if name not in existing:
+                        cur.execute(f"ALTER TABLE anomaly_events ADD COLUMN IF NOT EXISTS {name} {sql_type}")
+
+    def _migrate_dq_schema(self):
+        """Idempotent additive DQ migration, preserving legacy history and indexes."""
+        additions = {"run_id": "VARCHAR(100)", "timing_status": "VARCHAR(30)",
+                     "records_quarantined": "INTEGER", "records_missing_observation_time": "INTEGER",
+                     "untimed_silver_count": "INTEGER", "normalization_error_counts": "TEXT",
+                     "quarantine_reason_counts": "TEXT",
+                     "intra_batch_duplicate_count": "INTEGER DEFAULT 0",
+                     "cross_batch_duplicate_count": "INTEGER DEFAULT 0"}
+        with self._conn:
+            cur = self._conn.cursor()
+            if self._engine_type == "sqlite":
+                import re
+                info = cur.execute("PRAGMA table_info(data_quality_metrics)").fetchall()
+                if any(r[1] == "processing_time_ms" and r[3] for r in info):
+                    original = cur.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='data_quality_metrics'").fetchone()[0]
+                    indexes = cur.execute("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='data_quality_metrics' AND sql IS NOT NULL").fetchall()
+                    ddl = re.sub(r"CREATE TABLE(?: IF NOT EXISTS)? [\"`]?data_quality_metrics[\"`]?", "CREATE TABLE dq_migration_stage", original, flags=re.I)
+                    ddl = re.sub(r"(processing_time_ms\s+\w+)\s+NOT NULL", r"\1", ddl, flags=re.I)
+                    cur.execute(ddl)
+                    columns = ",".join('"' + r[1].replace('"', '""') + '"' for r in info)
+                    cur.execute(f"INSERT INTO dq_migration_stage ({columns}) SELECT {columns} FROM data_quality_metrics")
+                    cur.execute("DROP TABLE data_quality_metrics")
+                    cur.execute("ALTER TABLE dq_migration_stage RENAME TO data_quality_metrics")
+                    for (index_sql,) in indexes:
+                        cur.execute(index_sql)
+                existing = {r[1] for r in info}
+                for name, sql_type in additions.items():
+                    if name not in existing:
+                        cur.execute(f"ALTER TABLE data_quality_metrics ADD COLUMN {name} {sql_type}")
+            else:
+                existing = self._postgres_columns(cur, 'data_quality_metrics')
+                for name, sql_type in additions.items():
+                    if name not in existing:
+                        cur.execute(f"ALTER TABLE data_quality_metrics ADD COLUMN IF NOT EXISTS {name} {sql_type}")
+                if existing.get('processing_time_ms') == 'NO':
+                    cur.execute("ALTER TABLE data_quality_metrics ALTER COLUMN processing_time_ms DROP NOT NULL")
+
     def upsert_dataframe(
         self,
         table_name: str,
@@ -113,7 +271,7 @@ class WarehouseManager:
         
         rows_affected = 0
         try:
-            with self._conn:
+            with (nullcontext() if getattr(self, '_export_transaction', False) else self._conn):
                 cursor = self._conn.cursor()
                 
                 # Discover table schema dynamically
@@ -189,7 +347,7 @@ class WarehouseManager:
                         sql = f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders})"
                     
                     for _, row in df.iterrows():
-                        val_tuple = tuple(None if pd.isna(row[c]) else row[c] for c in columns)
+                        val_tuple = tuple(_database_value(row[c], sqlite=False) for c in columns)
                         cursor.execute(sql, val_tuple)
                         rows_affected += 1
                     
@@ -198,19 +356,6 @@ class WarehouseManager:
                     col_names = ", ".join(columns)
                     insert_sql = f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders})"
 
-                    def _to_sqlite_val(v):
-                        if v is None:
-                            return None
-                        if isinstance(v, (dict, list)):
-                            return json.dumps(v, ensure_ascii=False)
-                        if pd.isna(v):
-                            return None
-                        if isinstance(v, Decimal):
-                            return float(v)
-                        if isinstance(v, (pd.Timestamp, datetime.datetime, datetime.date)):
-                            return str(v)
-                        return v
-
                     if conflict_keys:
                         null_clause = " OR ".join([f"{k} IS NULL" for k in conflict_keys])
                         cursor.execute(f"DELETE FROM {table_name} WHERE {null_clause}")
@@ -218,10 +363,10 @@ class WarehouseManager:
                     for _, row in df.iterrows():
                         if conflict_keys:
                             where_clause = " AND ".join([f"{k} = ?" for k in conflict_keys])
-                            del_vals = tuple(_to_sqlite_val(row[k]) for k in conflict_keys)
+                            del_vals = tuple(_database_value(row[k], sqlite=True) for k in conflict_keys)
                             cursor.execute(f"DELETE FROM {table_name} WHERE {where_clause}", del_vals)
                         
-                        val_tuple = tuple(_to_sqlite_val(row[c]) for c in columns)
+                        val_tuple = tuple(_database_value(row[c], sqlite=True) for c in columns)
                         cursor.execute(insert_sql, val_tuple)
                         rows_affected += 1
 

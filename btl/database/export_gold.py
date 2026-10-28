@@ -51,36 +51,65 @@ def export_gold_to_db(
 
     synced_tables = {}
     try:
-        for mart in target_marts:
+        # Read and validate the entire group before opening the warehouse write
+        # transaction. A failed/partial Gold generation cannot advance serving.
+        frames = {}
+        run_ids = set()
+        unknown_run_marts = []
+        from storage.write_lock import write_lock
+        from spark.spark_session import SparkSessionFactory
+        with write_lock(SparkSessionFactory.resolve_storage_path('', layer='gold')):
             try:
-                df = storage.read_gold_parquet(mart)
-            except Exception as e:
-                raise RuntimeError(f"Failed to read Gold mart '{mart}' from storage: {e}") from e
-
-            if not df.empty:
-                keys = conflict_keys_map.get(mart, ["id"])
+                generation = storage.read_json('gold/_snapshot.json')
+            except FileNotFoundError:
+                generation = None
+            if generation is not None and generation.get('status') != 'complete':
+                raise ValueError('Gold run publication is incomplete; serving snapshot retained')
+            for mart in target_marts:
                 try:
-                    rows = wh.upsert_dataframe(mart, df, conflict_keys=keys)
-                    synced_tables[mart] = rows
-                    print(f"Exported {rows} rows to database table '{mart}' ({wh._engine_type})")
-                except Exception as e:
-                    raise RuntimeError(f"Export to warehouse failed for table '{mart}': {e}") from e
-
-        tables_to_sync = silver_tables if silver_tables is not None else ["products", "reviews"]
-        for tbl in tables_to_sync:
+                    frame = storage.read_gold_parquet(mart)
+                except Exception as exc:
+                    raise RuntimeError(f"Failed to read Gold mart '{mart}' from storage: {exc}") from exc
+                frames[mart] = frame
+                if mart in canonical_marts[:4] and not set(conflict_keys_map[mart]).issubset(frame.columns):
+                    raise ValueError(f"Gold snapshot '{mart}' is missing or has no required grain schema")
+                if mart in canonical_marts[:4] and not frame.empty:
+                    known = set(frame['run_id'].dropna().astype(str)) if 'run_id' in frame else set()
+                    if len(known) > 1 or (known and frame['run_id'].isna().any()):
+                        raise ValueError(f"Gold mart '{mart}' contains mixed run IDs")
+                    run_ids.update(known)
+                    if not known:
+                        unknown_run_marts.append(mart)
+            if len(run_ids) > 1 or (run_ids and unknown_run_marts):
+                raise ValueError('Gold marts belong to different run IDs; retry after complete publication')
+            if generation:
+                for name, frame in frames.items():
+                    if name in canonical_marts[:4]:
+                        if name not in generation['rows'] or len(frame) != generation['rows'][name]:
+                            raise ValueError('Gold run manifest row counts do not match published snapshots')
+                        if not frame.empty and (set(frame['run_id']) != {generation['run_id']}):
+                            raise ValueError('Gold run manifest does not match published lineage')
+        tables_to_sync = silver_tables if silver_tables is not None else ['products', 'reviews']
+        for table in tables_to_sync:
             try:
-                df_tbl = storage.read_silver_parquet(tbl)
-            except Exception as e:
-                raise RuntimeError(f"Failed to read Silver table '{tbl}' from storage: {e}") from e
-
-            if not df_tbl.empty:
-                keys = conflict_keys_map.get(tbl, ["id"])
+                frames[table] = storage.read_silver_parquet(table)
+            except Exception as exc:
+                raise RuntimeError(f"Failed to read Silver table '{table}' from storage: {exc}") from exc
+        with wh.transaction():
+            for name, frame in frames.items():
+                if name in canonical_marts[:4]:
+                    # Daily marts are complete snapshots; incidents/DQ remain history.
+                    wh._conn.cursor().execute(f'DELETE FROM {name}')
+                if frame.empty:
+                    if name in canonical_marts[:4]:
+                        synced_tables[name] = 0
+                    continue
                 try:
-                    rows = wh.upsert_dataframe(tbl, df_tbl, conflict_keys=keys)
-                    synced_tables[tbl] = rows
-                    print(f"Exported {rows} rows to table '{tbl}' ({wh._engine_type})")
-                except Exception as e:
-                    raise RuntimeError(f"Export to warehouse failed for table '{tbl}': {e}") from e
+                    rows = wh.upsert_dataframe(name, frame, conflict_keys=conflict_keys_map.get(name, ['id']))
+                    synced_tables[name] = rows
+                    print(f"Prepared {rows} rows for database table '{name}' ({wh._engine_type})")
+                except Exception as exc:
+                    raise RuntimeError(f"Export to warehouse failed for table '{name}': {exc}") from exc
     finally:
         wh.close()
 

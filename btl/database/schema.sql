@@ -13,6 +13,16 @@ CREATE TABLE IF NOT EXISTS products (
     review_count INTEGER DEFAULT 0,
     seller VARCHAR(255),
     source VARCHAR(100),
+    normalization_status VARCHAR(30),
+    normalization_errors TEXT,
+    time_available BOOLEAN,
+    ingestion_time_available BOOLEAN,
+    price_raw TEXT,
+    created_at_raw TEXT,
+    updated_at_raw TEXT,
+    timestamp_raw TEXT,
+    ingested_at_raw TEXT,
+    ingested_at TIMESTAMP,
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 );
@@ -28,6 +38,13 @@ CREATE TABLE IF NOT EXISTS product_daily_stats (
     rating_std NUMERIC(4, 2),
     positive_ratio NUMERIC(5, 4),
     negative_ratio NUMERIC(5, 4),
+    run_id VARCHAR(100),
+    source_run_id VARCHAR(100),
+    data_as_of DATE,
+    time_available BOOLEAN,
+    rating_sample_size INTEGER,
+    weighted_avg_rating NUMERIC(3,2),
+    price_source VARCHAR(30),
     PRIMARY KEY (date, product_id)
 );
 
@@ -38,6 +55,12 @@ CREATE TABLE IF NOT EXISTS brand_daily_stats (
     review_count INTEGER DEFAULT 0,
     avg_rating NUMERIC(3, 2),
     avg_price NUMERIC(15, 2),
+    run_id VARCHAR(100),
+    source_run_id VARCHAR(100),
+    data_as_of DATE,
+    time_available BOOLEAN,
+    rating_sample_size INTEGER,
+    weighted_avg_rating NUMERIC(3,2),
     PRIMARY KEY (date, brand)
 );
 
@@ -48,6 +71,12 @@ CREATE TABLE IF NOT EXISTS category_daily_stats (
     review_count INTEGER DEFAULT 0,
     avg_rating NUMERIC(3, 2),
     avg_price NUMERIC(15, 2),
+    run_id VARCHAR(100),
+    source_run_id VARCHAR(100),
+    data_as_of DATE,
+    time_available BOOLEAN,
+    rating_sample_size INTEGER,
+    weighted_avg_rating NUMERIC(3,2),
     PRIMARY KEY (date, category)
 );
 
@@ -59,6 +88,17 @@ CREATE TABLE IF NOT EXISTS anomaly_events (
     score NUMERIC(5, 2) NOT NULL,
     timestamp TIMESTAMP NOT NULL,
     description TEXT,
+    run_id VARCHAR(100),
+    data_quality_status VARCHAR(30),
+    baseline_window_hours INTEGER,
+    baseline_window_days INTEGER,
+    baseline_sample_size INTEGER,
+    baseline_sample_unit VARCHAR(30),
+    baseline_method VARCHAR(30),
+    baseline_start TIMESTAMP,
+    baseline_end TIMESTAMP,
+    baseline_observed_days INTEGER,
+    current_sample_size INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -68,10 +108,19 @@ CREATE TABLE IF NOT EXISTS data_quality_metrics (
     records_received INTEGER NOT NULL,
     records_valid INTEGER NOT NULL,
     records_invalid INTEGER NOT NULL,
+    records_quarantined INTEGER,
+    records_missing_observation_time INTEGER,
+    untimed_silver_count INTEGER,
+    normalization_error_counts TEXT,
+    quarantine_reason_counts TEXT,
     records_duplicate INTEGER NOT NULL,
     records_missing INTEGER NOT NULL,
     dq_score NUMERIC(5, 2) NOT NULL,
-    processing_time_ms INTEGER NOT NULL,
+    processing_time_ms INTEGER,
+    run_id VARCHAR(100),
+    timing_status VARCHAR(30),
+    intra_batch_duplicate_count INTEGER DEFAULT 0,
+    cross_batch_duplicate_count INTEGER DEFAULT 0,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -97,6 +146,10 @@ CREATE TABLE IF NOT EXISTS price_daily_stats (
     avg_price NUMERIC(15, 2),
     price_std NUMERIC(15, 2),
     data_points INTEGER DEFAULT 0,
+    run_id VARCHAR(100),
+    source_run_id VARCHAR(100),
+    data_as_of DATE,
+    time_available BOOLEAN,
     PRIMARY KEY (date, product_id)
 );
 
@@ -114,6 +167,13 @@ CREATE TABLE IF NOT EXISTS reviews (
     verified_purchase BOOLEAN,
     helpful_count INTEGER DEFAULT 0,
     source VARCHAR(100),
+    normalization_status VARCHAR(30),
+    normalization_errors TEXT,
+    time_available BOOLEAN,
+    ingestion_time_available BOOLEAN,
+    rating_raw TEXT,
+    review_date_raw TEXT,
+    ingested_at_raw TEXT,
     ingested_at TIMESTAMP
 );
 
