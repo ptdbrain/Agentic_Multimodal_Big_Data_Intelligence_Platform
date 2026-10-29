@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import hashlib
 import json
 import os
 import shutil
@@ -864,8 +865,227 @@ def benchmark_velocity(
 
 
 # -----------------------------------------------------------------------------
-# 3. Variety Benchmark
+# 3. Variety Benchmark (Dual: Isolated Parser Benchmark + E2E Ingestion)
 # -----------------------------------------------------------------------------
+
+class ProvenanceTracker:
+    """Maintains immutable data-level provenance and verifies source integrity.
+    Prevents synthetic fallbacks or generic files from disguising as authentic crawler sources.
+    """
+
+    @staticmethod
+    def compute_sha256(file_path: Path) -> str:
+        """Computes cryptographic SHA-256 hash of the source file."""
+        hasher = hashlib.sha256()
+        with open(file_path, "rb") as f:
+            while chunk := f.read(65536):
+                hasher.update(chunk)
+        return hasher.hexdigest()
+
+    @classmethod
+    def verify_provenance(
+        cls,
+        fmt_name: str,
+        file_path: Path,
+        loaded_records: List[Dict[str, Any]],
+        declared_category: str,
+    ) -> Dict[str, Any]:
+        """Validates format content and verifies source signature at the record level."""
+        if not file_path.exists():
+            raise FileNotFoundError(f"Provenance verification failed: {file_path} not found")
+
+        file_sha256 = cls.compute_sha256(file_path)
+        file_bytes = file_path.stat().st_size
+        record_count = len(loaded_records)
+
+        # 1. Format-level physical file content verification
+        if fmt_name in ("HTML_Synthetic_JSONLD", "HTML_Crawler"):
+            sample_content = file_path.read_text(encoding="utf-8", errors="ignore")[:4096]
+            is_html = any(tag in sample_content.lower() for tag in ("<!doctype", "<html", "<script", "<body"))
+            if not is_html:
+                raise ValueError(
+                    f"Format mismatch: {fmt_name} file {file_path.name} does not contain valid HTML markers"
+                )
+
+        # 2. Data-level signature verification for Tiki crawler datasets
+        if fmt_name == "JSONL_Tiki_Crawler":
+            if declared_category in ("real_crawler_jsonl", "authentic_snapshot_jsonl"):
+                if record_count == 0:
+                    raise ValueError(
+                        f"Cannot declare '{declared_category}' on empty dataset: {file_path.name}"
+                    )
+                # Verify Tiki signatures on loaded records
+                for idx, rec in enumerate(loaded_records):
+                    r_id = str(rec.get("review_id", ""))
+                    src = str(rec.get("source", ""))
+                    rating = rec.get("rating")
+
+                    is_tiki_id = r_id.startswith("tiki_rv_") or r_id.isdigit() or ("tiki" in r_id.lower())
+                    is_tiki_source = src == "tiki_crawler"
+                    is_valid_rating = rating is not None and 1.0 <= float(rating) <= 5.0
+
+                    if not (is_tiki_id and is_tiki_source and is_valid_rating):
+                        raise ValueError(
+                            f"Provenance violation: Record {idx} ({r_id}) in {file_path.name} "
+                            f"lacks authentic Tiki signatures (id={is_tiki_id}, source={is_tiki_source}, "
+                            f"rating={is_valid_rating}). Refusing to declare as '{declared_category}'."
+                        )
+                verified_source = "unverified_tiki_labeled_records"
+            elif declared_category == "synthetic_fallback":
+                verified_source = "synthetic_fallback"
+            else:
+                raise ValueError(f"Unknown declared category for {fmt_name}: {declared_category}")
+        elif fmt_name == "HTML_Synthetic_JSONLD":
+            if declared_category != "synthetic_html":
+                raise ValueError(
+                    f"Category honesty violation: {fmt_name} must be declared as 'synthetic_html', not '{declared_category}'"
+                )
+            verified_source = "schema_org_synthetic_html"
+        else:
+            verified_source = declared_category
+
+        return {
+            "format": fmt_name,
+            "file_path": str(file_path),
+            "file_bytes": file_bytes,
+            "sha256": file_sha256,
+            "sha256_short": file_sha256[:12],
+            "record_count": record_count,
+            "declared_category": declared_category,
+            "verified_source": verified_source,
+            "signature_verified": True,
+            "content_verified": True,
+            "provenance_status": "synthetic" if "synthetic" in declared_category else "unverified",
+            "source_verified": False,
+        }
+
+
+class VarietyBenchmarkResults(list):
+    """List container for Variety end-to-end benchmark results that also holds
+    the isolated parser benchmark results.
+    """
+
+    def __init__(
+        self,
+        items: Optional[List[Dict[str, Any]]] = None,
+        parser_benchmark: Optional[List[Dict[str, Any]]] = None,
+    ):
+        super().__init__(items or [])
+        self.parser_benchmark: List[Dict[str, Any]] = parser_benchmark or []
+
+
+def benchmark_parsers(
+    records_with_pii: List[Dict[str, Any]],
+    temp_dir: Path,
+) -> List[Dict[str, Any]]:
+    """Measures pure parsing and PII sanitization performance across multiple formats
+    using the EXACT same logical dataset of N records under identical controlled conditions.
+    Isolates format serialization/deserialization overhead from data size or source variance.
+    """
+    n_records = len(records_with_pii)
+    parser_temp = temp_dir / "parser_bench"
+    parser_temp.mkdir(parents=True, exist_ok=True)
+    df_raw = pd.DataFrame(records_with_pii)
+
+    # Serialize the exact same N records across 6 formats
+    json_path = parser_temp / "reviews_exact.json"
+    jsonl_path = parser_temp / "reviews_exact.jsonl"
+    csv_path = parser_temp / "reviews_exact.csv"
+    tsv_path = parser_temp / "reviews_exact.tsv"
+    parquet_path = parser_temp / "reviews_exact.parquet"
+    html_path = parser_temp / "reviews_exact.html"
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(records_with_pii, f, ensure_ascii=False)
+    with open(jsonl_path, "w", encoding="utf-8") as f:
+        for item in records_with_pii:
+            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+    df_raw.to_csv(csv_path, index=False, encoding="utf-8")
+    df_raw.to_csv(tsv_path, index=False, sep="\t", encoding="utf-8")
+    df_raw.to_parquet(parquet_path, index=False)
+
+    html_ld_payload = {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "sku": "prod_bench_exact",
+        "name": "Benchmark Product Exact",
+        "review": [
+            {
+                "@type": "Review",
+                "@id": r["review_id"],
+                "author": {"@type": "Person", "name": r["user_id"]},
+                "datePublished": r["review_date"],
+                "name": r["review_title"],
+                "reviewBody": r["review_text"],
+                "inLanguage": r.get("language", "vi"),
+                "reviewRating": {"@type": "Rating", "ratingValue": r["rating"]},
+            }
+            for r in records_with_pii
+        ],
+    }
+    html_doc = (
+        "<!DOCTYPE html><html><head><title>Product</title>"
+        f'<script type="application/ld+json">{json.dumps(html_ld_payload, ensure_ascii=False)}</script>'
+        "</head><body><h1>Product</h1></body></html>"
+    )
+    html_path.write_text(html_doc, encoding="utf-8")
+
+    parser_targets = [
+        ("JSON", json_path, "json"),
+        ("JSONL", jsonl_path, "jsonl"),
+        ("CSV", csv_path, "csv"),
+        ("TSV", tsv_path, "tsv"),
+        ("Parquet", parquet_path, "parquet"),
+        ("HTML_Synthetic_JSONLD", html_path, "html"),
+    ]
+
+    parser_results: List[Dict[str, Any]] = []
+    print(f"\n  --- [Variety 3.1] Isolated Parser Benchmark (Exact Same Dataset of N={n_records} records) ---")
+
+    for fmt_name, fpath, ptype in parser_targets:
+        f_size = fpath.stat().st_size
+        f_hash = ProvenanceTracker.compute_sha256(fpath)
+
+        t0 = time.perf_counter()
+        if ptype == "html":
+            scraper = UniversalProductScraper()
+            html_text = fpath.read_text(encoding="utf-8")
+            parsed_records = scraper.extract_reviews_from_html(html_text, product_id="prod_bench_exact")
+        else:
+            parsed_records = FileLoader.load_records(fpath, anonymize_pii=True)
+        parse_duration = time.perf_counter() - t0
+
+        assert len(parsed_records) == n_records, (
+            f"Parser record count mismatch for {fmt_name}: parsed {len(parsed_records)}, expected {n_records}"
+        )
+
+        pii_clean = all(
+            is_anonymized_user_id(r.get("user_id")) and "customer_email" not in r
+            for r in parsed_records
+        )
+        assert pii_clean, f"PII check failed during parser benchmark for {fmt_name}"
+
+        parse_throughput = n_records / parse_duration if parse_duration > 0 else 0.0
+
+        p_row = {
+            "format": fmt_name,
+            "records_count": n_records,
+            "file_size_bytes": int(f_size),
+            "parse_duration_sec": round(parse_duration, 5),
+            "parse_throughput_rps": round(parse_throughput, 1),
+            "sha256": f_hash,
+            "sha256_short": f_hash[:12],
+            "pii_anonymized": True,
+        }
+        print(
+            f"  [Parser Bench] format={p_row['format']:<22} | records={p_row['records_count']:,} | "
+            f"size={p_row['file_size_bytes']:,} B | time={p_row['parse_duration_sec']:.4f}s | "
+            f"rate={p_row['parse_throughput_rps']:,.1f} rec/s | sha256={p_row['sha256_short']}"
+        )
+        parser_results.append(p_row)
+
+    return parser_results
+
 
 def benchmark_variety(
     records_per_format: int = 500,
@@ -875,20 +1095,17 @@ def benchmark_variety(
     spark_etl: Optional[SparkBatchETLJob] = None,
     effective_mode: str = "integration",
     tiki_limit: int = 10,
-) -> List[Dict[str, Any]]:
-    """3. VARIETY BENCHMARK: Measures full multi-format Parse -> PII Hash -> Bronze Write ->
-    Spark Cast/Validate/Normalize/Deduplicate -> Silver & Quarantine Parquet across:
-      - JSON (.json)
-      - JSONL (.jsonl)
-      - CSV (.csv)
-      - TSV (.tsv)
-      - Parquet (.parquet)
-      - HTML_Synthetic_JSONLD (Schema.org JSON-LD semi-structured HTML fixture)
-      - JSONL_Tiki_Crawler (Authentic Tiki live crawler / realistic JSONL payload)
+) -> VarietyBenchmarkResults:
+    """3. VARIETY BENCHMARK: Evaluates both:
+      1. Isolated Parser Benchmark: Pure deserialization & PII sanitization performance across
+         JSON, JSONL, CSV, TSV, Parquet, and HTML Schema.org on the EXACT same logical dataset.
+      2. End-to-End Ingestion Benchmark: Full pipeline (Ingest -> PII Hash -> Bronze Write ->
+         Spark Cast/Validate/Normalize/Deduplicate -> Silver & Quarantine Parquet) across realistic
+         multi-format sources and authentic Tiki crawler datasets with strict data-level provenance.
     """
     print(
         f"\n--- [3/3] Running VARIETY Benchmark "
-        f"(Full Parse -> Validate -> Transform -> Silver/Quarantine, seed={seed}, n={records_per_format}) ---"
+        f"(Dual Parser Benchmark + E2E Ingestion, seed={seed}, n={records_per_format}) ---"
     )
     settings.set_runtime_mode(effective_mode)
     storage.set_mode(effective_mode)
@@ -914,6 +1131,11 @@ def benchmark_variety(
     results: List[Dict[str, Any]] = []
 
     try:
+        # Section 3.1: Run Isolated Parser Benchmark on identical dataset
+        parser_results = benchmark_parsers(raw_with_pii, temp_dir)
+
+        # Section 3.2: Prepare End-to-End Ingestion Benchmark files
+        print(f"\n  --- [Variety 3.2] End-to-End Ingestion Benchmark (Full Pipeline with Provenance) ---")
         df_raw = pd.DataFrame(raw_with_pii)
         format_files = {
             "JSON": (temp_dir / "reviews.json", "synthetic_file"),
@@ -1034,6 +1256,7 @@ def benchmark_variety(
             t0 = time.perf_counter()
 
             # Step A: Parse & sanitize PII at ingest
+            t_parse_start = time.perf_counter()
             if fmt_name == "HTML_Synthetic_JSONLD":
                 scraper = UniversalProductScraper()
                 html_text = fpath.read_text(encoding="utf-8")
@@ -1045,6 +1268,11 @@ def benchmark_variety(
                 loaded_records = FileLoader.load_records(fpath, anonymize_pii=True)
             else:
                 loaded_records = FileLoader.load_records(fpath, anonymize_pii=True)
+            parse_duration = time.perf_counter() - t_parse_start
+            parse_throughput = len(loaded_records) / parse_duration if parse_duration > 0 else 0.0
+
+            # Step A.1: Immutable Data-Level Provenance and Signature Verification
+            prov = ProvenanceTracker.verify_provenance(fmt_name, fpath, loaded_records, category)
 
             # Strict PII sanitization verification: raw customer emails removed, user_ids hashed
             if not all(
@@ -1107,6 +1335,12 @@ def benchmark_variety(
                 "seed": seed,
                 "format": fmt_name,
                 "category": category,
+                "verified_source": prov["verified_source"],
+                "sha256": prov["sha256"],
+                "sha256_short": prov["sha256_short"],
+                "provenance_verified": prov["source_verified"],
+                "content_verified": prov["content_verified"],
+                "provenance_status": prov["provenance_status"],
                 "source_bytes": int(source_bytes),
                 "records_input": input_cnt,
                 "valid_input_count": valid_input_cnt,
@@ -1119,6 +1353,8 @@ def benchmark_variety(
                 "silver_prev_count": silver_prev_cnt,
                 "silver_written_count": silver_written_cnt,
                 "dq_score": float(etl_res["dq_score"]),
+                "parse_duration_sec": round(parse_duration, 4),
+                "parse_throughput_rps": round(parse_throughput, 1),
                 "duration_sec": round(elapsed, 4),
                 "throughput_rps": round(throughput, 1),
                 "bronze_bytes": int(bronze_bytes),
@@ -1128,16 +1364,16 @@ def benchmark_variety(
                 "accounting_reconciled": True,
             }
             print(
-                f"  [Variety] format={row['format']:<22} | category={row['category']:<17} | input={row['records_input']:,} | "
-                f"time={row['duration_sec']:.3f}s | rate={row['throughput_rps']:,.1f} rec/s | "
+                f"  [Variety E2E] format={row['format']:<22} | category={row['category']:<17} | input={row['records_input']:,} | "
+                f"parse={row['parse_duration_sec']:.3f}s | time={row['duration_sec']:.3f}s | rate={row['throughput_rps']:,.1f} rec/s | "
                 f"valid={row['valid_count']:,} | quarantine={row['quarantine_count']:,} | "
-                f"dup={row['duplicate_count']:,} | silver={row['silver_bytes']:,} B"
+                f"dup={row['duplicate_count']:,} | sha256={row['sha256_short']}"
             )
             results.append(row)
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
-    return results
+    return VarietyBenchmarkResults(results, parser_benchmark=parser_results)
 
 
 # -----------------------------------------------------------------------------

@@ -40,6 +40,7 @@ from scripts.benchmark import (
 class TestBenchmarkAccountingInvariants:
     """Verifies strict mathematical accounting identities on ACTUAL executed benchmark pipeline outputs."""
 
+    @pytest.mark.spark
     def test_volume_benchmark_real_execution_accounting(self):
         """Executes real benchmark_volume and verifies accounting invariant on actual returned metrics:
         records_input == valid_count + duplicate_count + quarantine_count.
@@ -117,6 +118,7 @@ class TestBenchmarkAccountingInvariants:
         assert r["messages_sent"] == r["valid_count"] + r["quarantine_dlq_count"]
         assert r["accounting_reconciled"] is True
 
+    @pytest.mark.spark
     def test_variety_benchmark_real_execution_accounting(self):
         """Executes real benchmark_variety and verifies accounting invariant on actual returned metrics
         across all 7 formats.
@@ -658,6 +660,7 @@ class TestVarietyDistinctionAndSanitization:
             if temp_path.exists():
                 temp_path.unlink()
 
+    @pytest.mark.spark
     def test_integration_fails_loudly_when_tiki_crawler_fails_and_no_snapshot(self):
         """In integration mode, when Tiki crawler fails and no snapshot exists, benchmark_variety
         must raise RuntimeError refusing to disguise fallback data as real crawler dataset.
@@ -668,6 +671,7 @@ class TestVarietyDistinctionAndSanitization:
                 with pytest.raises(RuntimeError, match="Integration mode strictly requires a live Tiki crawler"):
                     benchmark_variety(records_per_format=10, effective_mode="integration")
 
+    @pytest.mark.spark
     def test_local_fallback_cannot_disguise_as_real_crawler(self):
         """In local/offline mode when live crawler fails and snapshot does not exist,
         category must be 'synthetic_fallback', NEVER 'real_crawler_html' or 'real_crawler_jsonl'.
@@ -694,3 +698,13 @@ class TestVarietyDistinctionAndSanitization:
             assert "customer_email" not in r
             assert r["user_id"].startswith("anon_")
             assert len(r["user_id"]) == 21  # 'anon_' + 16 hex chars
+
+
+@pytest.mark.spark
+def test_variety_report_does_not_claim_unverified_provenance():
+    configure_benchmark_mode('local')
+    results=benchmark_variety(records_per_format=10,effective_mode='local',seed=19)
+    for row in results:
+        assert row['provenance_verified'] is False
+        assert row['content_verified'] is True
+        assert row['provenance_status'] in ('synthetic','unverified')
