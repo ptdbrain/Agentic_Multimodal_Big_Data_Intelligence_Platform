@@ -1,8 +1,8 @@
 """Acceptance Test Script: Spark Gold -> PostgreSQL -> Dashboard.
 Verifies:
   1. SparkGoldBuilder distributed aggregation (4 Gold Marts: product, brand, category, price)
-  2. Transactional upsert to PostgreSQL DW
-  3. Independent SQL reconciliation between Gold Parquet and PostgreSQL
+  2. Transactional snapshot export to PostgreSQL DW
+  3. SQL row-count reconciliation and sampled product metrics
   4. DashboardDB reads PostgreSQL directly with active source labeling
   5. Strict integration mode: raises ConnectionError when PostgreSQL is down, zero Parquet fallback.
 """
@@ -35,25 +35,34 @@ def test_gold_generation_and_postgres_sync():
     settings.set_runtime_mode("integration")
     storage.set_mode("integration")
 
-    # Read Silver data (from MinIO or load sample into Silver for test)
+    # Use the actual producer identity; never create fresh labels or seed sample
+    # data to make a service acceptance command appear successful.
+    from spark.quality.spark_dq import SparkDataQualityEvaluator
+    datasets = ['products', 'reviews', 'prices']
+    snapshots = {}
+    for name in datasets:
+        try:
+            snapshots[name] = storage.read_json(f'silver/_snapshot_{name}.json')
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                f'Missing verified Silver snapshot for {name}; run the canonical pipeline first.'
+            ) from exc
+    source_runs = {snapshot.get('run_id') for snapshot in snapshots.values()}
+    if len(source_runs) != 1 or not next(iter(source_runs)):
+        raise RuntimeError('Silver snapshots must belong to one verified producer run')
+    source_run_id = next(iter(source_runs))
+    reports = storage.read_gold_parquet('data_quality_metrics')
+    if reports.empty or 'run_id' not in reports:
+        raise RuntimeError('Missing DQ reports for the verified Silver snapshots; run the pipeline first.')
+    dq_metrics = reports[reports['run_id'].eq(source_run_id)].to_dict(orient='records')
+    SparkDataQualityEvaluator.check_dq_gate(
+        dq_metrics, required_datasets=datasets, run_id=source_run_id, raise_on_failure=True,
+    )
+
+    # Inspect existing verified Silver; missing inputs are errors.
     df_prods = storage.read_silver_parquet("products")
     df_revs = storage.read_silver_parquet("reviews")
     df_prices = storage.read_silver_parquet("prices")
-
-    if df_prods.empty or df_revs.empty:
-        print("[Setup] Seeding Silver layer with sample data on MinIO...")
-        sample_p = REPO_ROOT / "data" / "sample" / "products.parquet"
-        sample_r = REPO_ROOT / "data" / "sample" / "reviews.parquet"
-        sample_pr = REPO_ROOT / "data" / "sample" / "prices.parquet"
-        if sample_p.exists():
-            storage.write_silver_parquet("products", pd.read_parquet(sample_p))
-        if sample_r.exists():
-            storage.write_silver_parquet("reviews", pd.read_parquet(sample_r))
-        if sample_pr.exists():
-            storage.write_silver_parquet("prices", pd.read_parquet(sample_pr))
-        df_prods = storage.read_silver_parquet("products")
-        df_revs = storage.read_silver_parquet("reviews")
-        df_prices = storage.read_silver_parquet("prices")
 
     print(f"Input Silver Data: {len(df_prods)} products, {len(df_revs)} reviews, {len(df_prices)} prices")
     assert not df_prods.empty, "Silver products must not be empty"
@@ -64,10 +73,12 @@ def test_gold_generation_and_postgres_sync():
     assert gold_builder.spark is not None, "SparkSession must be initialized"
     
     marts = gold_builder.build_all(
-        silver_reviews=df_revs,
-        silver_products=df_prods,
-        silver_prices=df_prices,
-        save_gold=True
+        save_gold=True,
+        dq_metrics=dq_metrics,
+        run_id=source_run_id,
+        source_run_id=source_run_id,
+        required_datasets=datasets,
+        enforce_dq_gate=True,
     )
 
     print(f"Generated Gold Marts in memory: {list(marts.keys())}")
@@ -162,7 +173,7 @@ def test_gold_generation_and_postgres_sync():
     assert pg_pr_count == len(gold_pr)
 
     conn.close()
-    print(">>> All 4 Gold Marts mathematically reconciled between Gold Parquet & PostgreSQL!")
+    print(">>> All 4 mart row counts and sampled product metrics reconciled with PostgreSQL.")
 
     print("\n" + "=" * 65)
     print("STEP 4: DASHBOARD CONNECTOR & ZERO FALLBACK VERIFICATION")
@@ -225,6 +236,7 @@ def test_gold_generation_and_postgres_sync():
     empty_res = db.query("SELECT * FROM products WHERE product_id = 'NON_EXISTENT_XYZ'")
     assert empty_res.empty, "Query for non-existent row must return empty DataFrame"
     assert len(empty_res) == 0, "No records must be returned when warehouse has no matches"
+    db.close()
     print("[OK] Empty warehouse returns empty DataFrame without Parquet substitution.")
 
     print("\n" + "=" * 65)

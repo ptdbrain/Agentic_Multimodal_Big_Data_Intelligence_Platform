@@ -498,7 +498,10 @@ def test_e2e_idempotency_no_logical_duplicates_on_rerun():
     assert len(storage.read_gold_parquet("brand_daily_stats")) == gold_b_1
     assert len(storage.read_gold_parquet("category_daily_stats")) == gold_c_1
     assert len(storage.read_gold_parquet("price_daily_stats")) == gold_pr_1
-    assert len(storage.read_gold_parquet("data_quality_metrics")) == gold_dq_1
+    dq_after = storage.read_gold_parquet("data_quality_metrics")
+    assert len(dq_after) == gold_dq_1 + 3  # A distinct run appends one report per dataset.
+    assert dq_after["batch_id"].is_unique
+    assert dq_after["run_id"].nunique() == 2
 
     db2 = DashboardDB(mode="local")
     kpis_2 = db2.get_kpi_summary()
@@ -560,6 +563,7 @@ def test_dq_gate_blocks_gold_when_below_threshold():
     from spark.analytics.gold_builder import SparkGoldBuilder
 
     low_dq_metrics = {
+        "run_id": "low-dq-run",
         "dataset_name": "reviews",
         "total_count": 10,
         "valid_count": 5,
@@ -575,6 +579,8 @@ def test_dq_gate_blocks_gold_when_below_threshold():
     with pytest.raises(DataQualityGateError, match="Data Quality Gate blocked Gold generation"):
         SparkGoldBuilder().build_all(
             dq_metrics=[low_dq_metrics],
+            run_id="low-dq-run",
+            required_datasets=["reviews"],
             enforce_dq_gate=True,
             min_dq_score=90.0,
             save_gold=False,
@@ -747,7 +753,7 @@ def test_github_actions_ci_workflow_valid():
     """Verify .github/workflows/ci.yml exists, is valid YAML, and defines lint, unit-tests, and integration-tests jobs."""
     import yaml
 
-    ci_path = REPO_ROOT / ".github" / "workflows" / "ci.yml"
+    ci_path = REPO_ROOT.parent / ".github" / "workflows" / "ci.yml"
     assert ci_path.exists()
     ci_data = yaml.safe_load(ci_path.read_text(encoding="utf-8"))
     assert "jobs" in ci_data
