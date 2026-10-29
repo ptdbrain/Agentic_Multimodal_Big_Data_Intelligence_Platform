@@ -1,0 +1,793 @@
+{
+  "mode": "read_only_comparison",
+  "acceptance": "requires_review",
+  "before": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/processing-backfill-20261029T043825Z/before",
+  "after": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/processing-backfill-20261029T043825Z/after",
+  "tables": {
+    "product_daily_stats": {
+      "status": "changed",
+      "grain": [
+        "date",
+        "product_id"
+      ],
+      "compared_columns": [
+        "avg_price",
+        "avg_rating",
+        "date",
+        "max_price",
+        "min_price",
+        "negative_ratio",
+        "positive_ratio",
+        "product_id",
+        "rating_std",
+        "review_count"
+      ],
+      "ignored_metadata": [
+        "created_at",
+        "quarantined_at",
+        "run_id",
+        "source_run_id"
+      ],
+      "before": {
+        "rows": 472,
+        "unique_keys": 472,
+        "content_sha256": "f36c117cace613652f405e30c471fbc59fef46c952e6e9e56014fbd528ca4981"
+      },
+      "after": {
+        "rows": 472,
+        "unique_keys": 472,
+        "content_sha256": "9438d60dac62f48ee79120aa8206dc231037372f117ddaa3dcd685ff79eb6d96"
+      },
+      "columns_added": [
+        "data_as_of",
+        "high_rating_ratio",
+        "low_rating_ratio",
+        "price_source",
+        "rating_sample_size",
+        "time_available",
+        "weighted_avg_rating"
+      ],
+      "columns_removed": [],
+      "keys_added": 0,
+      "keys_removed": 0,
+      "rows_changed": 117,
+      "changed_columns": {
+        "rating_std": 117
+      },
+      "added_key_examples": [],
+      "removed_key_examples": [],
+      "changed_key_examples": [
+        [
+          "2026-08-20",
+          "galaxy_s24"
+        ],
+        [
+          "2026-08-21",
+          "galaxy_s24"
+        ],
+        [
+          "2026-08-21",
+          "rog_phone_8"
+        ],
+        [
+          "2026-08-22",
+          "airpods_pro_2"
+        ],
+        [
+          "2026-08-22",
+          "galaxy_s24"
+        ],
+        [
+          "2026-08-23",
+          "dell_xps_15"
+        ],
+        [
+          "2026-08-23",
+          "pixel_8_pro"
+        ],
+        [
+          "2026-08-23",
+          "rog_phone_8"
+        ],
+        [
+          "2026-08-24",
+          "macbook_air_m3"
+        ],
+        [
+          "2026-08-24",
+          "macbook_pro_m3"
+        ]
+      ]
+    },
+    "brand_daily_stats": {
+      "status": "changed",
+      "grain": [
+        "date",
+        "brand"
+      ],
+      "compared_columns": [
+        "avg_price",
+        "avg_rating",
+        "brand",
+        "date",
+        "product_count",
+        "review_count"
+      ],
+      "ignored_metadata": [
+        "created_at",
+        "quarantined_at",
+        "run_id",
+        "source_run_id"
+      ],
+      "before": {
+        "rows": 257,
+        "unique_keys": 257,
+        "content_sha256": "19b8ffa6993f7d081e4d701bc0355ad509059fc268e8a0e8caafa31819feaeb9"
+      },
+      "after": {
+        "rows": 257,
+        "unique_keys": 257,
+        "content_sha256": "9aef4b5bc16177bf8556fee7374f7062136bb848e4ba1b6a37f6b19e80866584"
+      },
+      "columns_added": [
+        "data_as_of",
+        "rating_sample_size",
+        "time_available",
+        "weighted_avg_rating"
+      ],
+      "columns_removed": [],
+      "keys_added": 0,
+      "keys_removed": 0,
+      "rows_changed": 63,
+      "changed_columns": {
+        "avg_price": 63
+      },
+      "added_key_examples": [],
+      "removed_key_examples": [],
+      "changed_key_examples": [
+        [
+          "2026-08-20",
+          "Apple"
+        ],
+        [
+          "2026-08-20",
+          "Samsung"
+        ],
+        [
+          "2026-08-21",
+          "Apple"
+        ],
+        [
+          "2026-08-21",
+          "Samsung"
+        ],
+        [
+          "2026-08-22",
+          "Apple"
+        ],
+        [
+          "2026-08-22",
+          "Samsung"
+        ],
+        [
+          "2026-08-23",
+          "Apple"
+        ],
+        [
+          "2026-08-24",
+          "Apple"
+        ],
+        [
+          "2026-08-25",
+          "Apple"
+        ],
+        [
+          "2026-08-25",
+          "Samsung"
+        ]
+      ]
+    },
+    "category_daily_stats": {
+      "status": "changed",
+      "grain": [
+        "date",
+        "category"
+      ],
+      "compared_columns": [
+        "avg_price",
+        "avg_rating",
+        "category",
+        "date",
+        "product_count",
+        "review_count"
+      ],
+      "ignored_metadata": [
+        "created_at",
+        "quarantined_at",
+        "run_id",
+        "source_run_id"
+      ],
+      "before": {
+        "rows": 139,
+        "unique_keys": 139,
+        "content_sha256": "d716c2de0b2f4215e89bc7e1394f8c15478f8050a8b43175ff12f6f2fd909897"
+      },
+      "after": {
+        "rows": 139,
+        "unique_keys": 139,
+        "content_sha256": "0e7dc8bd21362ae51f882ec4ee3054a4f3cb9c0a0476d09c7d459c1d2e7bdf2f"
+      },
+      "columns_added": [
+        "data_as_of",
+        "rating_sample_size",
+        "time_available",
+        "weighted_avg_rating"
+      ],
+      "columns_removed": [],
+      "keys_added": 0,
+      "keys_removed": 0,
+      "rows_changed": 111,
+      "changed_columns": {
+        "avg_price": 111
+      },
+      "added_key_examples": [],
+      "removed_key_examples": [],
+      "changed_key_examples": [
+        [
+          "2026-08-20",
+          "Accessories"
+        ],
+        [
+          "2026-08-20",
+          "Laptop"
+        ],
+        [
+          "2026-08-20",
+          "Smartphone"
+        ],
+        [
+          "2026-08-21",
+          "Accessories"
+        ],
+        [
+          "2026-08-21",
+          "Laptop"
+        ],
+        [
+          "2026-08-21",
+          "Smartphone"
+        ],
+        [
+          "2026-08-22",
+          "Accessories"
+        ],
+        [
+          "2026-08-22",
+          "Laptop"
+        ],
+        [
+          "2026-08-22",
+          "Smartphone"
+        ],
+        [
+          "2026-08-22",
+          "Tablet"
+        ]
+      ]
+    },
+    "price_daily_stats": {
+      "status": "changed",
+      "grain": [
+        "date",
+        "product_id"
+      ],
+      "compared_columns": [
+        "avg_price",
+        "date",
+        "max_price",
+        "min_price",
+        "price_std",
+        "product_id"
+      ],
+      "ignored_metadata": [
+        "created_at",
+        "quarantined_at",
+        "run_id",
+        "source_run_id"
+      ],
+      "before": {
+        "rows": 525,
+        "unique_keys": 525,
+        "content_sha256": "442f2a442c277a7654fd44ed60b0ea13017ae4dfac99007a91fe9d02a86f94e7"
+      },
+      "after": {
+        "rows": 525,
+        "unique_keys": 525,
+        "content_sha256": "1d73d04c9700162543224a7b348f24aa3ca97efca1809b63537ef0dd1c9f2fa3"
+      },
+      "columns_added": [
+        "data_as_of",
+        "data_points",
+        "time_available"
+      ],
+      "columns_removed": [],
+      "keys_added": 0,
+      "keys_removed": 0,
+      "rows_changed": 525,
+      "changed_columns": {
+        "price_std": 525
+      },
+      "added_key_examples": [],
+      "removed_key_examples": [],
+      "changed_key_examples": [
+        [
+          "2026-08-20",
+          "airpods_pro_2"
+        ],
+        [
+          "2026-08-20",
+          "dell_xps_15"
+        ],
+        [
+          "2026-08-20",
+          "galaxy_s24"
+        ],
+        [
+          "2026-08-20",
+          "galaxy_s24_ultra"
+        ],
+        [
+          "2026-08-20",
+          "galaxy_tab_s9"
+        ],
+        [
+          "2026-08-20",
+          "ipad_pro_m4"
+        ],
+        [
+          "2026-08-20",
+          "iphone_15"
+        ],
+        [
+          "2026-08-20",
+          "iphone_15_pro"
+        ],
+        [
+          "2026-08-20",
+          "macbook_air_m3"
+        ],
+        [
+          "2026-08-20",
+          "macbook_pro_m3"
+        ]
+      ]
+    },
+    "anomaly_events": {
+      "status": "changed",
+      "grain": [
+        "event_id"
+      ],
+      "compared_columns": [
+        "anomaly_type",
+        "baseline_mean",
+        "baseline_rating",
+        "baseline_std",
+        "current_rating",
+        "description",
+        "entity_id",
+        "entity_type",
+        "event_id",
+        "observed_price",
+        "score",
+        "timestamp"
+      ],
+      "ignored_metadata": [
+        "created_at",
+        "quarantined_at",
+        "run_id",
+        "source_run_id"
+      ],
+      "before": {
+        "rows": 41,
+        "unique_keys": 41,
+        "content_sha256": "f5b6fa76914b600ddc0c27c335ad1d92f01c1eb8eb410797ec1e2d99584006d3"
+      },
+      "after": {
+        "rows": 38,
+        "unique_keys": 38,
+        "content_sha256": "12ae1b02854cf9589d8f6b5760e0bc979dbc06f23304283f10d12af680486e43"
+      },
+      "columns_added": [
+        "baseline_end",
+        "baseline_method",
+        "baseline_observed_days",
+        "baseline_sample_size",
+        "baseline_sample_unit",
+        "baseline_start",
+        "baseline_window_days",
+        "current_sample_size",
+        "data_quality_status"
+      ],
+      "columns_removed": [
+        "baseline_volume",
+        "current_volume"
+      ],
+      "keys_added": 37,
+      "keys_removed": 40,
+      "rows_changed": 0,
+      "changed_columns": {},
+      "added_key_examples": [
+        [
+          "anom_0256b8635612f7a387ff"
+        ],
+        [
+          "anom_12385a71ce4292826630"
+        ],
+        [
+          "anom_14aba02cd6fadd164f41"
+        ],
+        [
+          "anom_1de6e070ea3e8610c63e"
+        ],
+        [
+          "anom_2892ec4cbc60030971d9"
+        ],
+        [
+          "anom_2d37b4c5ececc80eac83"
+        ],
+        [
+          "anom_31688a976fc4778b37a8"
+        ],
+        [
+          "anom_353dcd0be2bd0b03341d"
+        ],
+        [
+          "anom_3afcd1038c1076905c58"
+        ],
+        [
+          "anom_4d76d71c901c4d8bd513"
+        ]
+      ],
+      "removed_key_examples": [
+        [
+          "anom_011963403dece441a118"
+        ],
+        [
+          "anom_01cf7f5befb55e5071b1"
+        ],
+        [
+          "anom_04770a47653616fb2b11"
+        ],
+        [
+          "anom_0fdc1482a8815e88448d"
+        ],
+        [
+          "anom_2920851fd673fd354073"
+        ],
+        [
+          "anom_2c4490b2cca25cbb72be"
+        ],
+        [
+          "anom_31ba84409917175dd5b1"
+        ],
+        [
+          "anom_320a27b3aa1b6115a864"
+        ],
+        [
+          "anom_350a5e42052a00821d48"
+        ],
+        [
+          "anom_459b0a950474d8a65559"
+        ]
+      ],
+      "changed_key_examples": []
+    }
+  },
+  "status": "changed",
+  "executed_at": "2026-10-29T04:38:27.502507+00:00",
+  "baseline_commit": "3da6c61c99650a8f47da2fbaf71f7fdccdf40244",
+  "baseline_source_sha256": {
+    "spark/etl/gold_aggregator.py": "e627e79de6135bb61f0a7d33ee3645c9b8d9a4522413ff6fdfc7c8b3a2a2f6ad",
+    "analytics/anomaly/rating_anomaly.py": "c4a02f01b87538beec78440f3580237a588ee611863d06c42bb819959abe73d7",
+    "analytics/anomaly/review_burst.py": "22e570c47926dbacef1e0356c7613eb1a08197e9d09aa95722ecc4c4d3357bce",
+    "analytics/anomaly/price_anomaly.py": "49b36a1f21edfd11fd3f891ce3265f15ef00b97450f9d99be6791221b2107eba"
+  },
+  "input_sha256": {
+    "btl/data/fixtures/canonical/products.json": "2078394f77963d772a6c19e89258e71e828dad4f01490f464078c59c70096e74",
+    "btl/data/fixtures/canonical/reviews.json": "f7f1bac8c5c1ee5de33ab6ed1b6cab7910199e9b7b6e55bbe58f99d553bac7a2",
+    "btl/data/fixtures/canonical/prices.json": "39339cb6fb755855d6d888c2f99b70e14a876bf0eaed816cf24c19446d108535"
+  },
+  "input_accounting": {
+    "products": {
+      "records_received": 15,
+      "records_valid": 15,
+      "records_invalid": 0,
+      "records_duplicate": 0,
+      "error_breakdown": {}
+    },
+    "reviews": {
+      "records_received": 1260,
+      "records_valid": 1260,
+      "records_invalid": 0,
+      "records_duplicate": 0,
+      "error_breakdown": {}
+    },
+    "prices": {
+      "records_received": 525,
+      "records_valid": 525,
+      "records_invalid": 0,
+      "records_duplicate": 0,
+      "error_breakdown": {}
+    }
+  },
+  "scope": "isolated pandas Gold + anomaly rebuild of the same validated canonical Silver inputs; not old-vs-new full ingestion or PostgreSQL",
+  "source_classification": "existing canonical synthetic fixtures; no authenticity claim",
+  "new_replay": {
+    "mode": "read_only_comparison",
+    "acceptance": "requires_review",
+    "before": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/processing-backfill-20261029T043825Z/after",
+    "after": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/processing-backfill-20261029T043825Z/replay",
+    "tables": {
+      "product_daily_stats": {
+        "status": "equal",
+        "grain": [
+          "date",
+          "product_id"
+        ],
+        "compared_columns": [
+          "avg_price",
+          "avg_rating",
+          "data_as_of",
+          "date",
+          "high_rating_ratio",
+          "low_rating_ratio",
+          "max_price",
+          "min_price",
+          "negative_ratio",
+          "positive_ratio",
+          "price_source",
+          "product_id",
+          "rating_sample_size",
+          "rating_std",
+          "review_count",
+          "time_available",
+          "weighted_avg_rating"
+        ],
+        "ignored_metadata": [
+          "created_at",
+          "quarantined_at",
+          "run_id",
+          "source_run_id"
+        ],
+        "before": {
+          "rows": 472,
+          "unique_keys": 472,
+          "content_sha256": "20ee1c57d1011922c5665aad698f5a3b4bbcb7908f114e4f9a24f9effe26d456"
+        },
+        "after": {
+          "rows": 472,
+          "unique_keys": 472,
+          "content_sha256": "20ee1c57d1011922c5665aad698f5a3b4bbcb7908f114e4f9a24f9effe26d456"
+        },
+        "columns_added": [],
+        "columns_removed": [],
+        "keys_added": 0,
+        "keys_removed": 0,
+        "rows_changed": 0,
+        "changed_columns": {},
+        "added_key_examples": [],
+        "removed_key_examples": [],
+        "changed_key_examples": []
+      },
+      "brand_daily_stats": {
+        "status": "equal",
+        "grain": [
+          "date",
+          "brand"
+        ],
+        "compared_columns": [
+          "avg_price",
+          "avg_rating",
+          "brand",
+          "data_as_of",
+          "date",
+          "product_count",
+          "rating_sample_size",
+          "review_count",
+          "time_available",
+          "weighted_avg_rating"
+        ],
+        "ignored_metadata": [
+          "created_at",
+          "quarantined_at",
+          "run_id",
+          "source_run_id"
+        ],
+        "before": {
+          "rows": 257,
+          "unique_keys": 257,
+          "content_sha256": "8b04973bbd8acf5bed523cc01000b9da78691147ef1c553ffdfdaa27f7e18daa"
+        },
+        "after": {
+          "rows": 257,
+          "unique_keys": 257,
+          "content_sha256": "8b04973bbd8acf5bed523cc01000b9da78691147ef1c553ffdfdaa27f7e18daa"
+        },
+        "columns_added": [],
+        "columns_removed": [],
+        "keys_added": 0,
+        "keys_removed": 0,
+        "rows_changed": 0,
+        "changed_columns": {},
+        "added_key_examples": [],
+        "removed_key_examples": [],
+        "changed_key_examples": []
+      },
+      "category_daily_stats": {
+        "status": "equal",
+        "grain": [
+          "date",
+          "category"
+        ],
+        "compared_columns": [
+          "avg_price",
+          "avg_rating",
+          "category",
+          "data_as_of",
+          "date",
+          "product_count",
+          "rating_sample_size",
+          "review_count",
+          "time_available",
+          "weighted_avg_rating"
+        ],
+        "ignored_metadata": [
+          "created_at",
+          "quarantined_at",
+          "run_id",
+          "source_run_id"
+        ],
+        "before": {
+          "rows": 139,
+          "unique_keys": 139,
+          "content_sha256": "c71080ebb4d810fa36b40278a83b3e7490e36178b0e01942178189f4618f5671"
+        },
+        "after": {
+          "rows": 139,
+          "unique_keys": 139,
+          "content_sha256": "c71080ebb4d810fa36b40278a83b3e7490e36178b0e01942178189f4618f5671"
+        },
+        "columns_added": [],
+        "columns_removed": [],
+        "keys_added": 0,
+        "keys_removed": 0,
+        "rows_changed": 0,
+        "changed_columns": {},
+        "added_key_examples": [],
+        "removed_key_examples": [],
+        "changed_key_examples": []
+      },
+      "price_daily_stats": {
+        "status": "equal",
+        "grain": [
+          "date",
+          "product_id"
+        ],
+        "compared_columns": [
+          "avg_price",
+          "data_as_of",
+          "data_points",
+          "date",
+          "max_price",
+          "min_price",
+          "price_std",
+          "product_id",
+          "time_available"
+        ],
+        "ignored_metadata": [
+          "created_at",
+          "quarantined_at",
+          "run_id",
+          "source_run_id"
+        ],
+        "before": {
+          "rows": 525,
+          "unique_keys": 525,
+          "content_sha256": "f4675078a8facacfd8f8d311d69c80bcb732ca0e7470f4372763aff7c6d80f50"
+        },
+        "after": {
+          "rows": 525,
+          "unique_keys": 525,
+          "content_sha256": "f4675078a8facacfd8f8d311d69c80bcb732ca0e7470f4372763aff7c6d80f50"
+        },
+        "columns_added": [],
+        "columns_removed": [],
+        "keys_added": 0,
+        "keys_removed": 0,
+        "rows_changed": 0,
+        "changed_columns": {},
+        "added_key_examples": [],
+        "removed_key_examples": [],
+        "changed_key_examples": []
+      },
+      "anomaly_events": {
+        "status": "equal",
+        "grain": [
+          "event_id"
+        ],
+        "compared_columns": [
+          "anomaly_type",
+          "baseline_end",
+          "baseline_mean",
+          "baseline_method",
+          "baseline_observed_days",
+          "baseline_rating",
+          "baseline_sample_size",
+          "baseline_sample_unit",
+          "baseline_start",
+          "baseline_std",
+          "baseline_window_days",
+          "current_rating",
+          "current_sample_size",
+          "data_quality_status",
+          "description",
+          "entity_id",
+          "entity_type",
+          "event_id",
+          "observed_price",
+          "score",
+          "timestamp"
+        ],
+        "ignored_metadata": [
+          "created_at",
+          "quarantined_at",
+          "run_id",
+          "source_run_id"
+        ],
+        "before": {
+          "rows": 38,
+          "unique_keys": 38,
+          "content_sha256": "c407e8e6e9df525f79909e934f40990ce4c4b0521d7be0400a258e163262b090"
+        },
+        "after": {
+          "rows": 38,
+          "unique_keys": 38,
+          "content_sha256": "c407e8e6e9df525f79909e934f40990ce4c4b0521d7be0400a258e163262b090"
+        },
+        "columns_added": [],
+        "columns_removed": [],
+        "keys_added": 0,
+        "keys_removed": 0,
+        "rows_changed": 0,
+        "changed_columns": {},
+        "added_key_examples": [],
+        "removed_key_examples": [],
+        "changed_key_examples": []
+      }
+    },
+    "status": "equal"
+  },
+  "input_files_unchanged": true,
+  "production_data_modified": false,
+  "anomaly_semantic_comparison": {
+    "key": [
+      "entity_type",
+      "entity_id",
+      "anomaly_type",
+      "UTC timestamp"
+    ],
+    "before_type_counts": {
+      "PRICE_ANOMALY": 1,
+      "RATING_DROP": 39,
+      "REVIEW_BOMBING": 1
+    },
+    "after_type_counts": {
+      "PRICE_ANOMALY": 1,
+      "RATING_DROP": 37
+    },
+    "retained": 37,
+    "added": 1,
+    "removed": 4,
+    "identity_format_change": "old rating IDs hash a date-only string; current IDs hash explicit UTC midnight; review migration rather than interpreting every changed event ID as a new incident"
+  }
+}

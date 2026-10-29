@@ -1,0 +1,115 @@
+{
+  "passed": true,
+  "executed_at": "2026-10-29T08:21:09.730384+00:00",
+  "airflow_version": "2.10.5",
+  "executor": "LocalExecutor",
+  "boundary": "actual PostgreSQL metadata and serving + Kafka + MinIO + Spark S3A, separate worker processes; Docker not exercised",
+  "source": "deterministic synthetic seed42 fixture15products/20reviews/525prices",
+  "runs": [
+    {
+      "run_id": "backfill__2026-10-25T00:00:00+00:00",
+      "state": "success",
+      "manifest_path": "runs/4fc1a86d6c0a71d8acc7f0fe3bfe6654e142509468e12aff2963f19baaf16f57/manifest.json",
+      "manifest_status": "finished",
+      "mode": "integration",
+      "tasks": [
+        {
+          "task_id": "start",
+          "state": "success",
+          "pid": 164241,
+          "try_number": 1
+        },
+        {
+          "task_id": "collect_and_publish",
+          "state": "success",
+          "pid": 164504,
+          "try_number": 1
+        },
+        {
+          "task_id": "spark_batch",
+          "state": "success",
+          "pid": 164549,
+          "try_number": 1
+        },
+        {
+          "task_id": "data_quality",
+          "state": "success",
+          "pid": 165233,
+          "try_number": 1
+        },
+        {
+          "task_id": "warehouse_upsert",
+          "state": "success",
+          "pid": 166213,
+          "try_number": 1
+        },
+        {
+          "task_id": "gold_analytics",
+          "state": "success",
+          "pid": 165256,
+          "try_number": 1
+        },
+        {
+          "task_id": "finish",
+          "state": "success",
+          "pid": 166263,
+          "try_number": 1
+        }
+      ]
+    },
+    {
+      "run_id": "backfill__2026-10-26T00:00:00+00:00",
+      "state": "success",
+      "manifest_path": "runs/4dba9450e90aff9a10fb37e9dcb2efac923a49c88e375fcf02b4f4364bb7d951/manifest.json",
+      "manifest_status": "finished",
+      "mode": "integration",
+      "tasks": [
+        {
+          "task_id": "collect_and_publish",
+          "state": "success",
+          "pid": 166711,
+          "try_number": 1
+        },
+        {
+          "task_id": "start",
+          "state": "success",
+          "pid": 166428,
+          "try_number": 1
+        },
+        {
+          "task_id": "spark_batch",
+          "state": "success",
+          "pid": 166741,
+          "try_number": 1
+        },
+        {
+          "task_id": "gold_analytics",
+          "state": "success",
+          "pid": 167650,
+          "try_number": 1
+        },
+        {
+          "task_id": "data_quality",
+          "state": "success",
+          "pid": 167627,
+          "try_number": 1
+        },
+        {
+          "task_id": "warehouse_upsert",
+          "state": "success",
+          "pid": 168718,
+          "try_number": 1
+        },
+        {
+          "task_id": "finish",
+          "state": "success",
+          "pid": 168762,
+          "try_number": 1
+        }
+      ]
+    }
+  ],
+  "serving_reviews": 20,
+  "dq_history_count": 6,
+  "remaining_lease_count": 0
+}

@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="45" time="163.153" timestamp="2026-10-29T19:17:16.663214+07:00" hostname="ptdbrain"><testcase classname="tests.integration.test_kafka_streaming" name="test_actual_kafka_source_quarantine_and_checkpoint" time="9.335" /><testcase classname="tests.integration.test_lakehouse_concurrency" name="test_two_remote_writers_commit_only_one_snapshot" time="15.119"><failure message="ConnectionError: MinIO storage backend unreachable at '127.0.0.1:29000' (bucket 'sentinel-native-processing'): S3 operation failed; code: BucketAlreadyOwnedByYou, message: Your previous request to create the named bucket succeeded and you already own it., resource: /sentinel-native-processing, request_id: 18E2FF3ECCCEC270, host_id: cd7dbed607f9daa136911a9d958d147ff15547dfecbdf5d3157ea513d5dfdd9a, bucket_name: sentinel-native-processing">self = &lt;storage.minio_backend.MinIOBackend object at 0x7faf2c9b9990&gt;
+
+    def health_check(self) -&gt; bool:
+        """Actively checks MinIO reachability and ensures the target bucket exists.
+        Raises ConnectionError if MinIO is unreachable.
+        """
+        try:
+            if not self.client.bucket_exists(self.bucket):
+&gt;               self.client.make_bucket(self.bucket)
+
+storage/minio_backend.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/minio/api.py:660: in make_bucket
+    self._url_open(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;minio.api.Minio object at 0x7faf2c9b9690&gt;, method = 'PUT'
+region = 'us-east-1', bucket_name = 'sentinel-native-processing'
+object_name = None, body = None
+headers = {'Host': '127.0.0.1:29000', 'User-Agent': 'MinIO (Linux; x86_64) minio-py/7.2.20', 'x-amz-content-sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'x-amz-date': '20261029T121726Z', ...}
+query_params = None, preload_content = True, no_body_trace = False
+
+    def _url_open(
+            self,
+            method: str,
+            region: str,
+            bucket_name: Optional[str] = None,
+            object_name: Optional[str] = None,
+            body: Optional[bytes] = None,
+            headers: Optional[DictType] = None,
+            query_params: Optional[DictType] = None,
+            preload_content: bool = True,
+            no_body_trace: bool = False,
+    ) -&gt; BaseHTTPResponse:
+        """Execute HTTP request."""
+        creds = self._provider.retrieve() if self._provider else None
+        url = self._base_url.build(
+            method=method,
+            region=region,
+            bucket_name=bucket_name,
+            object_name=object_name,
+            query_params=query_params,
+        )
+        headers, date = self._build_headers(url.netloc, headers, body, creds)
+        if creds:
+            headers = sign_v4_s3(
+                method=method,
+                url=url,
+                region=region,
+                headers=headers,
+                credentials=creds,
+                content_sha256=cast(str, headers.get("x-amz-content-sha256")),
+                date=date,
+            )
+    
+        if self._trace_stream:
+            self._trace_stream.write("---------START-HTTP---------\n")
+            query = ("?" + url.query) if url.query else ""
+            self._trace_stream.write(f"{method} {url.path}{query} HTTP/1.1\n")
+            self._trace_stream.write(
+                headers_to_strings(headers, titled_key=True),
+            )
+            self._trace_stream.write("\n")
+            if not no_body_trace and body is not None:
+                self._trace_stream.write("\n")
+                self._trace_stream.write(
+                    body.decode() if isinstance(body, bytes) else str(body),
+                )
+                self._trace_stream.write("\n")
+            self._trace_stream.write("\n")
+    
+        http_headers = HTTPHeaderDict()
+        for key, value in (headers or {}).items():
+            if isinstance(value, (list, tuple)):
+                for val in value:
+                    http_headers.add(key, val)
+            else:
+                http_headers.add(key, value)
+    
+        response = self._http.urlopen(
+            method,
+            urlunsplit(url),
+            body=body,
+            headers=http_headers,
+            preload_content=preload_content,
+        )
+    
+        if self._trace_stream:
+            self._trace_stream.write(f"HTTP/1.1 {response.status}\n")
+            self._trace_stream.write(
+                headers_to_strings(response.headers),
+            )
+            self._trace_stream.write("\n")
+    
+        if response.status in [200, 204, 206]:
+            if self._trace_stream:
+                if preload_content:
+                    self._trace_stream.write("\n")
+                    self._trace_stream.write(response.data.decode())
+                    self._trace_stream.write("\n")
+                self._trace_stream.write("----------END-HTTP----------\n")
+            return response
+    
+        response.read(cache_content=True)
+        if not preload_content:
+            response.release_conn()
+    
+        if self._trace_stream and method != "HEAD" and response.data:
+            self._trace_stream.write(response.data.decode())
+            self._trace_stream.write("\n")
+    
+        if (
+                method != "HEAD" and
+                "application/xml" not in response.headers.get(
+                    "content-type", "",
+                ).split(";")
+        ):
+            if self._trace_stream:
+                self._trace_stream.write("----------END-HTTP----------\n")
+            if response.status == 304 and not response.data:
+                raise ServerError(
+                    f"server failed with HTTP status code {response.status}",
+                    response.status,
+                )
+            raise InvalidResponseError(
+                response.status,
+                cast(str, response.headers.get("content-type")),
+                response.data.decode() if response.data else None,
+            )
+    
+        if not response.data and method != "HEAD":
+            if self._trace_stream:
+                self._trace_stream.write("----------END-HTTP----------\n")
+            raise InvalidResponseError(
+                response.status,
+                response.headers.get("content-type"),
+                None,
+            )
+    
+        response_error = S3Error.fromxml(response) if response.data else None
+    
+        if self._trace_stream:
+            self._trace_stream.write("----------END-HTTP----------\n")
+    
+        error_map = {
+            301: lambda: self._handle_redirect_response(
+                method, response, bucket_name, True,
+            ),
+            307: lambda: self._handle_redirect_response(
+                method, response, bucket_name, True,
+            ),
+            400: lambda: self._handle_redirect_response(
+                method, response, bucket_name, True,
+            ),
+            403: lambda: ("AccessDenied", "Access denied"),
+            404: lambda: (
+                ("NoSuchKey", "Object does not exist")
+                if object_name
+                else ("NoSuchBucket", "Bucket does not exist")
+                if bucket_name
+                else ("ResourceNotFound", "Request resource not found")
+            ),
+            405: lambda: (
+                "MethodNotAllowed",
+                "The specified method is not allowed against this resource",
+            ),
+            409: lambda: (
+                ("NoSuchBucket", "Bucket does not exist")
+                if bucket_name
+                else ("ResourceConflict", "Request resource conflicts"),
+            ),
+            501: lambda: (
+                "MethodNotAllowed",
+                "The specified method is not allowed against this resource",
+            ),
+        }
+    
+        if not response_error:
+            func = error_map.get(response.status)
+            code, message = func() if func else (None, None)
+            if not code:
+                raise ServerError(
+                    f"server failed with HTTP status code {response.status}",
+                    response.status,
+                )
+            response_error = S3Error(
+                response=response,
+                code=cast(str, code),
+                message=cast(Union[str, None], message),
+                resource=url.path,
+                request_id=response.headers.get("x-amz-request-id"),
+                host_id=response.headers.get("x-amz-id-2"),
+                bucket_name=bucket_name,
+                object_name=object_name,
+            )
+    
+        if response_error.code in ["NoSuchBucket", "RetryHead"]:
+            if bucket_name is not None:
+                self._region_map.pop(bucket_name, None)
+    
+&gt;       raise response_error
+E       minio.error.S3Error: S3 operation failed; code: BucketAlreadyOwnedByYou, message: Your previous request to create the named bucket succeeded and you already own it., resource: /sentinel-native-processing, request_id: 18E2FF3ECCCEC270, host_id: cd7dbed607f9daa136911a9d958d147ff15547dfecbdf5d3157ea513d5dfdd9a, bucket_name: sentinel-native-processing
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/minio/api.py:427: S3Error
+
+The above exception was the direct cause of the following exception:
+
+    def test_two_remote_writers_commit_only_one_snapshot():
+        name='race_'+uuid.uuid4().hex
+        tables=[LakehouseTable(name,storage_backend=StorageManager(mode='integration')) for _ in range(2)]
+        barrier=threading.Barrier(2)
+        for table in tables:
+            original=table.metadata.commit
+            def commit(*args,_original=original,**kwargs):
+                barrier.wait(timeout=15)
+                return _original(*args,**kwargs)
+            table.metadata.commit=commit
+        def write(index):
+            try:
+                return tables[index].write(pd.DataFrame({'id':[1],'value':[index]}))
+            except ConcurrentCommitError:
+                return 'conflict'
+        try:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+&gt;               results=list(pool.map(write,[0,1]))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_lakehouse_concurrency.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/concurrent/futures/_base.py:619: in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/concurrent/futures/_base.py:317: in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/concurrent/futures/thread.py:58: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_lakehouse_concurrency.py:26: in write
+    return tables[index].write(pd.DataFrame({'id':[1],'value':[index]}))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+storage/lakehouse.py:79: in write
+    return self._write(df,mode,operation,operation_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+storage/lakehouse.py:55: in _write
+    if current is None and self.storage.list_objects(self.log_prefix):
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+storage/storage_manager.py:169: in list_objects
+    return self.backend.list_objects(prefix)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+storage/minio_backend.py:199: in list_objects
+    self._ensure_bucket()
+storage/minio_backend.py:77: in _ensure_bucket
+    self.health_check()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;storage.minio_backend.MinIOBackend object at 0x7faf2c9b9990&gt;
+
+    def health_check(self) -&gt; bool:
+        """Actively checks MinIO reachability and ensures the target bucket exists.
+        Raises ConnectionError if MinIO is unreachable.
+        """
+        try:
+            if not self.client.bucket_exists(self.bucket):
+                self.client.make_bucket(self.bucket)
+            self.is_connected = True
+            self._bucket_verified = True
+            return True
+        except Exception as e:
+            self.is_connected = False
+            self._bucket_verified = False
+&gt;           raise ConnectionError(
+                f"MinIO storage backend unreachable at '{self.endpoint}' (bucket '{self.bucket}'): {e}"
+            ) from e
+E           ConnectionError: MinIO storage backend unreachable at '127.0.0.1:29000' (bucket 'sentinel-native-processing'): S3 operation failed; code: BucketAlreadyOwnedByYou, message: Your previous request to create the named bucket succeeded and you already own it., resource: /sentinel-native-processing, request_id: 18E2FF3ECCCEC270, host_id: cd7dbed607f9daa136911a9d958d147ff15547dfecbdf5d3157ea513d5dfdd9a, bucket_name: sentinel-native-processing
+
+storage/minio_backend.py:70: ConnectionError</failure></testcase><testcase classname="tests.integration.test_processing_contracts" name="test_gold_acceptance_verifier_does_not_seed_unverified_sample_data" time="0.019" /><testcase classname="tests.integration.test_processing_contracts" name="test_pipeline_drains_partial_real_kafka_batches_before_verifying_delivery" time="1.007" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_additive_migrations_preserve_legacy_rows_and_unknowns" time="0.047" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_initialized_schema_does_not_block_an_active_read_snapshot" time="0.070" /><testcase classname="tests.integration.test_processing_contracts" name="test_minio_parquet_metadata_arrays_survive_postgres_export_replay" time="0.100" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_real_constraint_failure_rolls_back_all_mart_writes" time="0.097" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_reader_retains_one_snapshot_across_real_export_commit" time="0.097" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_empty_snapshot_clears_daily_rows_and_keeps_incident_history" time="0.090" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_anomaly_baseline_and_dq_categories_round_trip" time="0.109" /><testcase classname="tests.integration.test_s3a_recovery" name="test_s3a_failed_promotion_preserves_original_rows" time="2.053" /><testcase classname="tests.integration.test_services" name="test_elasticsearch_persists_between_clients" time="2.117" /><testcase classname="tests.integration.test_services" name="test_postgres_minio_lakehouse_transaction" time="0.027" /><testcase classname="tests.test_api_live" name="test_live_http_pagination_with_real_local_server" time="0.512" /><testcase classname="tests.test_e2e" name="test_default_mode_is_strict_integration" time="0.001" /><testcase classname="tests.test_e2e" name="test_integration_minio_fails_loudly_without_local_fallback" time="0.004" /><testcase classname="tests.test_e2e" name="test_integration_postgres_fails_loudly_without_sqlite_fallback" time="0.001" /><testcase classname="tests.test_e2e" name="test_integration_pipeline_fails_loudly_when_services_stopped" time="0.462" /><testcase classname="tests.test_e2e" name="test_full_e2e_pipeline" time="20.942" /><testcase classname="tests.test_e2e" name="test_kafka_producer_envelope_structure" time="0.012" /><testcase classname="tests.test_e2e" name="test_kafka_producer_fail_loudly_when_offline" time="1.005" /><testcase classname="tests.test_e2e" name="test_raw_consumer_bronze_partitioning" time="0.002" /><testcase classname="tests.test_e2e" name="test_schema_validator_and_quarantine" time="0.002" /><testcase classname="tests.test_e2e" name="test_dead_letter_queue_handling" time="0.108" /><testcase classname="tests.test_e2e" name="test_warehouse_manager_upsert_idempotency" time="0.004" /><testcase classname="tests.test_e2e" name="test_price_pipeline_execution" time="0.002" /><testcase classname="tests.test_e2e" name="test_dashboard_db_connector" time="0.002" /><testcase classname="tests.test_e2e" name="test_spark_data_quality_evaluator" time="0.003" /><testcase classname="tests.test_e2e" name="test_prometheus_metrics_exporter" time="0.003" /><testcase classname="tests.test_e2e" name="test_airflow_dag_standalone_execution" time="16.180" /><testcase classname="tests.test_e2e" name="test_lakehouse_table_time_travel_and_upsert" time="0.012" /><testcase classname="tests.test_e2e" name="test_kafka_bronze_acceptance_3_valid_1_invalid" time="0.005" /><testcase classname="tests.test_e2e" name="test_raw_consumer_consume_batch_once_empty_poll" time="0.001" /><testcase classname="tests.test_e2e" name="test_topic_manager_provisioning" time="0.001" /><testcase classname="tests.test_e2e" name="test_e2e_stage_verification_fails_fast_on_invalid_stage" time="0.001" /><testcase classname="tests.test_e2e" name="test_e2e_idempotency_no_logical_duplicates_on_rerun" time="34.639" /><testcase classname="tests.test_e2e" name="test_unified_entrypoints_share_canonical_pipeline" time="0.001" /><testcase classname="tests.test_e2e" name="test_dq_field_nulls_vs_row_invalid_and_parse_cast" time="0.004" /><testcase classname="tests.test_e2e" name="test_dq_gate_blocks_gold_when_below_threshold" time="0.004" /><testcase classname="tests.test_e2e" name="test_streaming_late_data_malformed_types_dedup_and_restart" time="3.809" /><testcase classname="tests.test_e2e" name="test_pii_anonymization_and_user_id_hashing_at_ingest" time="0.002" /><testcase classname="tests.test_e2e" name="test_e2e_pipeline_with_crawler_and_public_dataset" time="30.333" /><testcase classname="tests.test_e2e" name="test_real_benchmark_execution_and_report_consistency" time="23.363" /><testcase classname="tests.test_e2e" name="test_github_actions_ci_workflow_valid" time="0.534" /></testsuite></testsuites>

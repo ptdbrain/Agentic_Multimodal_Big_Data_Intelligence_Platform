@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "executed_at": "2026-10-29T08:08:15.709142+00:00",
+  "boundary": "Streamlit AppTest executes actual page code and PostgreSQL queries; not browser rendering or browser load",
+  "run_id": "283c1c50-e59d-4d04-bc03-378625621f94",
+  "oracle": {
+    "products": 15,
+    "reviews": 20,
+    "average_rating": 4.55
+  },
+  "pages": [
+    {
+      "page": "app.py",
+      "passed": true,
+      "dataframes": 0,
+      "source": "actual PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/1_Overview.py",
+      "passed": true,
+      "dataframes": 1,
+      "source": "actual PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/3_Products.py",
+      "passed": true,
+      "dataframes": 1,
+      "source": "actual PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/4_Reviews.py",
+      "passed": true,
+      "dataframes": 1,
+      "source": "actual PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/5_Trends.py",
+      "passed": true,
+      "dataframes": 1,
+      "source": "actual PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/6_Anomalies.py",
+      "passed": true,
+      "dataframes": 2,
+      "source": "actual PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/7_Data_Quality.py",
+      "passed": true,
+      "dataframes": 2,
+      "source": "actual PostgreSQL warehouse"
+    }
+  ],
+  "duration_sec": 1.1377
+}

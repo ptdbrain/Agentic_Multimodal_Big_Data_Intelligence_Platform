@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "executed_at": "2026-10-29T13:16:24.965666+00:00",
+  "boundary": "Streamlit AppTest executes actual page code and Docker PostgreSQL queries; not browser rendering or browser load",
+  "run_id": "808bd32e-d00c-42fc-810b-798eb7b32845",
+  "oracle": {
+    "products": 15,
+    "reviews": 20,
+    "average_rating": 4.55
+  },
+  "pages": [
+    {
+      "page": "app.py",
+      "passed": true,
+      "dataframes": 0,
+      "source": "actual isolated Docker PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/1_Overview.py",
+      "passed": true,
+      "dataframes": 1,
+      "source": "actual isolated Docker PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/3_Products.py",
+      "passed": true,
+      "dataframes": 1,
+      "source": "actual isolated Docker PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/4_Reviews.py",
+      "passed": true,
+      "dataframes": 1,
+      "source": "actual isolated Docker PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/5_Trends.py",
+      "passed": true,
+      "dataframes": 1,
+      "source": "actual isolated Docker PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/6_Anomalies.py",
+      "passed": true,
+      "dataframes": 2,
+      "source": "actual isolated Docker PostgreSQL warehouse"
+    },
+    {
+      "page": "pages/7_Data_Quality.py",
+      "passed": true,
+      "dataframes": 2,
+      "source": "actual isolated Docker PostgreSQL warehouse"
+    }
+  ],
+  "duration_sec": 0.9137
+}

@@ -1,0 +1,154 @@
+{
+  "verified_at": "2026-10-29T12:30:50.029132+00:00",
+  "source_fingerprint": {
+    "sha256": "92481e950144a2f37d27fca461e5265fcad89f18b01815a8756ec0ee93a9ae73",
+    "files": 199,
+    "scope": "sorted btl/**/*.py,sql,yaml,yml,toml and *Dockerfile; each path + NUL + bytes + NUL"
+  },
+  "git_revision": "3da6c61c99650a8f47da2fbaf71f7fdccdf40244",
+  "worktree_dirty": true,
+  "local": {
+    "tests": 434,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_sec": 162.443,
+    "passed": 434,
+    "deselected": 48,
+    "warnings": 526,
+    "artifact": "docs/reports/remediation_processing_local.xml"
+  },
+  "native_integration": {
+    "tests": 46,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_sec": 141.478,
+    "passed": 46,
+    "deselected": 436,
+    "warnings": 240,
+    "artifact": "docs/reports/processing_native_integration_final.xml"
+  },
+  "service_boundary": "Actual isolated native Kafka3.7.0, MinIO, PostgreSQL16.15 and Elasticsearch8.13.0; Spark local[2] with S3A. Not Docker Compose or a multi-host cluster.",
+  "full_service_load": {
+    "artifact": "docs/reports/processing_native_fullpath_100k.json",
+    "completed": true,
+    "wall_sec": 151.6761,
+    "resources": {
+      "wall_sec": 151.7353,
+      "cpu_percent": 164.2,
+      "python_cpu_percent": 77.9,
+      "peak_ram_mb": 3206.13,
+      "peak_tree_ram_mb": 3206.13,
+      "peak_python_ram_mb": 913.56,
+      "peak_children_ram_mb": 2340.16,
+      "sample_count": 934
+    },
+    "resource_boundary": "Python driver and child process tree only",
+    "review_accounting": {
+      "input_count": 100000,
+      "valid_input_count": 95000,
+      "quarantine_count": 5000,
+      "intra_batch_duplicate_count": 3000,
+      "cross_batch_duplicate_count": 0,
+      "silver_written_count": 92000,
+      "reconciled": true
+    },
+    "transport": {
+      "records_consumed": 110100,
+      "records_valid": 110100,
+      "records_dlq": 0
+    },
+    "mart_rows": {
+      "product_daily_stats": 2000,
+      "brand_daily_stats": 100,
+      "category_daily_stats": 80,
+      "price_daily_stats": 500
+    },
+    "measurement_source_fingerprint": {
+      "sha256": "3ceb73c418cfd6f13821d4dbbc3484db4c19f5f6fc21b6e4b13c47907c3ee711",
+      "files": 198,
+      "scope": "sorted btl/**/*.py,sql,yaml,yml,toml and *Dockerfile; each path + NUL + bytes + NUL"
+    },
+    "subsequent_change": "Optional zero-price acceptance and owned-bucket bootstrap race guards are covered by the final full suite. Their new branches are not taken by this positive-price, already-provisioned measured workload; it retains its own fingerprint.",
+    "iterations": 1,
+    "excluded": [
+      "input generation",
+      "JVM startup/warmup",
+      "browser rendering",
+      "Docker runtime",
+      "multi-host/network saturation",
+      "resource use of separately running service daemons"
+    ]
+  },
+  "real_service_replay": {
+    "artifact": "docs/reports/processing_native_pipeline_replay.json",
+    "passed": true,
+    "runs": 2,
+    "serving_reviews": 20,
+    "dq_history_counts": [
+      3,
+      6
+    ],
+    "scope_note": "Executed before the later partial-fetch and optional-price guards; the new drain path is separately verified on the real broker and by the current100k run."
+  },
+  "dashboard": {
+    "artifact": "docs/reports/processing_native_dashboard.json",
+    "passed": true,
+    "pages": 7,
+    "oracle": {
+      "products": 15,
+      "reviews": 20,
+      "average_rating": 4.55
+    },
+    "scope": "Streamlit AppTest executes actual page code and PostgreSQL queries; not browser rendering or browser load"
+  },
+  "airflow": {
+    "artifact": "docs/reports/processing_native_airflow.json",
+    "passed": true,
+    "executor": "LocalExecutor",
+    "runs": 2,
+    "successful_tasks": 14,
+    "boundary": "actual PostgreSQL metadata and serving + Kafka + MinIO + Spark S3A, separate worker processes; Docker not exercised",
+    "scope_note": "Executed before the later Stage2 drain and optional-price guard changes; manifest/handoff/lease code is unchanged. Runtime processes/data in /tmp were lost on environment restart; saved successful execution evidence is retained."
+  },
+  "fixes": [
+    "PostgreSQL unnecessary ALTER locking active readers",
+    "Legacy verifier missing current-run evidence and hidden sample Silver seeding",
+    "Canonical Kafka stage failing on a partial fetch despite successful delivery",
+    "Canonical verification rejecting a valid empty optional-price snapshot",
+    "MinIO concurrent owned-bucket bootstrap misreported as connectivity failure"
+  ],
+  "remaining_required_acceptance": [],
+  "not_applied": [
+    "Production data backfill/event-ID rewrite",
+    "Production deployment",
+    "Commit/merge/push"
+  ],
+  "limitations": [
+    "One synthetic single-host service load iteration; no production SLA or multi-host saturation claim",
+    "AppTest executes page code and real SQL; not browser rendering/load",
+    "Classic Gold has per-path recovery and a serialized group manifest, not a four-file storage transaction",
+    "Price anomalies remain labelled retrospective leave-one-out"
+  ],
+  "objective_complete": true,
+  "goal_status": "complete",
+  "blocker": null,
+  "final_verified_at": "2026-10-29T13:29:43.819211+00:00",
+  "docker_acceptance": {
+    "artifact": "docs/reports/processing_docker_acceptance.json",
+    "status": "complete",
+    "integration": {
+      "tests": 46,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 46,
+      "duration_sec": 153.504,
+      "artifact": "docs/reports/processing_docker_integration.xml"
+    },
+    "replay_business_hashes_equal": true,
+    "dashboard_pages": 7,
+    "network_worker_ownership": true
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "completed": true,
+  "executed_at": "2026-10-29T05:23:11.848071+00:00",
+  "mode": "local Spark + SQLite",
+  "boundary": "Bronze JSONL write -> Spark normalize/DQ/quarantine/dedup/Silver -> Spark Gold + pandas anomalies -> SQLite -> DashboardDB queries",
+  "excluded": [
+    "Kafka transport",
+    "MinIO",
+    "PostgreSQL",
+    "browser-rendering load",
+    "input generation",
+    "JVM startup/warmup"
+  ],
+  "iterations": 1,
+  "generator": "deterministic synthetic fixture, 100000 review inputs plus 100 products and 10000 price observations",
+  "input": {
+    "products": {
+      "records": 100,
+      "sha256": "882c1949cb16cfba29e1597b13b9041e8871ea844e212800a9031be8f35a970e"
+    },
+    "reviews": {
+      "records": 100000,
+      "sha256": "dae163662060ae8708a2253c02ee8e0adf8aa90e0404c624a66a9b55dfdaae26"
+    },
+    "prices": {
+      "records": 10000,
+      "sha256": "7095e7fc68d4650263c2efb379c4046673ec54946c0b53daeae430726cc67c95"
+    }
+  },
+  "review_accounting": {
+    "input_count": 100000,
+    "valid_input_count": 95000,
+    "quarantine_count": 5000,
+    "intra_batch_duplicate_count": 3000,
+    "cross_batch_duplicate_count": 0,
+    "silver_written_count": 92000,
+    "reconciled": true
+  },
+  "times_sec": {
+    "bronze_json_write_sec": 0.2317,
+    "spark_etl_sec": 20.9277,
+    "spark_gold_and_anomalies_sec": 45.3752,
+    "sqlite_export_sec": 4.5407,
+    "dashboard_query_sec": 0.0039
+  },
+  "resources": {
+    "wall_sec": 71.1536,
+    "cpu_percent": 245.8,
+    "python_cpu_percent": 66.0,
+    "peak_ram_mb": 2375.02,
+    "peak_tree_ram_mb": 2375.02,
+    "peak_python_ram_mb": 400.91,
+    "peak_children_ram_mb": 2095.76,
+    "sample_count": 608
+  },
+  "mart_rows": {
+    "product_daily_stats": 2000,
+    "brand_daily_stats": 100,
+    "category_daily_stats": 80,
+    "price_daily_stats": 500
+  },
+  "anomaly_events": 0,
+  "exported_rows": {
+    "product_daily_stats": 2000,
+    "brand_daily_stats": 100,
+    "category_daily_stats": 80,
+    "price_daily_stats": 500,
+    "data_quality_metrics": 3,
+    "products": 100,
+    "reviews": 92000
+  },
+  "serving_review_count": 92000,
+  "production_data_modified": false,
+  "isolated_workspace": "/tmp/sentinel-fullpath-100k-lq06q34a",
+  "measurement_source_fingerprint": {
+    "sha256": "b296de389e3d63ad0d40de4b0545b0cd7e7f3c6afd317e4ca7b18c6f0bd7106f",
+    "files": 197
+  },
+  "subsequent_verification": "Two subsequent guard-only changes (empty required inputs and price read PermissionError propagation) are covered by final correctness regressions; this valid synthetic measured path is unchanged."
+}

@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="8.086" timestamp="2026-10-26T12:07:49.661833+07:00" hostname="ptdbrain"><testcase classname="tests.integration.test_s3a_recovery" name="test_s3a_failed_promotion_preserves_original_rows" time="7.956" /></testsuite></testsuites>

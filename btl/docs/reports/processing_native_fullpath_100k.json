@@ -1,0 +1,85 @@
+{
+  "completed": true,
+  "executed_at": "2026-10-29T12:05:48.941512+00:00",
+  "iterations": 1,
+  "mode": "actual native Kafka3.7 + MinIO + Spark3.5 S3A + PostgreSQL16",
+  "boundary": "JSONL load and PII -> Kafka delivery -> validated MinIO Bronze -> Spark Silver/quarantine/DQ -> Gold/anomalies -> PostgreSQL -> DashboardDB queries",
+  "excluded": [
+    "input generation",
+    "JVM startup/warmup",
+    "browser rendering",
+    "Docker runtime",
+    "multi-host/network saturation",
+    "resource use of separately running service daemons"
+  ],
+  "resource_boundary": "Python driver and child process tree only",
+  "source": "deterministic labelled synthetic:92000 valid reviews+3000 duplicates+5000 malformed observation timestamps; schema-valid transport",
+  "input": {
+    "products": {
+      "records": 100,
+      "sha256": "c324c54c16dc29576a6a1735d53b3863956dbedc062f0d76f3b42e79333ea2c4"
+    },
+    "reviews": {
+      "records": 100000,
+      "sha256": "b42e9ddbe125f1e15e218c0139d9e67a9a195b7364bd971797e3a40774751e36"
+    },
+    "prices": {
+      "records": 10000,
+      "sha256": "ab852bcee40c6e0946b25e4870157dcb8936968a00b9a22d2231ef578fcd75fd"
+    }
+  },
+  "review_accounting": {
+    "input_count": 100000,
+    "valid_input_count": 95000,
+    "quarantine_count": 5000,
+    "intra_batch_duplicate_count": 3000,
+    "cross_batch_duplicate_count": 0,
+    "silver_written_count": 92000,
+    "reconciled": true
+  },
+  "transport": {
+    "records_consumed": 110100,
+    "records_valid": 110100,
+    "records_dlq": 0
+  },
+  "run_id": "19739156-66bc-4565-90a3-31b98edaff7e",
+  "mart_rows": {
+    "product_daily_stats": 2000,
+    "brand_daily_stats": 100,
+    "category_daily_stats": 80,
+    "price_daily_stats": 500
+  },
+  "serving_review_count": 92000,
+  "anomaly_events": 0,
+  "times_sec": {
+    "source_load_and_pii_sec": 0.9167,
+    "kafka_delivery_consume_bronze_sec": 65.2376,
+    "bronze_verify_sec": 0.582,
+    "spark_etl_silver_dq_sec": 19.7426,
+    "spark_gold_anomalies_sec": 49.7281,
+    "postgres_export_dashboard_verify_sec": 15.4484
+  },
+  "wall_sec": 151.6761,
+  "resources": {
+    "wall_sec": 151.7353,
+    "cpu_percent": 164.2,
+    "python_cpu_percent": 77.9,
+    "peak_ram_mb": 3206.13,
+    "peak_tree_ram_mb": 3206.13,
+    "peak_python_ram_mb": 913.56,
+    "peak_children_ram_mb": 2340.16,
+    "sample_count": 934
+  },
+  "production_data_modified": false,
+  "workspace": "/tmp/sentinel-native-100k-q8m4lwoe",
+  "script_sha256": "e525c583084f61b3dcdb710970d0eccc3d9c5467049233be5b461bbe74059f2d",
+  "source_fingerprint": {
+    "sha256": "3ceb73c418cfd6f13821d4dbbc3484db4c19f5f6fc21b6e4b13c47907c3ee711",
+    "files": 198,
+    "scope": "sorted btl/**/*.py,sql,yaml,yml,toml and *Dockerfile; each path + NUL + bytes + NUL"
+  },
+  "source_fingerprint_note": "Recorded while the job was running; verified unchanged after completion. Measured values are unmodified.",
+  "git_revision": "3da6c61c99650a8f47da2fbaf71f7fdccdf40244",
+  "worktree_dirty": true,
+  "spark_master": "local[2]"
+}

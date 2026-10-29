@@ -1,0 +1,33 @@
+{
+  "before": {
+    "products": {
+      "rows": 15,
+      "sha256": "6ae00dfa460db0383689e1563b3a381afa53685657e7d1395fea54d7e2ca9f3b"
+    },
+    "reviews": {
+      "rows": 20,
+      "sha256": "127a5110004e6a4f78e9fa7426b98af1211260495e441d5ed640c0fd2890da50"
+    },
+    "prices": {
+      "rows": 525,
+      "sha256": "61fe93f122ded014f9ad0ca62fc60632b69e95f6d2e75f007b1b8db6827c1a19"
+    },
+    "dq_reports": 3
+  },
+  "after": {
+    "products": {
+      "rows": 15,
+      "sha256": "6ae00dfa460db0383689e1563b3a381afa53685657e7d1395fea54d7e2ca9f3b"
+    },
+    "reviews": {
+      "rows": 20,
+      "sha256": "127a5110004e6a4f78e9fa7426b98af1211260495e441d5ed640c0fd2890da50"
+    },
+    "prices": {
+      "rows": 525,
+      "sha256": "61fe93f122ded014f9ad0ca62fc60632b69e95f6d2e75f007b1b8db6827c1a19"
+    },
+    "dq_reports": 6
+  },
+  "passed": true
+}

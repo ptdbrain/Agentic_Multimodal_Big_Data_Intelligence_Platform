@@ -1,0 +1,103 @@
+{
+  "passed": true,
+  "executed_at": "2026-10-29T13:15:34.104129+00:00",
+  "mode": "Docker PostgreSQL + MinIO + Kafka; host Spark local[2] using S3A; isolated test project",
+  "source": "labelled deterministic synthetic acceptance fixture seed42",
+  "input": {
+    "products": {
+      "rows": 15,
+      "sha256": "8adcace2bbb78b2a2de09177064dce08af21c1b522e0f252aba12ff6ad023df8"
+    },
+    "reviews": {
+      "rows": 20,
+      "sha256": "d684cd2d02ebb90400035d0c98eda29b10c753aa98a552c2ae32b3e9f19b8018"
+    },
+    "prices": {
+      "rows": 525,
+      "sha256": "398430cc617b4881126e87bd7b1b17c1200e5e311ae453e10074d6f3b7ac0c78"
+    }
+  },
+  "first": {
+    "silver": {
+      "products": {
+        "rows": 15,
+        "business_sha256": "0d753db9477a405d6f1267e24c70acce127266b70844bf9b33f7e6509f0e380d"
+      },
+      "reviews": {
+        "rows": 20,
+        "business_sha256": "596f4a1849a024a5b4cb8abbe111ab1834b3a6db14fb752c04d9728a4166f90c"
+      },
+      "prices": {
+        "rows": 525,
+        "business_sha256": "4c198c8cd27c015d7442f110378cc18e5967b704db86a6507bbdbea854bc056a"
+      }
+    },
+    "gold": {
+      "product_daily_stats": {
+        "rows": 18,
+        "business_sha256": "5e3d2ac2c122237e2c5af1145533bafb2e468b10adbd95935da7a989e31d1d63"
+      },
+      "brand_daily_stats": {
+        "rows": 17,
+        "business_sha256": "23f10295252a2ef12b9cf46d20617873d3dff4f7fd4a5bacc8bb8109fd865da2"
+      },
+      "category_daily_stats": {
+        "rows": 18,
+        "business_sha256": "9e04ee1670f2661b6acb44c3dda7e333b75fbb9b1ee9bcaa22e7b7894670a278"
+      },
+      "price_daily_stats": {
+        "rows": 525,
+        "business_sha256": "9a433d730fc5d81aff7447b56d3a25cc1c806517d437eee4230d9f5997397d96"
+      }
+    },
+    "run_id": "316eb147-78a6-46cd-9575-aa5e7ee9003a",
+    "source_run_id": "316eb147-78a6-46cd-9575-aa5e7ee9003a",
+    "dq_history_count": 3,
+    "anomaly_ids": [
+      "anom_3d9f2f8a76cee795de25"
+    ],
+    "anomaly_events": 1
+  },
+  "second": {
+    "silver": {
+      "products": {
+        "rows": 15,
+        "business_sha256": "0d753db9477a405d6f1267e24c70acce127266b70844bf9b33f7e6509f0e380d"
+      },
+      "reviews": {
+        "rows": 20,
+        "business_sha256": "596f4a1849a024a5b4cb8abbe111ab1834b3a6db14fb752c04d9728a4166f90c"
+      },
+      "prices": {
+        "rows": 525,
+        "business_sha256": "4c198c8cd27c015d7442f110378cc18e5967b704db86a6507bbdbea854bc056a"
+      }
+    },
+    "gold": {
+      "product_daily_stats": {
+        "rows": 18,
+        "business_sha256": "5e3d2ac2c122237e2c5af1145533bafb2e468b10adbd95935da7a989e31d1d63"
+      },
+      "brand_daily_stats": {
+        "rows": 17,
+        "business_sha256": "23f10295252a2ef12b9cf46d20617873d3dff4f7fd4a5bacc8bb8109fd865da2"
+      },
+      "category_daily_stats": {
+        "rows": 18,
+        "business_sha256": "9e04ee1670f2661b6acb44c3dda7e333b75fbb9b1ee9bcaa22e7b7894670a278"
+      },
+      "price_daily_stats": {
+        "rows": 525,
+        "business_sha256": "9a433d730fc5d81aff7447b56d3a25cc1c806517d437eee4230d9f5997397d96"
+      }
+    },
+    "run_id": "808bd32e-d00c-42fc-810b-798eb7b32845",
+    "source_run_id": "808bd32e-d00c-42fc-810b-798eb7b32845",
+    "dq_history_count": 6,
+    "anomaly_ids": [
+      "anom_3d9f2f8a76cee795de25"
+    ],
+    "anomaly_events": 1
+  },
+  "duration_sec": 55.588
+}

@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.488" timestamp="2026-10-26T12:03:58.504513+07:00" hostname="ptdbrain"><testcase classname="tests.integration.test_lakehouse_concurrency" name="test_two_remote_writers_commit_only_one_snapshot" time="0.171" /></testsuite></testsuites>

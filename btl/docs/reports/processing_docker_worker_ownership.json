@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "executed_at": "2026-10-29T13:22:16.337087+00:00",
+  "boundary": "Independent Docker network namespaces on one physical host; actual PostgreSQL-mediated canonical ownership, contention and release. Not a multi-host latency/failover/load test.",
+  "owner": {
+    "stage": "acquired",
+    "identity": {
+      "hostname": "processing-worker-a",
+      "client_addr": "172.19.0.6/32",
+      "server_addr": "172.19.0.3/32",
+      "postgres_backend_pid": 1197
+    }
+  },
+  "contender": {
+    "stage": "blocked",
+    "owner": "worker-a",
+    "identity": {
+      "hostname": "processing-worker-b",
+      "client_addr": "172.19.0.7/32",
+      "server_addr": "172.19.0.3/32",
+      "postgres_backend_pid": 1205
+    }
+  },
+  "after_release": {
+    "stage": "acquired_after_release",
+    "identity": {
+      "hostname": "processing-worker-c",
+      "client_addr": "172.19.0.6/32",
+      "server_addr": "172.19.0.3/32",
+      "postgres_backend_pid": 1206
+    }
+  }
+}

@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="11.325" timestamp="2026-10-26T12:04:14.223905+07:00" hostname="ptdbrain"><testcase classname="tests.integration.test_kafka_streaming" name="test_actual_kafka_source_quarantine_and_checkpoint" time="11.135" /></testsuite></testsuites>

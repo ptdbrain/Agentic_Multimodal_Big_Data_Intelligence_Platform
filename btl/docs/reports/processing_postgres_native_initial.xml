@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="5.543" timestamp="2026-10-29T14:36:39.933673+07:00" hostname="ptdbrain"><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_additive_migrations_preserve_legacy_rows_and_unknowns" time="0.047" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_initialized_schema_does_not_block_an_active_read_snapshot" time="5.039"><failure message="psycopg2.errors.LockNotAvailable: canceling statement due to lock timeout">postgres_scope = 'processing_9979cd4041024ee6b7b97b164cb5948d'
+
+    def test_postgres_initialized_schema_does_not_block_an_active_read_snapshot(postgres_scope):
+        _seed_daily()
+        reader = DashboardDB(mode='integration')
+        writer = WarehouseManager(mode='integration')
+        try:
+            assert reader.get_product_daily_stats()['run_id'].tolist() == ['old']
+            # Export initializes its schema on every invocation. An already migrated
+            # schema must not take an ALTER TABLE lock against a serving reader.
+&gt;           writer.initialize_schema()
+
+tests/integration/test_processing_contracts.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+database/warehouse.py:132: in initialize_schema
+    self._migrate_analytics_schema()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;database.warehouse.WarehouseManager object at 0x7f3d2e0d3c50&gt;
+
+    def _migrate_analytics_schema(self):
+        """Keep Gold lineage available in serving; legacy values stay unknown."""
+        common = {"run_id": "VARCHAR(100)", "source_run_id": "VARCHAR(100)",
+                  "data_as_of": "DATE", "time_available": "BOOLEAN"}
+        tables = ("product_daily_stats", "brand_daily_stats", "category_daily_stats", "price_daily_stats")
+        with self._conn:
+            cur = self._conn.cursor()
+            for table in tables:
+                additions = dict(common)
+                if table != "price_daily_stats":
+                    additions.update(rating_sample_size="INTEGER", weighted_avg_rating="NUMERIC(3,2)")
+                if table == "product_daily_stats":
+                    additions["price_source"] = "VARCHAR(30)"
+                if self._engine_type == "sqlite":
+                    existing = {r[1] for r in cur.execute(f"PRAGMA table_info({table})").fetchall()}
+                    for name, sql_type in additions.items():
+                        if name not in existing:
+                            cur.execute(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}")
+                else:
+                    for name, sql_type in additions.items():
+&gt;                       cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {name} {sql_type}")
+E                       psycopg2.errors.LockNotAvailable: canceling statement due to lock timeout
+
+database/warehouse.py:178: LockNotAvailable</failure></testcase></testsuite></testsuites>

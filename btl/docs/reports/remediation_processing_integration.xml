@@ -1,0 +1,2271 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="36" time="95.229" timestamp="2026-10-27T00:42:19.592671+07:00" hostname="ptdbrain"><testcase classname="tests.integration.test_kafka_streaming" name="test_actual_kafka_source_quarantine_and_checkpoint" time="2.857"><failure message="RuntimeError: Failed to connect to Kafka at localhost:9094: KafkaTimeoutError: Unable to bootstrap from localhost:9094">self = &lt;kafka.producers.stream_producer.StreamProducer object at 0x7f23f4c59f50&gt;
+
+    def _init_producer(self):
+        if self.enable_offline_buffer:
+            # Explicit test mode, don't require Kafka
+            return
+    
+        try:
+            from kafka import KafkaProducer
+            if not KafkaProducer:
+                raise ImportError("KafkaProducer not available")
+    
+&gt;           self.producer = KafkaProducer(
+                bootstrap_servers=self.bootstrap_servers,
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                key_serializer=lambda k: str(k).encode('utf-8') if k else None,
+                bootstrap_timeout_ms=1000,
+                request_timeout_ms=1000,
+                max_block_ms=1000,
+                retries=1
+            )
+
+kafka/producers/stream_producer.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/kafka/producer/kafka.py:534: in __init__
+    manager.bootstrap(self.config['bootstrap_timeout_ms'])
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/kafka/net/manager.py:181: in bootstrap
+    self._net.run(self.bootstrap_async, timeout_ms, refresh)
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/kafka/net/selector.py:300: in run
+    raise future.exception
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/kafka/net/selector.py:389: in wrapper
+    future.success(await self._invoke(coro, *args))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/kafka/net/selector.py:408: in _invoke
+    result = await result
+             ^^^^^^^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/kafka/future.py:165: in __await__
+    raise self.exception
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/kafka/net/selector.py:389: in wrapper
+    future.success(await self._invoke(coro, *args))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/kafka/net/selector.py:402: in _invoke
+    result = await coro(*args)
+             ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;kafka.net.manager.KafkaConnectionManager object at 0x7f23f4c5a750&gt;
+deadline = 24142.148439827
+
+    async def _do_bootstrap(self, deadline):
+        while not self.closed and (deadline is None or time.monotonic() &lt; deadline):
+            bootstrap_broker = random.choice(self.cluster.bootstrap_brokers())
+            log.info('Attempting bootstrap to %s at %s:%s (rack %s)',
+                     bootstrap_broker.node_id, bootstrap_broker.host,
+                     bootstrap_broker.port, bootstrap_broker.rack)
+            try:
+                timeout_ms = (deadline - time.monotonic()) * 1000 if deadline is not None else None
+                conn = self.get_connection(bootstrap_broker.node_id,
+                                           timeout_ms=timeout_ms,
+                                           pop_on_close=False,
+                                           refresh_metadata_on_err=False,
+                                           reset_backoff_on_connect=False)
+            except Errors.NodeNotReadyError:
+                delay = self.connection_delay(bootstrap_broker.node_id)
+                if deadline is not None:
+                    delay = min(delay, max(0, deadline - time.monotonic()))
+                log.warning('Bootstrap %s not ready; waiting %.2f secs', bootstrap_broker.node_id, delay)
+                await self._bootstrap_wakeup(delay)
+                continue
+    
+            try:
+                await conn
+            except Errors.IncompatibleBrokerVersion:
+                log.error('Did you attempt to connect to a kafka controller (no metadata support)?')
+                raise
+            except Exception as exc:
+                self._conns.pop(bootstrap_broker.node_id, conn).close(exc)
+                backoff_ms = self.update_backoff(bootstrap_broker.node_id)
+                log.warning('Bootstrap connection to %s failed: %s (backoff %.2f secs)',
+                            bootstrap_broker.node_id, exc, backoff_ms / 1000)
+                continue
+    
+            try:
+                await self.cluster.refresh_metadata(bootstrap_broker.node_id)
+                if not self.cluster.brokers():
+                    backoff_ms = self.update_backoff(bootstrap_broker.node_id)
+                    log.warning('Bootstrap metadata response has no brokers. Retrying in %.2f secs.', backoff_ms / 1000)
+                    continue
+            except Exception as exc:
+                backoff_ms = self.update_backoff(bootstrap_broker.node_id)
+                log.error(f'Bootstrap attempt to {bootstrap_broker.node_id} failed: {exc} (backoff {(backoff_ms / 1000):.2f} secs)')
+                continue
+            else:
+                self.reset_backoff(bootstrap_broker.node_id)
+                self.cluster.start_refresh_loop()
+                log.info('Bootstrap complete: %s', self.cluster)
+                return True
+            finally:
+                log.info('Closing bootstrap connection %s', bootstrap_broker.node_id)
+                self._conns.pop(bootstrap_broker.node_id, conn).close()
+        else:
+&gt;           raise Errors.KafkaTimeoutError(
+                'Unable to bootstrap from %s' % (self.cluster.config['bootstrap_servers'],))
+E           kafka.errors.KafkaTimeoutError: KafkaTimeoutError: Unable to bootstrap from localhost:9094
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/kafka/net/manager.py:168: KafkaTimeoutError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/tmp/pytest-of-ptdbrain/pytest-64/test_actual_kafka_source_quara0')
+spark_session = &lt;pyspark.sql.session.SparkSession object at 0x7f23f4c44690&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f23f4c59e50&gt;
+
+    def test_actual_kafka_source_quarantine_and_checkpoint(tmp_path,spark_session,monkeypatch):
+        topic='sentinel-stream-test-'+uuid.uuid4().hex
+        monkeypatch.setattr(settings.kafka,'topic_reviews',topic)
+&gt;       producer=StreamProducer()
+                 ^^^^^^^^^^^^^^^^
+
+tests/integration/test_kafka_streaming.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+kafka/producers/stream_producer.py:28: in __init__
+    self._init_producer()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;kafka.producers.stream_producer.StreamProducer object at 0x7f23f4c59f50&gt;
+
+    def _init_producer(self):
+        if self.enable_offline_buffer:
+            # Explicit test mode, don't require Kafka
+            return
+    
+        try:
+            from kafka import KafkaProducer
+            if not KafkaProducer:
+                raise ImportError("KafkaProducer not available")
+    
+            self.producer = KafkaProducer(
+                bootstrap_servers=self.bootstrap_servers,
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                key_serializer=lambda k: str(k).encode('utf-8') if k else None,
+                bootstrap_timeout_ms=1000,
+                request_timeout_ms=1000,
+                max_block_ms=1000,
+                retries=1
+            )
+        except Exception as e:
+            # Raise exception if Kafka is unavailable in production
+&gt;           raise RuntimeError(f"Failed to connect to Kafka at {self.bootstrap_servers}: {e}")
+E           RuntimeError: Failed to connect to Kafka at localhost:9094: KafkaTimeoutError: Unable to bootstrap from localhost:9094
+
+kafka/producers/stream_producer.py:51: RuntimeError</failure></testcase><testcase classname="tests.integration.test_lakehouse_concurrency" name="test_two_remote_writers_commit_only_one_snapshot" time="0.017"><failure message="ConnectionError: Failed to connect to PostgreSQL at localhost:5432/sentinel_dw: connection to server at &quot;localhost&quot; (::1), port 5432 failed: Connection refused&#10;&#09;Is the server running on that host and accepting TCP/IP connections?&#10;connection to server at &quot;localhost&quot; (127.0.0.1), port 5432 failed: Connection refused&#10;&#09;Is the server running on that host and accepting TCP/IP connections?">self = &lt;database.warehouse.WarehouseManager object at 0x7f23f4ce6710&gt;
+
+    def _connect_postgres(self):
+        """Connect strictly to real PostgreSQL. Raises ConnectionError if unavailable."""
+        try:
+            import psycopg2
+        except ModuleNotFoundError as e:
+            raise ConnectionError(
+                "PostgreSQL driver 'psycopg2' is not installed; cannot run in PostgreSQL integration mode."
+            ) from e
+    
+        try:
+&gt;           self._conn = psycopg2.connect(
+                host=settings.database.host,
+                port=settings.database.port,
+                user=settings.database.user,
+                password=settings.database.password,
+                database=settings.database.database,
+                connect_timeout=10
+            )
+
+database/warehouse.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+dsn = 'host=localhost port=5432 user=sentinel password=sentinelpass connect_timeout=10 dbname=sentinel_dw'
+connection_factory = None, cursor_factory = None
+kwargs = {'host': 'localhost', 'port': 5432, 'user': 'sentinel', 'password': 'sentinelpass', ...}
+
+    def connect(dsn=None, connection_factory=None, cursor_factory=None, **kwargs):
+        """
+        Create a new database connection.
+    
+        The connection parameters can be specified as a string:
+    
+            conn = psycopg2.connect("dbname=test user=postgres password=secret")
+    
+        or using a set of keyword arguments:
+    
+            conn = psycopg2.connect(database="test", user="postgres", password="secret")
+    
+        Or as a mix of both. The basic connection parameters are:
+    
+        - *dbname*: the database name
+        - *database*: the database name (only as keyword argument)
+        - *user*: user name used to authenticate
+        - *password*: password used to authenticate
+        - *host*: database host address (defaults to UNIX socket if not provided)
+        - *port*: connection port number (defaults to 5432 if not provided)
+    
+        Using the *connection_factory* parameter a different class or connections
+        factory can be specified. It should be a callable object taking a dsn
+        argument.
+    
+        Using the *cursor_factory* parameter, a new default cursor factory will be
+        used by cursor().
+    
+        Using *async*=True an asynchronous connection will be created. *async_* is
+        a valid alias (for Python versions where ``async`` is a keyword).
+    
+        Any other keyword parameter will be passed to the underlying client
+        library: the list of supported parameters depends on the library version.
+    
+        """
+        kwasync = {}
+        if 'async' in kwargs:
+            kwasync['async'] = kwargs.pop('async')
+        if 'async_' in kwargs:
+            kwasync['async_'] = kwargs.pop('async_')
+    
+        dsn = _ext.make_dsn(dsn, **kwargs)
+&gt;       conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       psycopg2.OperationalError: connection to server at "localhost" (::1), port 5432 failed: Connection refused
+E       	Is the server running on that host and accepting TCP/IP connections?
+E       connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+E       	Is the server running on that host and accepting TCP/IP connections?
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/psycopg2/__init__.py:122: OperationalError
+
+The above exception was the direct cause of the following exception:
+
+    def test_two_remote_writers_commit_only_one_snapshot():
+        name='race_'+uuid.uuid4().hex
+&gt;       tables=[LakehouseTable(name,storage_backend=StorageManager(mode='integration')) for _ in range(2)]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_lakehouse_concurrency.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_lakehouse_concurrency.py:16: in &lt;listcomp&gt;
+    tables=[LakehouseTable(name,storage_backend=StorageManager(mode='integration')) for _ in range(2)]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+storage/lakehouse.py:27: in __init__
+    self.metadata=MetadataStore(sqlite_path=self.storage.base_dir/'.lakehouse.sqlite' if local else None)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+storage/lakehouse_metadata.py:20: in __init__
+    self.conn=WarehouseManager(mode='integration')._conn
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+database/warehouse.py:30: in __init__
+    self._connect_postgres()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;database.warehouse.WarehouseManager object at 0x7f23f4ce6710&gt;
+
+    def _connect_postgres(self):
+        """Connect strictly to real PostgreSQL. Raises ConnectionError if unavailable."""
+        try:
+            import psycopg2
+        except ModuleNotFoundError as e:
+            raise ConnectionError(
+                "PostgreSQL driver 'psycopg2' is not installed; cannot run in PostgreSQL integration mode."
+            ) from e
+    
+        try:
+            self._conn = psycopg2.connect(
+                host=settings.database.host,
+                port=settings.database.port,
+                user=settings.database.user,
+                password=settings.database.password,
+                database=settings.database.database,
+                connect_timeout=10
+            )
+            self._engine_type = 'postgres'
+            logger.info(f"Connected to PostgreSQL at {settings.database.host}:{settings.database.port}")
+        except Exception as e:
+&gt;           raise ConnectionError(
+                f"Failed to connect to PostgreSQL at {settings.database.host}:{settings.database.port}/"
+                f"{settings.database.database}: {e}"
+            ) from e
+E           ConnectionError: Failed to connect to PostgreSQL at localhost:5432/sentinel_dw: connection to server at "localhost" (::1), port 5432 failed: Connection refused
+E           	Is the server running on that host and accepting TCP/IP connections?
+E           connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+E           	Is the server running on that host and accepting TCP/IP connections?
+
+database/warehouse.py:55: ConnectionError</failure></testcase><testcase classname="tests.integration.test_s3a_recovery" name="test_s3a_failed_promotion_preserves_original_rows" time="0.338"><failure message="ConnectionError: Failed to connect to PostgreSQL at localhost:5432/sentinel_dw: connection to server at &quot;localhost&quot; (::1), port 5432 failed: Connection refused&#10;&#09;Is the server running on that host and accepting TCP/IP connections?&#10;connection to server at &quot;localhost&quot; (127.0.0.1), port 5432 failed: Connection refused&#10;&#09;Is the server running on that host and accepting TCP/IP connections?">self = &lt;database.warehouse.WarehouseManager object at 0x7f24233bd550&gt;
+
+    def _connect_postgres(self):
+        """Connect strictly to real PostgreSQL. Raises ConnectionError if unavailable."""
+        try:
+            import psycopg2
+        except ModuleNotFoundError as e:
+            raise ConnectionError(
+                "PostgreSQL driver 'psycopg2' is not installed; cannot run in PostgreSQL integration mode."
+            ) from e
+    
+        try:
+&gt;           self._conn = psycopg2.connect(
+                host=settings.database.host,
+                port=settings.database.port,
+                user=settings.database.user,
+                password=settings.database.password,
+                database=settings.database.database,
+                connect_timeout=10
+            )
+
+database/warehouse.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+dsn = 'host=localhost port=5432 user=sentinel password=sentinelpass connect_timeout=10 dbname=sentinel_dw'
+connection_factory = None, cursor_factory = None
+kwargs = {'host': 'localhost', 'port': 5432, 'user': 'sentinel', 'password': 'sentinelpass', ...}
+
+    def connect(dsn=None, connection_factory=None, cursor_factory=None, **kwargs):
+        """
+        Create a new database connection.
+    
+        The connection parameters can be specified as a string:
+    
+            conn = psycopg2.connect("dbname=test user=postgres password=secret")
+    
+        or using a set of keyword arguments:
+    
+            conn = psycopg2.connect(database="test", user="postgres", password="secret")
+    
+        Or as a mix of both. The basic connection parameters are:
+    
+        - *dbname*: the database name
+        - *database*: the database name (only as keyword argument)
+        - *user*: user name used to authenticate
+        - *password*: password used to authenticate
+        - *host*: database host address (defaults to UNIX socket if not provided)
+        - *port*: connection port number (defaults to 5432 if not provided)
+    
+        Using the *connection_factory* parameter a different class or connections
+        factory can be specified. It should be a callable object taking a dsn
+        argument.
+    
+        Using the *cursor_factory* parameter, a new default cursor factory will be
+        used by cursor().
+    
+        Using *async*=True an asynchronous connection will be created. *async_* is
+        a valid alias (for Python versions where ``async`` is a keyword).
+    
+        Any other keyword parameter will be passed to the underlying client
+        library: the list of supported parameters depends on the library version.
+    
+        """
+        kwasync = {}
+        if 'async' in kwargs:
+            kwasync['async'] = kwargs.pop('async')
+        if 'async_' in kwargs:
+            kwasync['async_'] = kwargs.pop('async_')
+    
+        dsn = _ext.make_dsn(dsn, **kwargs)
+&gt;       conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       psycopg2.OperationalError: connection to server at "localhost" (::1), port 5432 failed: Connection refused
+E       	Is the server running on that host and accepting TCP/IP connections?
+E       connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+E       	Is the server running on that host and accepting TCP/IP connections?
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/psycopg2/__init__.py:122: OperationalError
+
+The above exception was the direct cause of the following exception:
+
+spark_session = &lt;pyspark.sql.session.SparkSession object at 0x7f23f4c44690&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f24233bdd10&gt;
+
+    def test_s3a_failed_promotion_preserves_original_rows(spark_session,monkeypatch):
+        s=spark_session
+        target=f's3a://{settings.storage.data_lake_bucket}/recovery/{uuid.uuid4().hex}/table'
+        old=s.createDataFrame([(1,'one'),(2,'two')],['id','value'])
+&gt;       SafeParquetIO.publish_parquet_atomic(s,old,target,expected_count=2)
+
+tests/integration/test_s3a_recovery.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+storage/write_lock.py:68: in wrapped
+    with write_lock(path): return function(*args,**kwargs)
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+storage/write_lock.py:33: in write_lock
+    conn=WarehouseManager(mode='integration')._conn
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+database/warehouse.py:30: in __init__
+    self._connect_postgres()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;database.warehouse.WarehouseManager object at 0x7f24233bd550&gt;
+
+    def _connect_postgres(self):
+        """Connect strictly to real PostgreSQL. Raises ConnectionError if unavailable."""
+        try:
+            import psycopg2
+        except ModuleNotFoundError as e:
+            raise ConnectionError(
+                "PostgreSQL driver 'psycopg2' is not installed; cannot run in PostgreSQL integration mode."
+            ) from e
+    
+        try:
+            self._conn = psycopg2.connect(
+                host=settings.database.host,
+                port=settings.database.port,
+                user=settings.database.user,
+                password=settings.database.password,
+                database=settings.database.database,
+                connect_timeout=10
+            )
+            self._engine_type = 'postgres'
+            logger.info(f"Connected to PostgreSQL at {settings.database.host}:{settings.database.port}")
+        except Exception as e:
+&gt;           raise ConnectionError(
+                f"Failed to connect to PostgreSQL at {settings.database.host}:{settings.database.port}/"
+                f"{settings.database.database}: {e}"
+            ) from e
+E           ConnectionError: Failed to connect to PostgreSQL at localhost:5432/sentinel_dw: connection to server at "localhost" (::1), port 5432 failed: Connection refused
+E           	Is the server running on that host and accepting TCP/IP connections?
+E           connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused
+E           	Is the server running on that host and accepting TCP/IP connections?
+
+database/warehouse.py:55: ConnectionError</failure></testcase><testcase classname="tests.integration.test_services" name="test_elasticsearch_persists_between_clients" time="0.004"><failure message="requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=9200): Max retries exceeded with url: /sentinel-test-e8ea5fc43ebc47c5bbac2312d3f552f1 (Caused by NewConnectionError(&quot;HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 111] Connection refused&quot;))">self = &lt;HTTPConnection(host='localhost', port=9200) at 0x7f24233adb10&gt;
+
+    def _new_conn(self) -&gt; socket.socket:
+        """Establish a socket connection and set nodelay settings on it.
+    
+        :return: New socket connection.
+        """
+        try:
+&gt;           sock = connection.create_connection(
+                (self._dns_host, self.port),
+                self.timeout,
+                source_address=self.source_address,
+                socket_options=self.socket_options,
+            )
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/util/connection.py:85: in create_connection
+    raise err
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+address = ('localhost', 9200), timeout = 10, source_address = None
+socket_options = [(6, 1, 1)]
+
+    def create_connection(
+        address: tuple[str, int],
+        timeout: _TYPE_TIMEOUT = _DEFAULT_TIMEOUT,
+        source_address: tuple[str, int] | None = None,
+        socket_options: _TYPE_SOCKET_OPTIONS | None = None,
+    ) -&gt; socket.socket:
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`socket.getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        An host of '' or port 0 tells the OS to use the default.
+        """
+    
+        host, port = address
+        if host.startswith("["):
+            host = host.strip("[]")
+        err = None
+    
+        # Using the value from allowed_gai_family() in the context of getaddrinfo lets
+        # us select whether to work with IPv4 DNS records, IPv6 records, or both.
+        # The original create_connection function always returns all records.
+        family = allowed_gai_family()
+    
+        try:
+            host.encode("idna")
+        except UnicodeError:
+            raise LocationParseError(f"'{host}', label empty or too long") from None
+    
+        for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket.socket(af, socktype, proto)
+    
+                # If provided, set socket level options before connecting.
+                _set_socket_options(sock, socket_options)
+    
+                if timeout is not _DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+&gt;               sock.connect(sa)
+E               ConnectionRefusedError: [Errno 111] Connection refused
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/util/connection.py:73: ConnectionRefusedError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;urllib3.connectionpool.HTTPConnectionPool object at 0x7f23f4ce6690&gt;
+method = 'GET', url = '/_cluster/health', body = None
+headers = {'User-Agent': 'python-requests/2.34.2', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive'}
+retries = Retry(total=0, connect=None, read=False, redirect=None, status=None)
+redirect = False, assert_same_host = False
+timeout = Timeout(connect=10, read=10, total=None), pool_timeout = None
+release_conn = False, chunked = False, body_pos = None, preload_content = False
+decode_content = False, response_kw = {}
+
+    def urlopen(  # type: ignore[override]
+        self,
+        method: str,
+        url: str,
+        body: _TYPE_BODY | None = None,
+        headers: typing.Mapping[str, str] | None = None,
+        retries: Retry | bool | int | None = None,
+        redirect: bool = True,
+        assert_same_host: bool = True,
+        timeout: _TYPE_TIMEOUT = _DEFAULT_TIMEOUT,
+        pool_timeout: int | None = None,
+        release_conn: bool | None = None,
+        chunked: bool = False,
+        body_pos: _TYPE_BODY_POSITION | None = None,
+        preload_content: bool = True,
+        decode_content: bool = True,
+        **response_kw: typing.Any,
+    ) -&gt; BaseHTTPResponse:
+        """
+        Get a connection from the pool and perform an HTTP request. This is the
+        lowest level call for making a request, so you'll need to specify all
+        the raw details.
+    
+        .. note::
+    
+           More commonly, it's appropriate to use a convenience method
+           such as :meth:`request`.
+    
+        .. note::
+    
+           `release_conn` will only behave as expected if
+           `preload_content=False` because we want to make
+           `preload_content=False` the default behaviour someday soon without
+           breaking backwards compatibility.
+    
+        :param method:
+            HTTP request method (such as GET, POST, PUT, etc.)
+    
+        :param url:
+            The URL to perform the request on.
+    
+        :param body:
+            Data to send in the request body, either :class:`str`, :class:`bytes`,
+            an iterable of :class:`str`/:class:`bytes`, or a file-like object.
+    
+        :param headers:
+            Dictionary of custom headers to send, such as User-Agent,
+            If-None-Match, etc. If None, pool headers are used. If provided,
+            these headers completely replace any pool-specific headers.
+    
+        :param retries:
+            Configure the number of retries to allow before raising a
+            :class:`~urllib3.exceptions.MaxRetryError` exception.
+    
+            If ``None`` (default) will retry 3 times, see ``Retry.DEFAULT``. Pass a
+            :class:`~urllib3.util.retry.Retry` object for fine-grained control
+            over different types of retries.
+            Pass an integer number to retry connection errors that many times,
+            but no other types of errors. Pass zero to never retry.
+    
+            If ``False``, then retries are disabled and any exception is raised
+            immediately. Also, instead of raising a MaxRetryError on redirects,
+            the redirect response will be returned.
+    
+        :type retries: :class:`~urllib3.util.retry.Retry`, False, or an int.
+    
+        :param redirect:
+            If True, automatically handle redirects (status codes 301, 302,
+            303, 307, 308). Each redirect counts as a retry. Disabling retries
+            will disable redirect, too.
+    
+        :param assert_same_host:
+            If ``True``, will make sure that the host of the pool requests is
+            consistent else will raise HostChangedError. When ``False``, you can
+            use the pool on an HTTP proxy and request foreign hosts.
+    
+        :param timeout:
+            If specified, overrides the default timeout for this one
+            request. It may be a float (in seconds) or an instance of
+            :class:`urllib3.util.Timeout`.
+    
+        :param pool_timeout:
+            If set and the pool is set to block=True, then this method will
+            block for ``pool_timeout`` seconds and raise EmptyPoolError if no
+            connection is available within the time period.
+    
+        :param bool preload_content:
+            If True, the response's body will be preloaded into memory.
+    
+        :param bool decode_content:
+            If True, will attempt to decode the body based on the
+            'content-encoding' header.
+    
+        :param release_conn:
+            If False, then the urlopen call will not release the connection
+            back into the pool once a response is received (but will release if
+            you read the entire contents of the response such as when
+            `preload_content=True`). This is useful if you're not preloading
+            the response's content immediately. You will need to call
+            ``r.release_conn()`` on the response ``r`` to return the connection
+            back into the pool. If None, it takes the value of ``preload_content``
+            which defaults to ``True``.
+    
+        :param bool chunked:
+            If True, urllib3 will send the body using chunked transfer
+            encoding. Otherwise, urllib3 will send the body using the standard
+            content-length form. Defaults to False.
+    
+        :param int body_pos:
+            Position to seek to in file-like body in the event of a retry or
+            redirect. Typically this won't need to be set because urllib3 will
+            auto-populate the value when needed.
+        """
+        # Ensure that the URL we're connecting to is properly encoded
+        if url.startswith("/"):
+            # URLs starting with / are inherently schemeless.
+            url = to_str(_encode_target(url))
+            destination_scheme = None
+        else:
+            parsed_url = parse_url(url)
+            destination_scheme = parsed_url.scheme
+            url = to_str(parsed_url._replace(fragment=None).url)
+    
+        if headers is None:
+            headers = self.headers
+    
+        if not isinstance(retries, Retry):
+            retries = Retry.from_int(retries, redirect=redirect, default=self.retries)
+    
+        if release_conn is None:
+            release_conn = preload_content
+    
+        # Check host
+        if assert_same_host and not self.is_same_host(url):
+            raise HostChangedError(self, url, retries)
+    
+        conn = None
+    
+        # Track whether `conn` needs to be released before
+        # returning/raising/recursing. Update this variable if necessary, and
+        # leave `release_conn` constant throughout the function. That way, if
+        # the function recurses, the original value of `release_conn` will be
+        # passed down into the recursive call, and its value will be respected.
+        #
+        # See issue #651 [1] for details.
+        #
+        # [1] &lt;https://github.com/urllib3/urllib3/issues/651&gt;
+        release_this_conn = release_conn
+    
+        http_tunnel_required = connection_requires_http_tunnel(
+            self.proxy, self.proxy_config, destination_scheme
+        )
+    
+        # Merge the proxy headers. Only done when not using HTTP CONNECT. We
+        # have to copy the headers dict so we can safely change it without those
+        # changes being reflected in anyone else's copy.
+        if not http_tunnel_required:
+            headers = headers.copy()  # type: ignore[attr-defined]
+            headers.update(self.proxy_headers)  # type: ignore[union-attr]
+    
+        # Must keep the exception bound to a separate variable or else Python 3
+        # complains about UnboundLocalError.
+        err = None
+    
+        # Keep track of whether we cleanly exited the except block. This
+        # ensures we do proper cleanup in finally.
+        clean_exit = False
+    
+        # Rewind body position, if needed. Record current position
+        # for future rewinds in the event of a redirect/retry.
+        body_pos = set_file_position(body, body_pos)
+    
+        timeout_obj = self._get_timeout(timeout)
+        try:
+            # Request a connection from the queue.
+            conn = self._get_conn(timeout=pool_timeout)
+            conn.timeout = timeout_obj.connect_timeout  # type: ignore[assignment]
+    
+            # Is this a closed/new connection that requires CONNECT tunnelling?
+            if self.proxy is not None and http_tunnel_required and conn.is_closed:
+                try:
+                    self._prepare_proxy(conn)
+                except (BaseSSLError, OSError, SocketTimeout) as e:
+                    self._raise_timeout(
+                        err=e, url=self.proxy.url, timeout_value=conn.timeout
+                    )
+                    raise
+    
+            # If we're going to release the connection in ``finally:``, then
+            # the response doesn't need to know about the connection. Otherwise
+            # it will also try to release it and we'll have a double-release
+            # mess.
+            response_conn = conn if not release_conn else None
+    
+            # Make the request on the HTTPConnection object
+&gt;           response = self._make_request(
+                conn,
+                method,
+                url,
+                timeout=timeout_obj,
+                body=body,
+                headers=headers,
+                chunked=chunked,
+                retries=retries,
+                response_conn=response_conn,
+                preload_content=preload_content,
+                decode_content=decode_content,
+                **response_kw,
+            )
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connectionpool.py:793: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connectionpool.py:499: in _make_request
+    conn.request(
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:567: in request
+    self.endheaders()
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/http/client.py:1346: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/http/client.py:1106: in _send_output
+    self.send(msg)
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/http/client.py:1044: in send
+    self.connect()
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:398: in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;HTTPConnection(host='localhost', port=9200) at 0x7f24233adb10&gt;
+
+    def _new_conn(self) -&gt; socket.socket:
+        """Establish a socket connection and set nodelay settings on it.
+    
+        :return: New socket connection.
+        """
+        try:
+            sock = connection.create_connection(
+                (self._dns_host, self.port),
+                self.timeout,
+                source_address=self.source_address,
+                socket_options=self.socket_options,
+            )
+        except socket.gaierror as e:
+            raise NameResolutionError(self.host, self, e) from e
+        except SocketTimeout as e:
+            raise ConnectTimeoutError(
+                self,
+                f"Connection to {self.host} timed out. (connect timeout={self.timeout})",
+            ) from e
+    
+        except OSError as e:
+&gt;           raise NewConnectionError(
+                self, f"Failed to establish a new connection: {e}"
+            ) from e
+E           urllib3.exceptions.NewConnectionError: HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 111] Connection refused
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:254: NewConnectionError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;requests.adapters.HTTPAdapter object at 0x7f24233ae990&gt;
+request = &lt;PreparedRequest [GET]&gt;, stream = False, timeout = 10, verify = True
+cert = None, proxies = OrderedDict()
+
+    def send(
+        self,
+        request: PreparedRequest,
+        stream: bool = False,
+        timeout: _t.TimeoutType = None,
+        verify: _t.VerifyType = True,
+        cert: _t.CertType = None,
+        proxies: dict[str, str] | None = None,
+    ) -&gt; Response:
+        """Sends PreparedRequest object. Returns Response object.
+    
+        :param request: The :class:`PreparedRequest &lt;PreparedRequest&gt;` being sent.
+        :param stream: (optional) Whether to stream the request content.
+        :param timeout: (optional) How long to wait for the server to send
+            data before giving up, as a float, or a :ref:`(connect timeout,
+            read timeout) &lt;timeouts&gt;` tuple.
+        :type timeout: float or tuple or urllib3 Timeout object
+        :param verify: (optional) Either a boolean, in which case it controls whether
+            we verify the server's TLS certificate, or a string, in which case it
+            must be a path to a CA bundle to use
+        :param cert: (optional) Any user-provided SSL certificate to be trusted.
+        :param proxies: (optional) The proxies dictionary to apply to the request.
+        :rtype: requests.Response
+        """
+    
+        assert _is_prepared(request)
+    
+        try:
+            conn = self.get_connection_with_tls_context(
+                request, verify, proxies=proxies, cert=cert
+            )
+        except LocationValueError as e:
+            raise InvalidURL(e, request=request)
+    
+        self.cert_verify(conn, request.url, verify, cert)
+        url = self.request_url(request, proxies)
+        self.add_headers(
+            request,
+            stream=stream,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+            proxies=proxies,
+        )
+    
+        chunked = not (request.body is None or "Content-Length" in request.headers)
+    
+        if isinstance(timeout, tuple):
+            try:
+                connect, read = timeout
+                resolved_timeout = TimeoutSauce(connect=connect, read=read)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid timeout {timeout}. Pass a (connect, read) timeout tuple, "
+                    f"or a single float to set both timeouts to the same value."
+                )
+        elif isinstance(timeout, TimeoutSauce):
+            resolved_timeout = timeout
+        else:
+            resolved_timeout = TimeoutSauce(connect=timeout, read=timeout)
+    
+        try:
+&gt;           resp = conn.urlopen(
+                method=request.method,
+                url=url,
+                body=request.body,  # type: ignore[arg-type]  # urllib3 stubs don't accept Iterable[bytes | str]
+                headers=request.headers,  # type: ignore[arg-type]  # urllib3#3072
+                redirect=False,
+                assert_same_host=False,
+                preload_content=False,
+                decode_content=False,
+                retries=self.max_retries,
+                timeout=resolved_timeout,
+                chunked=chunked,
+            )
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/requests/adapters.py:696: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connectionpool.py:847: in urlopen
+    retries = retries.increment(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Retry(total=0, connect=None, read=False, redirect=None, status=None)
+method = 'GET', url = '/_cluster/health', response = None
+error = NewConnectionError("HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 111] Connection refused")
+_pool = &lt;urllib3.connectionpool.HTTPConnectionPool object at 0x7f23f4ce6690&gt;
+_stacktrace = &lt;traceback object at 0x7f23f5346800&gt;
+
+    def increment(
+        self,
+        method: str | None = None,
+        url: str | None = None,
+        response: BaseHTTPResponse | None = None,
+        error: Exception | None = None,
+        _pool: ConnectionPool | None = None,
+        _stacktrace: TracebackType | None = None,
+    ) -&gt; Self:
+        """Return a new Retry object with incremented retry counters.
+    
+        :param response: A response object, or None, if the server did not
+            return a response.
+        :type response: :class:`~urllib3.response.BaseHTTPResponse`
+        :param Exception error: An error encountered during the request, or
+            None if the response was received successfully.
+    
+        :return: A new ``Retry`` object.
+        """
+        if self.total is False and error:
+            # Disabled, indicate to re-raise the error.
+            raise reraise(type(error), error, _stacktrace)
+    
+        total = self.total
+        if total is not None:
+            total -= 1
+    
+        connect = self.connect
+        read = self.read
+        redirect = self.redirect
+        status_count = self.status
+        other = self.other
+        cause = "unknown"
+        status = None
+        redirect_location = None
+    
+        if error and self._is_connection_error(error):
+            # Connect retry?
+            if connect is False:
+                raise reraise(type(error), error, _stacktrace)
+            elif connect is not None:
+                connect -= 1
+    
+        elif error and self._is_read_error(error):
+            # Read retry?
+            if read is False or method is None or not self._is_method_retryable(method):
+                raise reraise(type(error), error, _stacktrace)
+            elif read is not None:
+                read -= 1
+    
+        elif error:
+            # Other retry?
+            if other is not None:
+                other -= 1
+    
+        elif response and response.get_redirect_location():
+            # Redirect retry?
+            if redirect is not None:
+                redirect -= 1
+            cause = "too many redirects"
+            response_redirect_location = response.get_redirect_location()
+            if response_redirect_location:
+                redirect_location = response_redirect_location
+            status = response.status
+    
+        else:
+            # Incrementing because of a server error like a 500 in
+            # status_forcelist and the given method is in the allowed_methods
+            cause = ResponseError.GENERIC_ERROR
+            if response and response.status:
+                if status_count is not None:
+                    status_count -= 1
+                cause = ResponseError.SPECIFIC_ERROR.format(status_code=response.status)
+                status = response.status
+    
+        history = self.history + (
+            RequestHistory(method, url, error, status, redirect_location),
+        )
+    
+        new_retry = self.new(
+            total=total,
+            connect=connect,
+            read=read,
+            redirect=redirect,
+            status=status_count,
+            other=other,
+            history=history,
+        )
+    
+        if new_retry.is_exhausted():
+            reason = error or ResponseError(cause)
+&gt;           raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=9200): Max retries exceeded with url: /_cluster/health (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 111] Connection refused"))
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/util/retry.py:555: MaxRetryError
+
+During handling of the above exception, another exception occurred:
+
+    def test_elasticsearch_persists_between_clients():
+        from storage.search_indexer import SearchIndexer
+        index='sentinel-test-'+uuid.uuid4().hex
+        writer=SearchIndexer(backend='elasticsearch',index=index)
+        try:
+&gt;           assert writer.health_check()
+                   ^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_services.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+storage/search_indexer.py:119: in health_check
+    return self._request("GET", "/_cluster/health").get("status") in ("green", "yellow")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+storage/search_indexer.py:112: in _request
+    response = self.session.request(method, self.endpoint + path, timeout=10, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/requests/sessions.py:651: in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/requests/sessions.py:784: in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;requests.adapters.HTTPAdapter object at 0x7f24233ae990&gt;
+request = &lt;PreparedRequest [GET]&gt;, stream = False, timeout = 10, verify = True
+cert = None, proxies = OrderedDict()
+
+    def send(
+        self,
+        request: PreparedRequest,
+        stream: bool = False,
+        timeout: _t.TimeoutType = None,
+        verify: _t.VerifyType = True,
+        cert: _t.CertType = None,
+        proxies: dict[str, str] | None = None,
+    ) -&gt; Response:
+        """Sends PreparedRequest object. Returns Response object.
+    
+        :param request: The :class:`PreparedRequest &lt;PreparedRequest&gt;` being sent.
+        :param stream: (optional) Whether to stream the request content.
+        :param timeout: (optional) How long to wait for the server to send
+            data before giving up, as a float, or a :ref:`(connect timeout,
+            read timeout) &lt;timeouts&gt;` tuple.
+        :type timeout: float or tuple or urllib3 Timeout object
+        :param verify: (optional) Either a boolean, in which case it controls whether
+            we verify the server's TLS certificate, or a string, in which case it
+            must be a path to a CA bundle to use
+        :param cert: (optional) Any user-provided SSL certificate to be trusted.
+        :param proxies: (optional) The proxies dictionary to apply to the request.
+        :rtype: requests.Response
+        """
+    
+        assert _is_prepared(request)
+    
+        try:
+            conn = self.get_connection_with_tls_context(
+                request, verify, proxies=proxies, cert=cert
+            )
+        except LocationValueError as e:
+            raise InvalidURL(e, request=request)
+    
+        self.cert_verify(conn, request.url, verify, cert)
+        url = self.request_url(request, proxies)
+        self.add_headers(
+            request,
+            stream=stream,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+            proxies=proxies,
+        )
+    
+        chunked = not (request.body is None or "Content-Length" in request.headers)
+    
+        if isinstance(timeout, tuple):
+            try:
+                connect, read = timeout
+                resolved_timeout = TimeoutSauce(connect=connect, read=read)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid timeout {timeout}. Pass a (connect, read) timeout tuple, "
+                    f"or a single float to set both timeouts to the same value."
+                )
+        elif isinstance(timeout, TimeoutSauce):
+            resolved_timeout = timeout
+        else:
+            resolved_timeout = TimeoutSauce(connect=timeout, read=timeout)
+    
+        try:
+            resp = conn.urlopen(
+                method=request.method,
+                url=url,
+                body=request.body,  # type: ignore[arg-type]  # urllib3 stubs don't accept Iterable[bytes | str]
+                headers=request.headers,  # type: ignore[arg-type]  # urllib3#3072
+                redirect=False,
+                assert_same_host=False,
+                preload_content=False,
+                decode_content=False,
+                retries=self.max_retries,
+                timeout=resolved_timeout,
+                chunked=chunked,
+            )
+    
+        except (ProtocolError, OSError) as err:
+            raise ConnectionError(err, request=request)
+    
+        except MaxRetryError as e:
+            if isinstance(e.reason, ConnectTimeoutError):
+                # TODO: Remove this in 3.0.0: see #2811
+                if not isinstance(e.reason, NewConnectionError):
+                    raise ConnectTimeout(e, request=request)
+    
+            if isinstance(e.reason, ResponseError):
+                raise RetryError(e, request=request)
+    
+            if isinstance(e.reason, _ProxyError):
+                raise ProxyError(e, request=request)
+    
+            if isinstance(e.reason, _SSLError):
+                # This branch is for urllib3 v1.22 and later.
+                raise SSLError(e, request=request)
+    
+&gt;           raise ConnectionError(e, request=request)
+E           requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=9200): Max retries exceeded with url: /_cluster/health (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 111] Connection refused"))
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/requests/adapters.py:729: ConnectionError
+
+During handling of the above exception, another exception occurred:
+
+self = &lt;HTTPConnection(host='localhost', port=9200) at 0x7f2423379290&gt;
+
+    def _new_conn(self) -&gt; socket.socket:
+        """Establish a socket connection and set nodelay settings on it.
+    
+        :return: New socket connection.
+        """
+        try:
+&gt;           sock = connection.create_connection(
+                (self._dns_host, self.port),
+                self.timeout,
+                source_address=self.source_address,
+                socket_options=self.socket_options,
+            )
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/util/connection.py:85: in create_connection
+    raise err
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+address = ('localhost', 9200), timeout = 10, source_address = None
+socket_options = [(6, 1, 1)]
+
+    def create_connection(
+        address: tuple[str, int],
+        timeout: _TYPE_TIMEOUT = _DEFAULT_TIMEOUT,
+        source_address: tuple[str, int] | None = None,
+        socket_options: _TYPE_SOCKET_OPTIONS | None = None,
+    ) -&gt; socket.socket:
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`socket.getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        An host of '' or port 0 tells the OS to use the default.
+        """
+    
+        host, port = address
+        if host.startswith("["):
+            host = host.strip("[]")
+        err = None
+    
+        # Using the value from allowed_gai_family() in the context of getaddrinfo lets
+        # us select whether to work with IPv4 DNS records, IPv6 records, or both.
+        # The original create_connection function always returns all records.
+        family = allowed_gai_family()
+    
+        try:
+            host.encode("idna")
+        except UnicodeError:
+            raise LocationParseError(f"'{host}', label empty or too long") from None
+    
+        for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket.socket(af, socktype, proto)
+    
+                # If provided, set socket level options before connecting.
+                _set_socket_options(sock, socket_options)
+    
+                if timeout is not _DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+&gt;               sock.connect(sa)
+E               ConnectionRefusedError: [Errno 111] Connection refused
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/util/connection.py:73: ConnectionRefusedError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;urllib3.connectionpool.HTTPConnectionPool object at 0x7f23f4ce6690&gt;
+method = 'DELETE', url = '/sentinel-test-e8ea5fc43ebc47c5bbac2312d3f552f1'
+body = None
+headers = {'User-Agent': 'python-requests/2.34.2', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive', 'Content-Length': '0'}
+retries = Retry(total=0, connect=None, read=False, redirect=None, status=None)
+redirect = False, assert_same_host = False
+timeout = Timeout(connect=10, read=10, total=None), pool_timeout = None
+release_conn = False, chunked = False, body_pos = None, preload_content = False
+decode_content = False, response_kw = {}
+
+    def urlopen(  # type: ignore[override]
+        self,
+        method: str,
+        url: str,
+        body: _TYPE_BODY | None = None,
+        headers: typing.Mapping[str, str] | None = None,
+        retries: Retry | bool | int | None = None,
+        redirect: bool = True,
+        assert_same_host: bool = True,
+        timeout: _TYPE_TIMEOUT = _DEFAULT_TIMEOUT,
+        pool_timeout: int | None = None,
+        release_conn: bool | None = None,
+        chunked: bool = False,
+        body_pos: _TYPE_BODY_POSITION | None = None,
+        preload_content: bool = True,
+        decode_content: bool = True,
+        **response_kw: typing.Any,
+    ) -&gt; BaseHTTPResponse:
+        """
+        Get a connection from the pool and perform an HTTP request. This is the
+        lowest level call for making a request, so you'll need to specify all
+        the raw details.
+    
+        .. note::
+    
+           More commonly, it's appropriate to use a convenience method
+           such as :meth:`request`.
+    
+        .. note::
+    
+           `release_conn` will only behave as expected if
+           `preload_content=False` because we want to make
+           `preload_content=False` the default behaviour someday soon without
+           breaking backwards compatibility.
+    
+        :param method:
+            HTTP request method (such as GET, POST, PUT, etc.)
+    
+        :param url:
+            The URL to perform the request on.
+    
+        :param body:
+            Data to send in the request body, either :class:`str`, :class:`bytes`,
+            an iterable of :class:`str`/:class:`bytes`, or a file-like object.
+    
+        :param headers:
+            Dictionary of custom headers to send, such as User-Agent,
+            If-None-Match, etc. If None, pool headers are used. If provided,
+            these headers completely replace any pool-specific headers.
+    
+        :param retries:
+            Configure the number of retries to allow before raising a
+            :class:`~urllib3.exceptions.MaxRetryError` exception.
+    
+            If ``None`` (default) will retry 3 times, see ``Retry.DEFAULT``. Pass a
+            :class:`~urllib3.util.retry.Retry` object for fine-grained control
+            over different types of retries.
+            Pass an integer number to retry connection errors that many times,
+            but no other types of errors. Pass zero to never retry.
+    
+            If ``False``, then retries are disabled and any exception is raised
+            immediately. Also, instead of raising a MaxRetryError on redirects,
+            the redirect response will be returned.
+    
+        :type retries: :class:`~urllib3.util.retry.Retry`, False, or an int.
+    
+        :param redirect:
+            If True, automatically handle redirects (status codes 301, 302,
+            303, 307, 308). Each redirect counts as a retry. Disabling retries
+            will disable redirect, too.
+    
+        :param assert_same_host:
+            If ``True``, will make sure that the host of the pool requests is
+            consistent else will raise HostChangedError. When ``False``, you can
+            use the pool on an HTTP proxy and request foreign hosts.
+    
+        :param timeout:
+            If specified, overrides the default timeout for this one
+            request. It may be a float (in seconds) or an instance of
+            :class:`urllib3.util.Timeout`.
+    
+        :param pool_timeout:
+            If set and the pool is set to block=True, then this method will
+            block for ``pool_timeout`` seconds and raise EmptyPoolError if no
+            connection is available within the time period.
+    
+        :param bool preload_content:
+            If True, the response's body will be preloaded into memory.
+    
+        :param bool decode_content:
+            If True, will attempt to decode the body based on the
+            'content-encoding' header.
+    
+        :param release_conn:
+            If False, then the urlopen call will not release the connection
+            back into the pool once a response is received (but will release if
+            you read the entire contents of the response such as when
+            `preload_content=True`). This is useful if you're not preloading
+            the response's content immediately. You will need to call
+            ``r.release_conn()`` on the response ``r`` to return the connection
+            back into the pool. If None, it takes the value of ``preload_content``
+            which defaults to ``True``.
+    
+        :param bool chunked:
+            If True, urllib3 will send the body using chunked transfer
+            encoding. Otherwise, urllib3 will send the body using the standard
+            content-length form. Defaults to False.
+    
+        :param int body_pos:
+            Position to seek to in file-like body in the event of a retry or
+            redirect. Typically this won't need to be set because urllib3 will
+            auto-populate the value when needed.
+        """
+        # Ensure that the URL we're connecting to is properly encoded
+        if url.startswith("/"):
+            # URLs starting with / are inherently schemeless.
+            url = to_str(_encode_target(url))
+            destination_scheme = None
+        else:
+            parsed_url = parse_url(url)
+            destination_scheme = parsed_url.scheme
+            url = to_str(parsed_url._replace(fragment=None).url)
+    
+        if headers is None:
+            headers = self.headers
+    
+        if not isinstance(retries, Retry):
+            retries = Retry.from_int(retries, redirect=redirect, default=self.retries)
+    
+        if release_conn is None:
+            release_conn = preload_content
+    
+        # Check host
+        if assert_same_host and not self.is_same_host(url):
+            raise HostChangedError(self, url, retries)
+    
+        conn = None
+    
+        # Track whether `conn` needs to be released before
+        # returning/raising/recursing. Update this variable if necessary, and
+        # leave `release_conn` constant throughout the function. That way, if
+        # the function recurses, the original value of `release_conn` will be
+        # passed down into the recursive call, and its value will be respected.
+        #
+        # See issue #651 [1] for details.
+        #
+        # [1] &lt;https://github.com/urllib3/urllib3/issues/651&gt;
+        release_this_conn = release_conn
+    
+        http_tunnel_required = connection_requires_http_tunnel(
+            self.proxy, self.proxy_config, destination_scheme
+        )
+    
+        # Merge the proxy headers. Only done when not using HTTP CONNECT. We
+        # have to copy the headers dict so we can safely change it without those
+        # changes being reflected in anyone else's copy.
+        if not http_tunnel_required:
+            headers = headers.copy()  # type: ignore[attr-defined]
+            headers.update(self.proxy_headers)  # type: ignore[union-attr]
+    
+        # Must keep the exception bound to a separate variable or else Python 3
+        # complains about UnboundLocalError.
+        err = None
+    
+        # Keep track of whether we cleanly exited the except block. This
+        # ensures we do proper cleanup in finally.
+        clean_exit = False
+    
+        # Rewind body position, if needed. Record current position
+        # for future rewinds in the event of a redirect/retry.
+        body_pos = set_file_position(body, body_pos)
+    
+        timeout_obj = self._get_timeout(timeout)
+        try:
+            # Request a connection from the queue.
+            conn = self._get_conn(timeout=pool_timeout)
+            conn.timeout = timeout_obj.connect_timeout  # type: ignore[assignment]
+    
+            # Is this a closed/new connection that requires CONNECT tunnelling?
+            if self.proxy is not None and http_tunnel_required and conn.is_closed:
+                try:
+                    self._prepare_proxy(conn)
+                except (BaseSSLError, OSError, SocketTimeout) as e:
+                    self._raise_timeout(
+                        err=e, url=self.proxy.url, timeout_value=conn.timeout
+                    )
+                    raise
+    
+            # If we're going to release the connection in ``finally:``, then
+            # the response doesn't need to know about the connection. Otherwise
+            # it will also try to release it and we'll have a double-release
+            # mess.
+            response_conn = conn if not release_conn else None
+    
+            # Make the request on the HTTPConnection object
+&gt;           response = self._make_request(
+                conn,
+                method,
+                url,
+                timeout=timeout_obj,
+                body=body,
+                headers=headers,
+                chunked=chunked,
+                retries=retries,
+                response_conn=response_conn,
+                preload_content=preload_content,
+                decode_content=decode_content,
+                **response_kw,
+            )
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connectionpool.py:793: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connectionpool.py:499: in _make_request
+    conn.request(
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:567: in request
+    self.endheaders()
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/http/client.py:1346: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/http/client.py:1106: in _send_output
+    self.send(msg)
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/http/client.py:1044: in send
+    self.connect()
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:398: in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;HTTPConnection(host='localhost', port=9200) at 0x7f2423379290&gt;
+
+    def _new_conn(self) -&gt; socket.socket:
+        """Establish a socket connection and set nodelay settings on it.
+    
+        :return: New socket connection.
+        """
+        try:
+            sock = connection.create_connection(
+                (self._dns_host, self.port),
+                self.timeout,
+                source_address=self.source_address,
+                socket_options=self.socket_options,
+            )
+        except socket.gaierror as e:
+            raise NameResolutionError(self.host, self, e) from e
+        except SocketTimeout as e:
+            raise ConnectTimeoutError(
+                self,
+                f"Connection to {self.host} timed out. (connect timeout={self.timeout})",
+            ) from e
+    
+        except OSError as e:
+&gt;           raise NewConnectionError(
+                self, f"Failed to establish a new connection: {e}"
+            ) from e
+E           urllib3.exceptions.NewConnectionError: HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 111] Connection refused
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:254: NewConnectionError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;requests.adapters.HTTPAdapter object at 0x7f24233ae990&gt;
+request = &lt;PreparedRequest [DELETE]&gt;, stream = False, timeout = 10
+verify = True, cert = None, proxies = OrderedDict()
+
+    def send(
+        self,
+        request: PreparedRequest,
+        stream: bool = False,
+        timeout: _t.TimeoutType = None,
+        verify: _t.VerifyType = True,
+        cert: _t.CertType = None,
+        proxies: dict[str, str] | None = None,
+    ) -&gt; Response:
+        """Sends PreparedRequest object. Returns Response object.
+    
+        :param request: The :class:`PreparedRequest &lt;PreparedRequest&gt;` being sent.
+        :param stream: (optional) Whether to stream the request content.
+        :param timeout: (optional) How long to wait for the server to send
+            data before giving up, as a float, or a :ref:`(connect timeout,
+            read timeout) &lt;timeouts&gt;` tuple.
+        :type timeout: float or tuple or urllib3 Timeout object
+        :param verify: (optional) Either a boolean, in which case it controls whether
+            we verify the server's TLS certificate, or a string, in which case it
+            must be a path to a CA bundle to use
+        :param cert: (optional) Any user-provided SSL certificate to be trusted.
+        :param proxies: (optional) The proxies dictionary to apply to the request.
+        :rtype: requests.Response
+        """
+    
+        assert _is_prepared(request)
+    
+        try:
+            conn = self.get_connection_with_tls_context(
+                request, verify, proxies=proxies, cert=cert
+            )
+        except LocationValueError as e:
+            raise InvalidURL(e, request=request)
+    
+        self.cert_verify(conn, request.url, verify, cert)
+        url = self.request_url(request, proxies)
+        self.add_headers(
+            request,
+            stream=stream,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+            proxies=proxies,
+        )
+    
+        chunked = not (request.body is None or "Content-Length" in request.headers)
+    
+        if isinstance(timeout, tuple):
+            try:
+                connect, read = timeout
+                resolved_timeout = TimeoutSauce(connect=connect, read=read)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid timeout {timeout}. Pass a (connect, read) timeout tuple, "
+                    f"or a single float to set both timeouts to the same value."
+                )
+        elif isinstance(timeout, TimeoutSauce):
+            resolved_timeout = timeout
+        else:
+            resolved_timeout = TimeoutSauce(connect=timeout, read=timeout)
+    
+        try:
+&gt;           resp = conn.urlopen(
+                method=request.method,
+                url=url,
+                body=request.body,  # type: ignore[arg-type]  # urllib3 stubs don't accept Iterable[bytes | str]
+                headers=request.headers,  # type: ignore[arg-type]  # urllib3#3072
+                redirect=False,
+                assert_same_host=False,
+                preload_content=False,
+                decode_content=False,
+                retries=self.max_retries,
+                timeout=resolved_timeout,
+                chunked=chunked,
+            )
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/requests/adapters.py:696: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connectionpool.py:847: in urlopen
+    retries = retries.increment(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Retry(total=0, connect=None, read=False, redirect=None, status=None)
+method = 'DELETE', url = '/sentinel-test-e8ea5fc43ebc47c5bbac2312d3f552f1'
+response = None
+error = NewConnectionError("HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 111] Connection refused")
+_pool = &lt;urllib3.connectionpool.HTTPConnectionPool object at 0x7f23f4ce6690&gt;
+_stacktrace = &lt;traceback object at 0x7f2423379200&gt;
+
+    def increment(
+        self,
+        method: str | None = None,
+        url: str | None = None,
+        response: BaseHTTPResponse | None = None,
+        error: Exception | None = None,
+        _pool: ConnectionPool | None = None,
+        _stacktrace: TracebackType | None = None,
+    ) -&gt; Self:
+        """Return a new Retry object with incremented retry counters.
+    
+        :param response: A response object, or None, if the server did not
+            return a response.
+        :type response: :class:`~urllib3.response.BaseHTTPResponse`
+        :param Exception error: An error encountered during the request, or
+            None if the response was received successfully.
+    
+        :return: A new ``Retry`` object.
+        """
+        if self.total is False and error:
+            # Disabled, indicate to re-raise the error.
+            raise reraise(type(error), error, _stacktrace)
+    
+        total = self.total
+        if total is not None:
+            total -= 1
+    
+        connect = self.connect
+        read = self.read
+        redirect = self.redirect
+        status_count = self.status
+        other = self.other
+        cause = "unknown"
+        status = None
+        redirect_location = None
+    
+        if error and self._is_connection_error(error):
+            # Connect retry?
+            if connect is False:
+                raise reraise(type(error), error, _stacktrace)
+            elif connect is not None:
+                connect -= 1
+    
+        elif error and self._is_read_error(error):
+            # Read retry?
+            if read is False or method is None or not self._is_method_retryable(method):
+                raise reraise(type(error), error, _stacktrace)
+            elif read is not None:
+                read -= 1
+    
+        elif error:
+            # Other retry?
+            if other is not None:
+                other -= 1
+    
+        elif response and response.get_redirect_location():
+            # Redirect retry?
+            if redirect is not None:
+                redirect -= 1
+            cause = "too many redirects"
+            response_redirect_location = response.get_redirect_location()
+            if response_redirect_location:
+                redirect_location = response_redirect_location
+            status = response.status
+    
+        else:
+            # Incrementing because of a server error like a 500 in
+            # status_forcelist and the given method is in the allowed_methods
+            cause = ResponseError.GENERIC_ERROR
+            if response and response.status:
+                if status_count is not None:
+                    status_count -= 1
+                cause = ResponseError.SPECIFIC_ERROR.format(status_code=response.status)
+                status = response.status
+    
+        history = self.history + (
+            RequestHistory(method, url, error, status, redirect_location),
+        )
+    
+        new_retry = self.new(
+            total=total,
+            connect=connect,
+            read=read,
+            redirect=redirect,
+            status=status_count,
+            other=other,
+            history=history,
+        )
+    
+        if new_retry.is_exhausted():
+            reason = error or ResponseError(cause)
+&gt;           raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=9200): Max retries exceeded with url: /sentinel-test-e8ea5fc43ebc47c5bbac2312d3f552f1 (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 111] Connection refused"))
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/util/retry.py:555: MaxRetryError
+
+During handling of the above exception, another exception occurred:
+
+    def test_elasticsearch_persists_between_clients():
+        from storage.search_indexer import SearchIndexer
+        index='sentinel-test-'+uuid.uuid4().hex
+        writer=SearchIndexer(backend='elasticsearch',index=index)
+        try:
+            assert writer.health_check()
+            writer.index_records([{'review_id':'r1','review_text':'unique camera review','rating':5}])
+            reader=SearchIndexer(backend='elasticsearch',index=index)
+            assert reader.search('camera')[0]['review_id']=='r1'
+            writer.index_records([{'review_id':'r1','review_text':'updated camera review','rating':4}])
+            assert reader.count==1
+        finally:
+&gt;           response=writer.session.delete(writer.endpoint+'/'+index,timeout=10)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_services.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/requests/sessions.py:750: in delete
+    return self.request("DELETE", url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/requests/sessions.py:651: in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/requests/sessions.py:784: in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;requests.adapters.HTTPAdapter object at 0x7f24233ae990&gt;
+request = &lt;PreparedRequest [DELETE]&gt;, stream = False, timeout = 10
+verify = True, cert = None, proxies = OrderedDict()
+
+    def send(
+        self,
+        request: PreparedRequest,
+        stream: bool = False,
+        timeout: _t.TimeoutType = None,
+        verify: _t.VerifyType = True,
+        cert: _t.CertType = None,
+        proxies: dict[str, str] | None = None,
+    ) -&gt; Response:
+        """Sends PreparedRequest object. Returns Response object.
+    
+        :param request: The :class:`PreparedRequest &lt;PreparedRequest&gt;` being sent.
+        :param stream: (optional) Whether to stream the request content.
+        :param timeout: (optional) How long to wait for the server to send
+            data before giving up, as a float, or a :ref:`(connect timeout,
+            read timeout) &lt;timeouts&gt;` tuple.
+        :type timeout: float or tuple or urllib3 Timeout object
+        :param verify: (optional) Either a boolean, in which case it controls whether
+            we verify the server's TLS certificate, or a string, in which case it
+            must be a path to a CA bundle to use
+        :param cert: (optional) Any user-provided SSL certificate to be trusted.
+        :param proxies: (optional) The proxies dictionary to apply to the request.
+        :rtype: requests.Response
+        """
+    
+        assert _is_prepared(request)
+    
+        try:
+            conn = self.get_connection_with_tls_context(
+                request, verify, proxies=proxies, cert=cert
+            )
+        except LocationValueError as e:
+            raise InvalidURL(e, request=request)
+    
+        self.cert_verify(conn, request.url, verify, cert)
+        url = self.request_url(request, proxies)
+        self.add_headers(
+            request,
+            stream=stream,
+            timeout=timeout,
+            verify=verify,
+            cert=cert,
+            proxies=proxies,
+        )
+    
+        chunked = not (request.body is None or "Content-Length" in request.headers)
+    
+        if isinstance(timeout, tuple):
+            try:
+                connect, read = timeout
+                resolved_timeout = TimeoutSauce(connect=connect, read=read)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid timeout {timeout}. Pass a (connect, read) timeout tuple, "
+                    f"or a single float to set both timeouts to the same value."
+                )
+        elif isinstance(timeout, TimeoutSauce):
+            resolved_timeout = timeout
+        else:
+            resolved_timeout = TimeoutSauce(connect=timeout, read=timeout)
+    
+        try:
+            resp = conn.urlopen(
+                method=request.method,
+                url=url,
+                body=request.body,  # type: ignore[arg-type]  # urllib3 stubs don't accept Iterable[bytes | str]
+                headers=request.headers,  # type: ignore[arg-type]  # urllib3#3072
+                redirect=False,
+                assert_same_host=False,
+                preload_content=False,
+                decode_content=False,
+                retries=self.max_retries,
+                timeout=resolved_timeout,
+                chunked=chunked,
+            )
+    
+        except (ProtocolError, OSError) as err:
+            raise ConnectionError(err, request=request)
+    
+        except MaxRetryError as e:
+            if isinstance(e.reason, ConnectTimeoutError):
+                # TODO: Remove this in 3.0.0: see #2811
+                if not isinstance(e.reason, NewConnectionError):
+                    raise ConnectTimeout(e, request=request)
+    
+            if isinstance(e.reason, ResponseError):
+                raise RetryError(e, request=request)
+    
+            if isinstance(e.reason, _ProxyError):
+                raise ProxyError(e, request=request)
+    
+            if isinstance(e.reason, _SSLError):
+                # This branch is for urllib3 v1.22 and later.
+                raise SSLError(e, request=request)
+    
+&gt;           raise ConnectionError(e, request=request)
+E           requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=9200): Max retries exceeded with url: /sentinel-test-e8ea5fc43ebc47c5bbac2312d3f552f1 (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 111] Connection refused"))
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/requests/adapters.py:729: ConnectionError</failure></testcase><testcase classname="tests.integration.test_services" name="test_postgres_minio_lakehouse_transaction" time="0.002"><failure message="ConnectionError: MinIO storage backend unreachable at 'localhost:9000' (bucket 'sentinel-data'): HTTPConnectionPool(host='localhost', port=9000): Max retries exceeded with url: /sentinel-data?location= (Caused by NewConnectionError(&quot;HTTPConnection(host='localhost', port=9000): Failed to establish a new connection: [Errno 111] Connection refused&quot;))">self = &lt;HTTPConnection(host='localhost', port=9000) at 0x7f24216fa150&gt;
+
+    def _new_conn(self) -&gt; socket.socket:
+        """Establish a socket connection and set nodelay settings on it.
+    
+        :return: New socket connection.
+        """
+        try:
+&gt;           sock = connection.create_connection(
+                (self._dns_host, self.port),
+                self.timeout,
+                source_address=self.source_address,
+                socket_options=self.socket_options,
+            )
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/util/connection.py:85: in create_connection
+    raise err
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+address = ('localhost', 9000), timeout = 1.0, source_address = None
+socket_options = [(6, 1, 1)]
+
+    def create_connection(
+        address: tuple[str, int],
+        timeout: _TYPE_TIMEOUT = _DEFAULT_TIMEOUT,
+        source_address: tuple[str, int] | None = None,
+        socket_options: _TYPE_SOCKET_OPTIONS | None = None,
+    ) -&gt; socket.socket:
+        """Connect to *address* and return the socket object.
+    
+        Convenience function.  Connect to *address* (a 2-tuple ``(host,
+        port)``) and return the socket object.  Passing the optional
+        *timeout* parameter will set the timeout on the socket instance
+        before attempting to connect.  If no *timeout* is supplied, the
+        global default timeout setting returned by :func:`socket.getdefaulttimeout`
+        is used.  If *source_address* is set it must be a tuple of (host, port)
+        for the socket to bind as a source address before making the connection.
+        An host of '' or port 0 tells the OS to use the default.
+        """
+    
+        host, port = address
+        if host.startswith("["):
+            host = host.strip("[]")
+        err = None
+    
+        # Using the value from allowed_gai_family() in the context of getaddrinfo lets
+        # us select whether to work with IPv4 DNS records, IPv6 records, or both.
+        # The original create_connection function always returns all records.
+        family = allowed_gai_family()
+    
+        try:
+            host.encode("idna")
+        except UnicodeError:
+            raise LocationParseError(f"'{host}', label empty or too long") from None
+    
+        for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            sock = None
+            try:
+                sock = socket.socket(af, socktype, proto)
+    
+                # If provided, set socket level options before connecting.
+                _set_socket_options(sock, socket_options)
+    
+                if timeout is not _DEFAULT_TIMEOUT:
+                    sock.settimeout(timeout)
+                if source_address:
+                    sock.bind(source_address)
+&gt;               sock.connect(sa)
+E               ConnectionRefusedError: [Errno 111] Connection refused
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/util/connection.py:73: ConnectionRefusedError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;urllib3.connectionpool.HTTPConnectionPool object at 0x7f24216f8dd0&gt;
+method = 'GET', url = '/sentinel-data?location=', body = None
+headers = HTTPHeaderDict({'Host': 'localhost:9000', 'User-Agent': 'MinIO (Linux; x86_64) minio-py/7.2.20', 'x-amz-content-sha256...ers=host;x-amz-content-sha256;x-amz-date, Signature=63af650f8ba4baefad0f0605934a7145d2d74853df2c510c941ce28fe946d031'})
+retries = Retry(total=0, connect=0, read=0, redirect=None, status=None)
+redirect = False, assert_same_host = False, timeout = &lt;_TYPE_DEFAULT.token: -1&gt;
+pool_timeout = None, release_conn = True, chunked = False, body_pos = None
+preload_content = True, decode_content = True, response_kw = {}
+
+    def urlopen(  # type: ignore[override]
+        self,
+        method: str,
+        url: str,
+        body: _TYPE_BODY | None = None,
+        headers: typing.Mapping[str, str] | None = None,
+        retries: Retry | bool | int | None = None,
+        redirect: bool = True,
+        assert_same_host: bool = True,
+        timeout: _TYPE_TIMEOUT = _DEFAULT_TIMEOUT,
+        pool_timeout: int | None = None,
+        release_conn: bool | None = None,
+        chunked: bool = False,
+        body_pos: _TYPE_BODY_POSITION | None = None,
+        preload_content: bool = True,
+        decode_content: bool = True,
+        **response_kw: typing.Any,
+    ) -&gt; BaseHTTPResponse:
+        """
+        Get a connection from the pool and perform an HTTP request. This is the
+        lowest level call for making a request, so you'll need to specify all
+        the raw details.
+    
+        .. note::
+    
+           More commonly, it's appropriate to use a convenience method
+           such as :meth:`request`.
+    
+        .. note::
+    
+           `release_conn` will only behave as expected if
+           `preload_content=False` because we want to make
+           `preload_content=False` the default behaviour someday soon without
+           breaking backwards compatibility.
+    
+        :param method:
+            HTTP request method (such as GET, POST, PUT, etc.)
+    
+        :param url:
+            The URL to perform the request on.
+    
+        :param body:
+            Data to send in the request body, either :class:`str`, :class:`bytes`,
+            an iterable of :class:`str`/:class:`bytes`, or a file-like object.
+    
+        :param headers:
+            Dictionary of custom headers to send, such as User-Agent,
+            If-None-Match, etc. If None, pool headers are used. If provided,
+            these headers completely replace any pool-specific headers.
+    
+        :param retries:
+            Configure the number of retries to allow before raising a
+            :class:`~urllib3.exceptions.MaxRetryError` exception.
+    
+            If ``None`` (default) will retry 3 times, see ``Retry.DEFAULT``. Pass a
+            :class:`~urllib3.util.retry.Retry` object for fine-grained control
+            over different types of retries.
+            Pass an integer number to retry connection errors that many times,
+            but no other types of errors. Pass zero to never retry.
+    
+            If ``False``, then retries are disabled and any exception is raised
+            immediately. Also, instead of raising a MaxRetryError on redirects,
+            the redirect response will be returned.
+    
+        :type retries: :class:`~urllib3.util.retry.Retry`, False, or an int.
+    
+        :param redirect:
+            If True, automatically handle redirects (status codes 301, 302,
+            303, 307, 308). Each redirect counts as a retry. Disabling retries
+            will disable redirect, too.
+    
+        :param assert_same_host:
+            If ``True``, will make sure that the host of the pool requests is
+            consistent else will raise HostChangedError. When ``False``, you can
+            use the pool on an HTTP proxy and request foreign hosts.
+    
+        :param timeout:
+            If specified, overrides the default timeout for this one
+            request. It may be a float (in seconds) or an instance of
+            :class:`urllib3.util.Timeout`.
+    
+        :param pool_timeout:
+            If set and the pool is set to block=True, then this method will
+            block for ``pool_timeout`` seconds and raise EmptyPoolError if no
+            connection is available within the time period.
+    
+        :param bool preload_content:
+            If True, the response's body will be preloaded into memory.
+    
+        :param bool decode_content:
+            If True, will attempt to decode the body based on the
+            'content-encoding' header.
+    
+        :param release_conn:
+            If False, then the urlopen call will not release the connection
+            back into the pool once a response is received (but will release if
+            you read the entire contents of the response such as when
+            `preload_content=True`). This is useful if you're not preloading
+            the response's content immediately. You will need to call
+            ``r.release_conn()`` on the response ``r`` to return the connection
+            back into the pool. If None, it takes the value of ``preload_content``
+            which defaults to ``True``.
+    
+        :param bool chunked:
+            If True, urllib3 will send the body using chunked transfer
+            encoding. Otherwise, urllib3 will send the body using the standard
+            content-length form. Defaults to False.
+    
+        :param int body_pos:
+            Position to seek to in file-like body in the event of a retry or
+            redirect. Typically this won't need to be set because urllib3 will
+            auto-populate the value when needed.
+        """
+        # Ensure that the URL we're connecting to is properly encoded
+        if url.startswith("/"):
+            # URLs starting with / are inherently schemeless.
+            url = to_str(_encode_target(url))
+            destination_scheme = None
+        else:
+            parsed_url = parse_url(url)
+            destination_scheme = parsed_url.scheme
+            url = to_str(parsed_url._replace(fragment=None).url)
+    
+        if headers is None:
+            headers = self.headers
+    
+        if not isinstance(retries, Retry):
+            retries = Retry.from_int(retries, redirect=redirect, default=self.retries)
+    
+        if release_conn is None:
+            release_conn = preload_content
+    
+        # Check host
+        if assert_same_host and not self.is_same_host(url):
+            raise HostChangedError(self, url, retries)
+    
+        conn = None
+    
+        # Track whether `conn` needs to be released before
+        # returning/raising/recursing. Update this variable if necessary, and
+        # leave `release_conn` constant throughout the function. That way, if
+        # the function recurses, the original value of `release_conn` will be
+        # passed down into the recursive call, and its value will be respected.
+        #
+        # See issue #651 [1] for details.
+        #
+        # [1] &lt;https://github.com/urllib3/urllib3/issues/651&gt;
+        release_this_conn = release_conn
+    
+        http_tunnel_required = connection_requires_http_tunnel(
+            self.proxy, self.proxy_config, destination_scheme
+        )
+    
+        # Merge the proxy headers. Only done when not using HTTP CONNECT. We
+        # have to copy the headers dict so we can safely change it without those
+        # changes being reflected in anyone else's copy.
+        if not http_tunnel_required:
+            headers = headers.copy()  # type: ignore[attr-defined]
+            headers.update(self.proxy_headers)  # type: ignore[union-attr]
+    
+        # Must keep the exception bound to a separate variable or else Python 3
+        # complains about UnboundLocalError.
+        err = None
+    
+        # Keep track of whether we cleanly exited the except block. This
+        # ensures we do proper cleanup in finally.
+        clean_exit = False
+    
+        # Rewind body position, if needed. Record current position
+        # for future rewinds in the event of a redirect/retry.
+        body_pos = set_file_position(body, body_pos)
+    
+        timeout_obj = self._get_timeout(timeout)
+        try:
+            # Request a connection from the queue.
+            conn = self._get_conn(timeout=pool_timeout)
+            conn.timeout = timeout_obj.connect_timeout  # type: ignore[assignment]
+    
+            # Is this a closed/new connection that requires CONNECT tunnelling?
+            if self.proxy is not None and http_tunnel_required and conn.is_closed:
+                try:
+                    self._prepare_proxy(conn)
+                except (BaseSSLError, OSError, SocketTimeout) as e:
+                    self._raise_timeout(
+                        err=e, url=self.proxy.url, timeout_value=conn.timeout
+                    )
+                    raise
+    
+            # If we're going to release the connection in ``finally:``, then
+            # the response doesn't need to know about the connection. Otherwise
+            # it will also try to release it and we'll have a double-release
+            # mess.
+            response_conn = conn if not release_conn else None
+    
+            # Make the request on the HTTPConnection object
+&gt;           response = self._make_request(
+                conn,
+                method,
+                url,
+                timeout=timeout_obj,
+                body=body,
+                headers=headers,
+                chunked=chunked,
+                retries=retries,
+                response_conn=response_conn,
+                preload_content=preload_content,
+                decode_content=decode_content,
+                **response_kw,
+            )
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connectionpool.py:793: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connectionpool.py:499: in _make_request
+    conn.request(
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:567: in request
+    self.endheaders()
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/http/client.py:1346: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/http/client.py:1106: in _send_output
+    self.send(msg)
+../.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/http/client.py:1044: in send
+    self.connect()
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:398: in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;HTTPConnection(host='localhost', port=9000) at 0x7f24216fa150&gt;
+
+    def _new_conn(self) -&gt; socket.socket:
+        """Establish a socket connection and set nodelay settings on it.
+    
+        :return: New socket connection.
+        """
+        try:
+            sock = connection.create_connection(
+                (self._dns_host, self.port),
+                self.timeout,
+                source_address=self.source_address,
+                socket_options=self.socket_options,
+            )
+        except socket.gaierror as e:
+            raise NameResolutionError(self.host, self, e) from e
+        except SocketTimeout as e:
+            raise ConnectTimeoutError(
+                self,
+                f"Connection to {self.host} timed out. (connect timeout={self.timeout})",
+            ) from e
+    
+        except OSError as e:
+&gt;           raise NewConnectionError(
+                self, f"Failed to establish a new connection: {e}"
+            ) from e
+E           urllib3.exceptions.NewConnectionError: HTTPConnection(host='localhost', port=9000): Failed to establish a new connection: [Errno 111] Connection refused
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connection.py:254: NewConnectionError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;storage.minio_backend.MinIOBackend object at 0x7f24216f8e90&gt;
+
+    def health_check(self) -&gt; bool:
+        """Actively checks MinIO reachability and ensures the target bucket exists.
+        Raises ConnectionError if MinIO is unreachable.
+        """
+        try:
+&gt;           if not self.client.bucket_exists(self.bucket):
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+storage/minio_backend.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/minio/api.py:700: in bucket_exists
+    self._execute("HEAD", bucket_name)
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/minio/api.py:441: in _execute
+    region = self._get_region(bucket_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/minio/api.py:498: in _get_region
+    response = self._url_open(
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/minio/api.py:306: in _url_open
+    response = self._http.urlopen(
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/poolmanager.py:459: in urlopen
+    response = conn.urlopen(method, u.request_uri, **kw)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connectionpool.py:886: in urlopen
+    return self.urlopen(
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/connectionpool.py:847: in urlopen
+    retries = retries.increment(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Retry(total=0, connect=0, read=0, redirect=None, status=None)
+method = 'GET', url = '/sentinel-data?location=', response = None
+error = NewConnectionError("HTTPConnection(host='localhost', port=9000): Failed to establish a new connection: [Errno 111] Connection refused")
+_pool = &lt;urllib3.connectionpool.HTTPConnectionPool object at 0x7f24216f8dd0&gt;
+_stacktrace = &lt;traceback object at 0x7f24216fa2c0&gt;
+
+    def increment(
+        self,
+        method: str | None = None,
+        url: str | None = None,
+        response: BaseHTTPResponse | None = None,
+        error: Exception | None = None,
+        _pool: ConnectionPool | None = None,
+        _stacktrace: TracebackType | None = None,
+    ) -&gt; Self:
+        """Return a new Retry object with incremented retry counters.
+    
+        :param response: A response object, or None, if the server did not
+            return a response.
+        :type response: :class:`~urllib3.response.BaseHTTPResponse`
+        :param Exception error: An error encountered during the request, or
+            None if the response was received successfully.
+    
+        :return: A new ``Retry`` object.
+        """
+        if self.total is False and error:
+            # Disabled, indicate to re-raise the error.
+            raise reraise(type(error), error, _stacktrace)
+    
+        total = self.total
+        if total is not None:
+            total -= 1
+    
+        connect = self.connect
+        read = self.read
+        redirect = self.redirect
+        status_count = self.status
+        other = self.other
+        cause = "unknown"
+        status = None
+        redirect_location = None
+    
+        if error and self._is_connection_error(error):
+            # Connect retry?
+            if connect is False:
+                raise reraise(type(error), error, _stacktrace)
+            elif connect is not None:
+                connect -= 1
+    
+        elif error and self._is_read_error(error):
+            # Read retry?
+            if read is False or method is None or not self._is_method_retryable(method):
+                raise reraise(type(error), error, _stacktrace)
+            elif read is not None:
+                read -= 1
+    
+        elif error:
+            # Other retry?
+            if other is not None:
+                other -= 1
+    
+        elif response and response.get_redirect_location():
+            # Redirect retry?
+            if redirect is not None:
+                redirect -= 1
+            cause = "too many redirects"
+            response_redirect_location = response.get_redirect_location()
+            if response_redirect_location:
+                redirect_location = response_redirect_location
+            status = response.status
+    
+        else:
+            # Incrementing because of a server error like a 500 in
+            # status_forcelist and the given method is in the allowed_methods
+            cause = ResponseError.GENERIC_ERROR
+            if response and response.status:
+                if status_count is not None:
+                    status_count -= 1
+                cause = ResponseError.SPECIFIC_ERROR.format(status_code=response.status)
+                status = response.status
+    
+        history = self.history + (
+            RequestHistory(method, url, error, status, redirect_location),
+        )
+    
+        new_retry = self.new(
+            total=total,
+            connect=connect,
+            read=read,
+            redirect=redirect,
+            status=status_count,
+            other=other,
+            history=history,
+        )
+    
+        if new_retry.is_exhausted():
+            reason = error or ResponseError(cause)
+&gt;           raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=9000): Max retries exceeded with url: /sentinel-data?location= (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9000): Failed to establish a new connection: [Errno 111] Connection refused"))
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/urllib3/util/retry.py:555: MaxRetryError
+
+The above exception was the direct cause of the following exception:
+
+    def test_postgres_minio_lakehouse_transaction():
+        import pandas as pd
+        from config.settings import settings
+        from storage.storage_manager import StorageManager
+        from storage.lakehouse import LakehouseTable
+        settings.set_runtime_mode('integration')
+        mgr=StorageManager(mode='integration')
+&gt;       assert mgr.health_check()
+               ^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_services.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+storage/storage_manager.py:145: in health_check
+    return b.health_check()
+           ^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;storage.minio_backend.MinIOBackend object at 0x7f24216f8e90&gt;
+
+    def health_check(self) -&gt; bool:
+        """Actively checks MinIO reachability and ensures the target bucket exists.
+        Raises ConnectionError if MinIO is unreachable.
+        """
+        try:
+            if not self.client.bucket_exists(self.bucket):
+                self.client.make_bucket(self.bucket)
+            self.is_connected = True
+            self._bucket_verified = True
+            return True
+        except Exception as e:
+            self.is_connected = False
+            self._bucket_verified = False
+&gt;           raise ConnectionError(
+                f"MinIO storage backend unreachable at '{self.endpoint}' (bucket '{self.bucket}'): {e}"
+            ) from e
+E           ConnectionError: MinIO storage backend unreachable at 'localhost:9000' (bucket 'sentinel-data'): HTTPConnectionPool(host='localhost', port=9000): Max retries exceeded with url: /sentinel-data?location= (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9000): Failed to establish a new connection: [Errno 111] Connection refused"))
+
+storage/minio_backend.py:70: ConnectionError</failure></testcase><testcase classname="tests.test_api_live" name="test_live_http_pagination_with_real_local_server" time="0.508" /><testcase classname="tests.test_e2e" name="test_default_mode_is_strict_integration" time="0.002" /><testcase classname="tests.test_e2e" name="test_integration_minio_fails_loudly_without_local_fallback" time="0.004" /><testcase classname="tests.test_e2e" name="test_integration_postgres_fails_loudly_without_sqlite_fallback" time="0.002" /><testcase classname="tests.test_e2e" name="test_integration_pipeline_fails_loudly_when_services_stopped" time="1.041" /><testcase classname="tests.test_e2e" name="test_full_e2e_pipeline" time="10.194" /><testcase classname="tests.test_e2e" name="test_kafka_producer_envelope_structure" time="0.012" /><testcase classname="tests.test_e2e" name="test_kafka_producer_fail_loudly_when_offline" time="1.004" /><testcase classname="tests.test_e2e" name="test_raw_consumer_bronze_partitioning" time="0.002" /><testcase classname="tests.test_e2e" name="test_schema_validator_and_quarantine" time="0.003" /><testcase classname="tests.test_e2e" name="test_dead_letter_queue_handling" time="30.026" /><testcase classname="tests.test_e2e" name="test_warehouse_manager_upsert_idempotency" time="0.005" /><testcase classname="tests.test_e2e" name="test_price_pipeline_execution" time="0.001" /><testcase classname="tests.test_e2e" name="test_dashboard_db_connector" time="0.001" /><testcase classname="tests.test_e2e" name="test_spark_data_quality_evaluator" time="0.002" /><testcase classname="tests.test_e2e" name="test_prometheus_metrics_exporter" time="0.008" /><testcase classname="tests.test_e2e" name="test_airflow_dag_standalone_execution" time="6.462" /><testcase classname="tests.test_e2e" name="test_lakehouse_table_time_travel_and_upsert" time="0.011" /><testcase classname="tests.test_e2e" name="test_kafka_bronze_acceptance_3_valid_1_invalid" time="0.052" /><testcase classname="tests.test_e2e" name="test_raw_consumer_consume_batch_once_empty_poll" time="0.001" /><testcase classname="tests.test_e2e" name="test_topic_manager_provisioning" time="0.001" /><testcase classname="tests.test_e2e" name="test_e2e_stage_verification_fails_fast_on_invalid_stage" time="0.002" /><testcase classname="tests.test_e2e" name="test_e2e_idempotency_no_logical_duplicates_on_rerun" time="14.624" /><testcase classname="tests.test_e2e" name="test_unified_entrypoints_share_canonical_pipeline" time="0.006" /><testcase classname="tests.test_e2e" name="test_dq_field_nulls_vs_row_invalid_and_parse_cast" time="0.003" /><testcase classname="tests.test_e2e" name="test_dq_gate_blocks_gold_when_below_threshold" time="0.003" /><testcase classname="tests.test_e2e" name="test_streaming_late_data_malformed_types_dedup_and_restart" time="3.079" /><testcase classname="tests.test_e2e" name="test_pii_anonymization_and_user_id_hashing_at_ingest" time="0.002" /><testcase classname="tests.test_e2e" name="test_e2e_pipeline_with_crawler_and_public_dataset" time="10.712" /><testcase classname="tests.test_e2e" name="test_real_benchmark_execution_and_report_consistency" time="13.060" /><testcase classname="tests.test_e2e" name="test_github_actions_ci_workflow_valid" time="0.262" /></testsuite></testsuites>

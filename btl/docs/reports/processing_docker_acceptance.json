@@ -1,0 +1,192 @@
+{
+  "status": "complete",
+  "objective_complete": true,
+  "verified_at": "2026-10-29T13:29:43.819211+00:00",
+  "source_fingerprint": {
+    "sha256": "92481e950144a2f37d27fca461e5265fcad89f18b01815a8756ec0ee93a9ae73",
+    "files": 199,
+    "scope": "sorted btl/**/*.py,sql,yaml,yml,toml and *Dockerfile; path+NUL+bytes+NUL"
+  },
+  "docker_project": "sentinel-processing-20261029",
+  "docker_daemon_version": "29.9.2",
+  "images": [
+    {
+      "service": "postgres",
+      "container_id": "c606590043f542dd8ecc728828f89a81b3bc97a955ac3194c38629b5eb71e232",
+      "image_ref": "postgres:16-alpine",
+      "image_id": "sha256:f4610795587492cd4fb887c2dc3de301b813278bb6f616992061141b5f15ac36",
+      "repo_digests": [
+        "postgres@sha256:f4610795587492cd4fb887c2dc3de301b813278bb6f616992061141b5f15ac36"
+      ],
+      "started_at": "2026-10-29T13:10:09.211855352Z",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "elasticsearch",
+      "container_id": "db1e22d8ca4bd76c36dd837e3ffe5b30e4ccfe1c578a8333285184610dfbae4d",
+      "image_ref": "elasticsearch:8.13.0",
+      "image_id": "sha256:9d1cd1491778aceca4490de7ec9f205c3633a277df15473e1ea507d13a5270c6",
+      "repo_digests": [
+        "elasticsearch@sha256:9d1cd1491778aceca4490de7ec9f205c3633a277df15473e1ea507d13a5270c6"
+      ],
+      "started_at": "2026-10-29T13:10:09.430053006Z",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "kafka",
+      "container_id": "f29c5206cb94cbc9230a308820395217d7325251fab63b98d88b2fb9346183b1",
+      "image_ref": "apache/kafka:3.7.0",
+      "image_id": "sha256:41c20d65b0a2180b9deca056d47540771752e69fe9225d5748dd65a25a9675d7",
+      "repo_digests": [
+        "apache/kafka@sha256:41c20d65b0a2180b9deca056d47540771752e69fe9225d5748dd65a25a9675d7"
+      ],
+      "started_at": "2026-10-29T13:10:09.656231927Z",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "minio",
+      "container_id": "14db97609f946c650674e7c8f792c2faa7fe2c9d03fd3a75ba7083817c583fe2",
+      "image_ref": "sentinel-minio-source:20240330",
+      "image_id": "sha256:52638615045eedbb62e934a5609eb3a94458c28b3e81b71ede7b8d170b6c9aff",
+      "repo_digests": [
+        "sentinel-minio-source@sha256:52638615045eedbb62e934a5609eb3a94458c28b3e81b71ede7b8d170b6c9aff"
+      ],
+      "started_at": "2026-10-29T13:10:08.924525902Z",
+      "state": "running",
+      "health": "healthchecked by actual API"
+    }
+  ],
+  "local": {
+    "tests": 434,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 434,
+    "duration_sec": 162.443,
+    "artifact": "docs/reports/remediation_processing_local.xml"
+  },
+  "docker_integration": {
+    "tests": 46,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 46,
+    "duration_sec": 153.504,
+    "artifact": "docs/reports/processing_docker_integration.xml"
+  },
+  "docker_replay": {
+    "artifact": "docs/reports/processing_docker_pipeline_replay.json",
+    "runs": 2,
+    "duration_sec": 55.588,
+    "silver_business_hashes_equal": true,
+    "gold_business_hashes_equal": true,
+    "dq_history_counts": [
+      3,
+      6
+    ]
+  },
+  "docker_dashboard": {
+    "artifact": "docs/reports/processing_docker_dashboard.json",
+    "pages": 7,
+    "oracle": {
+      "products": 15,
+      "reviews": 20,
+      "average_rating": 4.55
+    }
+  },
+  "docker_worker_ownership": {
+    "artifact": "docs/reports/processing_docker_worker_ownership.json",
+    "passed": true,
+    "boundary": "Independent Docker network namespaces on one physical host; actual PostgreSQL-mediated canonical ownership, contention and release. Not a multi-host latency/failover/load test."
+  },
+  "requirement_audit": [
+    {
+      "requirement": "Normalization, raw/time evidence and DQ accounting",
+      "status": "verified",
+      "evidence": "434 local tests and Docker processing contracts, including actual nullable legacy migrations and nested metadata"
+    },
+    {
+      "requirement": "Current-run/source-bound DQ gate and strict read/error policy",
+      "status": "verified",
+      "evidence": "Local negative regressions plus current-source Docker canonical replay"
+    },
+    {
+      "requirement": "Four Gold grains, weighted/sample statistics and unavailable values",
+      "status": "verified",
+      "evidence": "Independent literal pandas/Spark oracles, full local suite and matching Docker Gold business hashes"
+    },
+    {
+      "requirement": "Calendar trends and truthful anomaly baselines/provenance",
+      "status": "verified",
+      "evidence": "Local temporal/sample regressions, actual PostgreSQL metadata persistence and seven Docker warehouse AppTest pages"
+    },
+    {
+      "requirement": "Validated complete/empty publication and warehouse transactions",
+      "status": "verified",
+      "evidence": "Docker S3A fault recovery, actual PostgreSQL rollback/read snapshots, local stale/empty snapshot and optional-price E2E regressions"
+    },
+    {
+      "requirement": "Replay without logical duplication or invented source IDs",
+      "status": "verified",
+      "evidence": "Two current-source Docker canonical runs, identical sorted Silver/Gold business hashes, stable incident ID and DQ history3→6"
+    },
+    {
+      "requirement": "Remote ownership and concurrent snapshot writers",
+      "status": "verified",
+      "evidence": "Docker Lakehouse contention and real MinIO bootstrap regression; separate Docker client IPs prove PostgreSQL canonical ownership/contention/release"
+    },
+    {
+      "requirement": "Orchestration handoff and run separation",
+      "status": "verified",
+      "evidence": "Saved actual Airflow2.10.5 LocalExecutor two runs/14 worker tasks; handoff/lease code unchanged, later Stage2 guards covered by current Docker pipeline"
+    },
+    {
+      "requirement": "Historical comparison and rollback workflow",
+      "status": "verified",
+      "evidence": "Read-only canonical comparator: new replay hashes equal, source fixtures unchanged; changed historical metrics and event IDs explicitly reported"
+    },
+    {
+      "requirement": "Reproducible load with honest boundaries",
+      "status": "verified",
+      "evidence": "Public local benchmark CLI plus actual native100k service-path run; measured source and subsequent unaffected guards recorded separately"
+    },
+    {
+      "requirement": "Independent review findings",
+      "status": "verified",
+      "evidence": "One fresh review, eight Important findings fixed with RED→GREEN regressions and complete subsequent suites; no unresolved Critical/Important finding"
+    },
+    {
+      "requirement": "Docker runtime acceptance",
+      "status": "verified",
+      "evidence": "Actual authenticated service health,46-case suite,two-run canonical content replay,seven warehouse AppTest pages and network-separated worker ownership"
+    }
+  ],
+  "remaining_required_gates": [],
+  "limitations": [
+    "Single physical host; network-separated Docker clients establish the tested ownership protocol, not physical multi-host latency/failover/load guarantees.",
+    "The100k151.6761s/3206.13MiB result is a labelled synthetic native-service run, not a Docker load benchmark; measured process-tree resources exclude service daemons and JVM startup.",
+    "Streamlit AppTest executes page code and actual SQL; browser rendering/load is not measured.",
+    "Historical production backfill and event-ID merge remain explicit future deployment decisions; fixture comparison is not production-history approval.",
+    "Classic Parquet publication has per-path recovery and a serialized group manifest, not a four-file storage transaction; price methods remain labelled retrospective.",
+    "Dependency deprecations and existing Compose obsolete-version warning are deferred and visible in logs."
+  ],
+  "workspace_disposition": "Keep the user-approved current workspace and uncommitted mixed edits; no commit,merge,push or production rollout. Old stopped test stack remains unchanged. New isolated Docker test project remains running for review.",
+  "verification_scripts_sha256": {
+    "run_processing_docker_replay.py": "2200aeb0af0325a42312638a15e41f4d0a9cf2fba9440b6369a4ba9f1229d834",
+    "run_processing_docker_dashboard.py": "cfe55c033171faff3ce3da24a24af4868a505e2321a8c837488bc56c0b569ebe",
+    "docker_worker_client.py": "9c974e65fe534e02d6f107a149d7e345840dfd7a7f7ebc7f3d7b6b80938c2137",
+    "run_docker_worker_ownership.py": "1da6a14ff79a72cd623c494793785638ebe65e5dbf17d5784dc1515d828a6aab"
+  },
+  "post_completion_revalidation": {
+    "verified_at": "2026-10-29T13:52:37.991208+00:00",
+    "source_unchanged": true,
+    "live_minio_generation_matches": true,
+    "live_postgres_four_mart_business_hashes_match": true,
+    "serving_reviews": 20,
+    "dq_history_rows": 6,
+    "note": "Read-only live revalidation after goal reactivation; no new scope or source edits. Existing suite results were inspected, not rerun."
+  }
+}
