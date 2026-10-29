@@ -1,0 +1,189 @@
+{
+  "root": ".",
+  "datasets": [
+    {
+      "dataset_id": "sample",
+      "source_kind": "synthetic",
+      "source_url": null,
+      "collected_at": null,
+      "license": null,
+      "schema_version": "1.0",
+      "files": [
+        {
+          "path": "sample/events.json",
+          "sha256": "92cc3e087d5871fe4d72438d0dff63f1fdae1f7f68b64592206195af90a4980e"
+        },
+        {
+          "path": "sample/prices.csv",
+          "sha256": "2cddff9ef19d8b39fa769f79a4968d5f72cdc32ba34c6482c5547cf3fb35d5c5"
+        },
+        {
+          "path": "sample/prices.json",
+          "sha256": "f5d6adaa52c20443f8b94c6bd6739e8626ee52aaee42762198ecf466846e9bab"
+        },
+        {
+          "path": "sample/prices.parquet",
+          "sha256": "bf2f03c2517007fc84770912aef727820636a38417cace34d3fa7e90ba08a2fe"
+        },
+        {
+          "path": "sample/products.csv",
+          "sha256": "fb8e9d041f830c22b26a73ba5c77dcf6beb149162d1eb14c5410064f42d50712"
+        },
+        {
+          "path": "sample/products.json",
+          "sha256": "0a9d16db93fb862a492e9fce40e9452ab21344c4ca7ae40145d4262f094b9725"
+        },
+        {
+          "path": "sample/products.parquet",
+          "sha256": "c5bd34614c71691bae3bd95c4d7d10281b54c36696f2b42590f1d3ea3eb895e3"
+        },
+        {
+          "path": "sample/reviews.csv",
+          "sha256": "803a69bc756e8f8ed5197a8d83d75b6264c5b085697e303c7cbc69d271b44940"
+        },
+        {
+          "path": "sample/reviews.json",
+          "sha256": "8f2881c5ea33f5474c0f2491f8519b30210c7dc74be5e3afc4bfc0f06e46858f"
+        },
+        {
+          "path": "sample/reviews.parquet",
+          "sha256": "b0fc9bbd1ba19230726ed6f1a1f4cefec05a1dd2a62edf7e2f1176ae0d53135b"
+        }
+      ]
+    },
+    {
+      "dataset_id": "public",
+      "source_kind": "unverified",
+      "source_url": null,
+      "collected_at": null,
+      "license": null,
+      "schema_version": "1.0",
+      "files": [
+        {
+          "path": "public/ecommerce_public_prices.csv",
+          "sha256": "51744f67642e04faed4dd8998dccde569683d3a1c8a5dbe5a32a24d36553b1b7"
+        },
+        {
+          "path": "public/ecommerce_public_products.json",
+          "sha256": "c27577ff7b95fb7d0d2b3ad8bbb6270857d89cd78393e4ff9c62046f4adad85a"
+        },
+        {
+          "path": "public/ecommerce_public_reviews.jsonl",
+          "sha256": "340c474ae3d3884d89dad86dff8dd32613387dba802eea740b22f736c8f7a4d9"
+        }
+      ]
+    },
+    {
+      "dataset_id": "external/tiki",
+      "source_kind": "unverified",
+      "source_url": null,
+      "collected_at": null,
+      "license": null,
+      "schema_version": "1.0",
+      "files": [
+        {
+          "path": "external/tiki/tiki_prices_latest.csv",
+          "sha256": "9512d9ec6cf88eb328e847ab630833b6837f942fb31dd19344033f8ab90cfbb2"
+        },
+        {
+          "path": "external/tiki/tiki_prices_snapshot_20261018T162647Z.jsonl",
+          "sha256": "34145b3b27e14cc2ac1185adbd35bbbe79cbfb671e7eaf9863969f036b73ab54"
+        },
+        {
+          "path": "external/tiki/tiki_prices_snapshot_20261018T165951Z.jsonl",
+          "sha256": "23fd60d521d9a134adf16cc04d5e261f8e9d6f1d237d8fabbc68974886ba5ead"
+        },
+        {
+          "path": "external/tiki/tiki_product_snapshot_20261018T161833Z.jsonl",
+          "sha256": "847b374af9f631567bb1b50d8fbd0d6a1aa18e9bb5b4ae065a4438bcc1174ed8"
+        },
+        {
+          "path": "external/tiki/tiki_product_snapshot_20261018T162204Z.jsonl",
+          "sha256": "cae9d3127658b7f9256c6ad0aa5566d46eec4fddbded0ce459a7134ecb5f9166"
+        },
+        {
+          "path": "external/tiki/tiki_products_latest.csv",
+          "sha256": "102670c70ef9e0624f38a8331a73763fc92836c02a9a67e46667d9dff79ba817"
+        },
+        {
+          "path": "external/tiki/tiki_products_snapshot_20261018T162647Z.jsonl",
+          "sha256": "c5d6eb7d115f871ecd7188f8f3ae9139e370587183c89719ebdc92a5bd266940"
+        },
+        {
+          "path": "external/tiki/tiki_products_snapshot_20261018T165951Z.jsonl",
+          "sha256": "fd4deec61d39808ea5f77b2bb4f55d703f44b981580172a3b0084ef71c9b241d"
+        },
+        {
+          "path": "external/tiki/tiki_reviews_latest.csv",
+          "sha256": "527f64a048f8f8136c59e7d25f969a01bb37d2a4e3e031fa0eba40ed378e822e"
+        },
+        {
+          "path": "external/tiki/tiki_reviews_snapshot_20261018T165951Z.jsonl",
+          "sha256": "41ce1c724f14b89ed0ed8092d9c7e0dc743d1d25c0b1401d38b2542c228fc960"
+        },
+        {
+          "path": "external/tiki/tiki_unparsed_20261018T161833Z.jsonl",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "external/tiki/tiki_unparsed_20261018T162204Z.jsonl",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "external/tiki/tiki_unparsed_20261018T162647Z.jsonl",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "external/tiki/tiki_unparsed_20261018T165951Z.jsonl",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    {
+      "dataset_id": "fixtures/canonical",
+      "source_kind": "synthetic",
+      "source_url": null,
+      "collected_at": null,
+      "license": null,
+      "schema_version": "1.0",
+      "files": [
+        {
+          "path": "fixtures/canonical/prices.csv",
+          "sha256": "5c1a868726c82d1e95881f38431179fb7fbbeb3fae78b119eecddcd860393c62"
+        },
+        {
+          "path": "fixtures/canonical/prices.json",
+          "sha256": "39339cb6fb755855d6d888c2f99b70e14a876bf0eaed816cf24c19446d108535"
+        },
+        {
+          "path": "fixtures/canonical/prices.parquet",
+          "sha256": "8d292b18beb68b3e527c11f26d44c8a81db1f8cc0ec34786c08d2bc7f3e9ddb3"
+        },
+        {
+          "path": "fixtures/canonical/products.csv",
+          "sha256": "9d9d68b68a0f863ec7f08029a7eb01e9f98990699191ab403f260808adfc38b2"
+        },
+        {
+          "path": "fixtures/canonical/products.json",
+          "sha256": "2078394f77963d772a6c19e89258e71e828dad4f01490f464078c59c70096e74"
+        },
+        {
+          "path": "fixtures/canonical/products.parquet",
+          "sha256": "baf7e44ec84db2ae3af88a818c3a8ad14eadb7052616efe642a3a552b86ce185"
+        },
+        {
+          "path": "fixtures/canonical/reviews.csv",
+          "sha256": "b1a7cbf2aaf706631453e3841a562edfe8a65dae8ddb2b74f0c3a758911b2b51"
+        },
+        {
+          "path": "fixtures/canonical/reviews.json",
+          "sha256": "f7f1bac8c5c1ee5de33ab6ed1b6cab7910199e9b7b6e55bbe58f99d553bac7a2"
+        },
+        {
+          "path": "fixtures/canonical/reviews.parquet",
+          "sha256": "7dcd10aca8f10b3d33180b154f627c8429df57044bfa9c81740627e1ddeccb57"
+        }
+      ]
+    }
+  ]
+}
