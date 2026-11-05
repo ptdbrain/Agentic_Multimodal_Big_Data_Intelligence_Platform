@@ -28,6 +28,7 @@ import argparse
 import datetime
 import hashlib
 import json
+import math
 import os
 import shutil
 import statistics
@@ -579,6 +580,25 @@ def benchmark_volume(
 # 2. Velocity Benchmark
 # -----------------------------------------------------------------------------
 
+def spread_schema_failures(records):
+    """Keep the invalid fraction uniform in a time-limited candidate prefix."""
+    from data.schemas.validator import SchemaValidator
+    valid, invalid = [], []
+    for row in records:
+        (valid if SchemaValidator.validate_record(row,'review')[0] else invalid).append(row)
+    total, failures = len(records), len(invalid)
+    if not total or not failures or failures == total:
+        return list(records)
+    good_index = bad_index = 0
+    ordered = []
+    for position in range(total):
+        if (position + 1) * failures // total > position * failures // total:
+            ordered.append(invalid[bad_index]);bad_index += 1
+        else:
+            ordered.append(valid[good_index]);good_index += 1
+    return ordered
+
+
 def benchmark_velocity(
     rates: Optional[List[int]] = None,
     seed: int = 42,
@@ -598,6 +618,12 @@ def benchmark_velocity(
     """
     if rates is None:
         rates = [50, 200, 500, 1000]
+    if any(not math.isfinite(rate) or rate <= 0 for rate in rates):
+        raise ValueError('Velocity rates must be positive and finite')
+    if duration_sec is not None and (not math.isfinite(duration_sec) or duration_sec <= 0):
+        raise ValueError('Velocity duration must be positive and finite')
+    if messages_per_rate is not None and messages_per_rate <= 0:
+        raise ValueError('Message count must be positive')
 
     is_local = effective_mode not in ("integration", "production")
     settings.set_runtime_mode(effective_mode)
@@ -631,6 +657,7 @@ def benchmark_velocity(
         auto_offset_reset="earliest"
     )
     producer = StreamProducer(enable_offline_buffer=is_local)
+    active_stop = active_thread = active_lag_monitor = None
 
     try:
         if not is_local:
@@ -647,9 +674,9 @@ def benchmark_velocity(
         for rate in rates:
             # Determine message count without hard 500 cap
             if messages_per_rate is not None:
-                msg_count = max(10, int(messages_per_rate))
+                msg_count = int(messages_per_rate)
             elif duration_sec is not None:
-                msg_count = max(50, int(rate * duration_sec))
+                msg_count = max(1, math.ceil(rate * duration_sec))
             else:
                 msg_count = max(100, min(rate * 2, 5000))
 
@@ -662,6 +689,7 @@ def benchmark_velocity(
                 dirty_ratio=dirty_ratio,
                 duplicate_ratio=0.0,
             )
+            reviews = spread_schema_failures(reviews)
             bench_run_id = f"vel_{run_seed}_{uuid.uuid4().hex[:6]}"
             for idx, r in enumerate(reviews):
                 r["review_id"] = f"{bench_run_id}_rv_{idx+1:06d}"
@@ -675,6 +703,7 @@ def benchmark_velocity(
             cons_res: Dict[str, Any] = {}
             cons_errors: List[Exception] = []
             stop_event = threading.Event()
+            active_stop = stop_event
             cons_start_barrier = threading.Event()
             t_cons_start = 0.0
             t_cons_end = 0.0
@@ -717,6 +746,7 @@ def benchmark_velocity(
                 sample_interval_sec=0.005,
             )
             lag_monitor.start()
+            active_lag_monitor = lag_monitor
 
             consumer_thread = threading.Thread(
                 target=consumer_worker,
@@ -724,6 +754,7 @@ def benchmark_velocity(
                 daemon=True,
             )
             consumer_thread.start()
+            active_thread = consumer_thread
             cons_start_barrier.wait(timeout=2.0)
 
             send_errors = 0
@@ -735,6 +766,7 @@ def benchmark_velocity(
                     rate=float(rate),
                     event_type="NEW_REVIEW",
                     source=f"velocity_bench_{rate}",
+                    max_duration_sec=duration_sec if messages_per_rate is None else None,
                 )
             except Exception as pe:
                 send_errors += 1
@@ -811,6 +843,9 @@ def benchmark_velocity(
                 "seed": run_seed,
                 "transport_mode": transport_mode,
                 "target_rate_mps": int(rate),
+                "requested_duration_sec": duration_sec if messages_per_rate is None else None,
+                "candidate_message_count": msg_count,
+                "workload_layout": "uniform_schema_failures_v1",
                 "messages_sent": int(sent),
                 "produce_duration_sec": round(prod_duration, 4),
                 "actual_produce_rate_mps": round(actual_prod_rate, 1),
@@ -858,6 +893,12 @@ def benchmark_velocity(
             )
             results.append(row)
     finally:
+        if active_stop is not None:
+            active_stop.set()
+        if active_thread is not None and active_thread.is_alive():
+            active_thread.join(timeout=15)
+        if active_lag_monitor is not None:
+            active_lag_monitor.stop()
         producer.close()
         consumer.close()
 
