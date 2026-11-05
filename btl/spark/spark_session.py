@@ -79,6 +79,10 @@ class SparkSessionFactory:
         extra_configs: Optional[Dict[str, str]] = None
     ):
         """Constructs or retrieves the shared SparkSession configured for MinIO S3A."""
+        # The module may be cached while a worker/test resets its environment.
+        # Re-establish defaults at session creation, preserving explicit settings.
+        os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
+        os.environ.setdefault("PYSPARK_DRIVER_PYTHON", sys.executable)
         try:
             from pyspark.sql import SparkSession
         except ImportError:

@@ -1,4 +1,9 @@
 import json
+import copy
+import os
+import tempfile
+import math
+from urllib.parse import urlsplit
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from config.settings import settings
@@ -44,6 +49,7 @@ class StreamingJob:
             self.load_checkpoint()
 
     def _init_empty_state(self) -> None:
+        self.source_group: Optional[str] = None
         self.processed_batches: int = 0
         self.negative_reviews_detected: int = 0
         self.valid_events_processed: int = 0
@@ -64,12 +70,20 @@ class StreamingJob:
         if not self.checkpoint_dir:
             return False, ""
         chk_str = str(self.checkpoint_dir)
+        def remote_checkpoint(uri):
+            from storage.minio_backend import MinIOBackend
+            parts = urlsplit(uri)
+            if parts.netloc != settings.storage.data_lake_bucket:
+                raise ValueError('Checkpoint bucket differs from the configured storage bucket')
+            if parts.query or parts.fragment or '..' in parts.path.split('/'):
+                raise ValueError('Invalid remote checkpoint path')
+            if not isinstance(storage.backend,MinIOBackend):
+                raise ValueError('S3A checkpoint requires an actual MinIO backend')
+            prefix = parts.path.strip('/') or 'checkpoints/streaming_job'
+            return True, prefix + '/checkpoint_state.json'
+
         if chk_str.startswith("s3a://"):
-            # Strip s3a://<bucket>/ prefix for storage.backend
-            without_scheme = chk_str[len("s3a://"):]
-            parts = without_scheme.split("/", 1)
-            rel_path = parts[1] if len(parts) > 1 else "checkpoints/streaming_job"
-            return True, f"{rel_path.rstrip('/')}/checkpoint_state.json"
+            return remote_checkpoint(chk_str)
 
         p = Path(chk_str)
         if p.is_absolute() or chk_str.startswith(".") or "\\" in chk_str or "/" in chk_str:
@@ -79,11 +93,13 @@ class StreamingJob:
 
         resolved = SparkSessionFactory.resolve_checkpoint_path(chk_str)
         if resolved.startswith("s3a://"):
-            without_scheme = resolved[len("s3a://"):]
-            parts = without_scheme.split("/", 1)
-            rel_path = parts[1] if len(parts) > 1 else "checkpoints/streaming_job"
-            return True, f"{rel_path.rstrip('/')}/checkpoint_state.json"
+            return remote_checkpoint(resolved)
         return False, str(Path(resolved) / "checkpoint_state.json")
+
+    def _checkpoint_configuration(self):
+        return {'window_seconds':self.window_seconds,'watermark_seconds':self.watermark_seconds,
+                'negative_threshold':self.negative_threshold,'strict_validation':self.strict_validation,
+                'output_mode':self.output_mode}
 
     def save_checkpoint(self) -> Optional[str]:
         """Persists streaming state (offsets, watermark, dedup keys, window metrics) to checkpoint."""
@@ -91,6 +107,9 @@ class StreamingJob:
             return None
 
         state_payload = {
+            'checkpoint_schema_version':3,
+            'source_group':self.source_group,
+            'configuration':self._checkpoint_configuration(),
             "processed_batches": self.processed_batches,
             "negative_reviews_detected": self.negative_reviews_detected,
             "valid_events_processed": self.valid_events_processed,
@@ -107,6 +126,7 @@ class StreamingJob:
             "output_mode": self.output_mode,
         }
 
+        encoded = json.dumps(state_payload,ensure_ascii=False,indent=2,allow_nan=False)
         use_storage, target_path = self._resolve_checkpoint_file()
         if use_storage:
             storage.backend.write_json(target_path, state_payload)
@@ -114,8 +134,16 @@ class StreamingJob:
         else:
             p = Path(target_path)
             p.parent.mkdir(parents=True, exist_ok=True)
-            with open(p, "w", encoding="utf-8") as f:
-                json.dump(state_payload, f, ensure_ascii=False, indent=2)
+            descriptor, temporary = tempfile.mkstemp(dir=p.parent,prefix='.checkpoint-')
+            try:
+                with os.fdopen(descriptor,'w',encoding='utf-8') as stream:
+                    stream.write(encoded)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temporary,p)
+            finally:
+                if os.path.exists(temporary):
+                    os.unlink(temporary)
             return str(p)
 
     def load_checkpoint(self) -> bool:
@@ -135,31 +163,54 @@ class StreamingJob:
                     return False
                 with open(p, "r", encoding="utf-8") as f:
                     data = json.load(f)
-        except Exception:
-            return False
+        except Exception as error:
+            raise RuntimeError('Existing checkpoint could not be read; refusing an empty restart') from error
 
         if not isinstance(data, dict):
-            return False
+            raise RuntimeError('Invalid checkpoint object; refusing an empty restart')
 
-        self.processed_batches = int(data.get("processed_batches", 0))
-        self.negative_reviews_detected = int(data.get("negative_reviews_detected", 0))
-        self.valid_events_processed = int(data.get("valid_events_processed", 0))
-        self.invalid_events_count = int(data.get("invalid_events_count", 0))
-        self.cast_error_count = int(data.get("cast_error_count", 0))
-        self.duplicates_dropped = int(data.get("duplicates_dropped", 0))
-        self.late_events_accepted = int(data.get("late_events_accepted", 0))
-        self.late_events_dropped = int(data.get("late_events_dropped", 0))
-        self.max_event_time = data.get("max_event_time")
-        self.current_watermark = data.get("current_watermark")
-        self.seen_keys = {str(k): float(v) for k, v in (data.get("seen_keys") or {}).items()}
-        self.committed_batch_ids = [str(x) for x in (data.get("committed_batch_ids") or [])]
-        self.window_state = dict(data.get("window_state") or {})
+        counters = ('processed_batches','negative_reviews_detected','valid_events_processed',
+                    'invalid_events_count','cast_error_count','duplicates_dropped',
+                    'late_events_accepted','late_events_dropped')
+        required = set(counters) | {'source_group','max_event_time','current_watermark','seen_keys','committed_batch_ids','window_state'}
+        if (data.get('checkpoint_schema_version') != 3 or not required.issubset(data)
+                or data.get('configuration') != self._checkpoint_configuration()):
+            raise RuntimeError('Invalid checkpoint version/configuration; inspect or migrate it before recovery')
+        if data['source_group'] not in (None,'unverified','simulation','marketplace'):
+            raise RuntimeError('Invalid checkpoint source group')
+        if any(type(data[name]) is not int or data[name] < 0 for name in counters):
+            raise RuntimeError('Invalid checkpoint counters')
+        def finite_number(value):
+            return type(value) in (int,float) and math.isfinite(value)
+        if any(data[name] is not None and not finite_number(data[name]) for name in ('max_event_time','current_watermark')):
+            raise RuntimeError('Invalid checkpoint clock')
+        if (not isinstance(data['seen_keys'],dict)
+                or any(not isinstance(key,str) or not finite_number(value) for key,value in data['seen_keys'].items())
+                or not isinstance(data['committed_batch_ids'],list)
+                or any(not isinstance(value,str) for value in data['committed_batch_ids'])
+                or not isinstance(data['window_state'],dict)):
+            raise RuntimeError('Invalid checkpoint deduplication/window state')
+        window_fields = {'window_start_epoch','window_end_epoch','product_id','review_count',
+                         'rating_sum','rating_count','negative_count'}
+        for window in data['window_state'].values():
+            if not isinstance(window,dict) or not window_fields.issubset(window):
+                raise RuntimeError('Invalid checkpoint window object')
+            if (any(not finite_number(window[name]) for name in window_fields - {'product_id'})
+                    or window['window_end_epoch'] <= window['window_start_epoch']
+                    or window['review_count'] < window['rating_count']
+                    or window['rating_count'] < window['negative_count']
+                    or window['negative_count'] < 0):
+                raise RuntimeError('Invalid checkpoint window metrics')
+        staged = {name:data[name] for name in required}
+        self.__dict__.update(staged)
+
         return True
 
     def restart(self) -> Dict[str, Any]:
         """Simulates stopping the stream processor and recovering state strictly from checkpoint."""
-        self._init_empty_state()
         restored = self.load_checkpoint()
+        if not restored:
+            self._init_empty_state()
         return {
             "restored_from_checkpoint": restored,
             "total_processed": self.processed_batches,
@@ -175,6 +226,8 @@ class StreamingJob:
         """Performs explicit parse/cast BEFORE validation.
         Returns (is_valid, quarantine_reason, parsed_rating, parsed_epoch, event_key, product_id).
         """
+        if not isinstance(evt,dict):
+            return False, 'INVALID_EVENT_SHAPE', None, None, None, None
         payload = evt.get("payload", evt) if isinstance(evt.get("payload"), dict) else evt
 
         # Extract key & product_id
@@ -189,12 +242,8 @@ class StreamingJob:
         product_id = str(raw_prod).strip() if raw_prod is not None and str(raw_prod).strip() != "" else "unknown"
 
         # 1. Parse/Cast timestamp BEFORE validation
-        raw_ts = (
-            payload.get("review_date")
-            or payload.get("timestamp")
-            or evt.get("timestamp")
-            or evt.get("ingested_at")
-        )
+        raw_ts = next((value for value in (payload.get('review_date'),payload.get('timestamp'),evt.get('timestamp'))
+                       if value is not None and not (isinstance(value,str) and not value.strip())),None)
         parsed_epoch: Optional[float] = None
         if raw_ts is not None and str(raw_ts).strip() != "":
             parsed_epoch = WindowAggregator._parse_timestamp(raw_ts)
@@ -206,6 +255,9 @@ class StreamingJob:
         rating_present = "rating" in payload or "rating" in evt
         raw_rating = payload.get("rating") if "rating" in payload else evt.get("rating")
         parsed_rating: Optional[float] = None
+        if isinstance(raw_rating,bool):
+            self.cast_error_count += 1
+            return False, 'INVALID_TYPE_RATING', None, parsed_epoch, event_key, product_id
 
         if raw_rating is not None and (not isinstance(raw_rating, str) or raw_rating.strip() != ""):
             try:
@@ -231,7 +283,24 @@ class StreamingJob:
 
         return True, None, parsed_rating, parsed_epoch, event_key, product_id
 
-    def process_micro_batch(
+    @staticmethod
+    def _is_review_event(event):
+        return (not isinstance(event,dict) or event.get('event_type') is None
+                or str(event['event_type']).upper() in {'NEW_REVIEW','REVIEW_UPDATED','REPLAY_REVIEW','EVENT'})
+
+    def process_micro_batch(self, events, batch_id=None):
+        """Apply a local batch; failed durable saves leave the previous state retryable."""
+        if not self.checkpoint_dir:
+            return self._apply_micro_batch(events,batch_id=batch_id)
+        before = copy.deepcopy(self.__dict__)
+        try:
+            return self._apply_micro_batch(events,batch_id=batch_id)
+        except Exception:
+            self.__dict__.clear()
+            self.__dict__.update(before)
+            raise
+
+    def _apply_micro_batch(
         self,
         events: List[Dict[str, Any]],
         batch_id: Optional[str] = None,
@@ -243,12 +312,15 @@ class StreamingJob:
         - Event-time watermarking (accepts late data within watermark, drops too-late data)
         - Automatic checkpoint persistence when checkpoint_dir is configured
         """
+        events = list(events)
         if batch_id is not None and str(batch_id) in self.committed_batch_ids:
             return {
                 "batch_id": str(batch_id),
                 "skipped_committed_batch": True,
                 "micro_batch_size": 0,
                 "batch_valid_count": 0,
+                "batch_ignored_count": 0,
+                "source_group": self.source_group or 'unverified',
                 "batch_invalid_count": 0,
                 "batch_duplicate_count": 0,
                 "batch_late_accepted": 0,
@@ -265,6 +337,26 @@ class StreamingJob:
                 "status": "active",
             }
 
+        from ingestion.provenance import classify_source_group
+        source_records = []
+        for event in events:
+            if not isinstance(event,dict) or not self._is_review_event(event):
+                continue
+            payload = event.get('payload') if isinstance(event.get('payload'),dict) else event
+            metadata = {}
+            for field in ('source_group','acquisition_method'):
+                outer, inner = event.get(field), payload.get(field)
+                if outer is not None and inner is not None and outer != inner:
+                    raise ValueError('Contradictory source metadata in envelope and payload')
+                metadata[field] = inner if inner is not None else outer
+            source_records.append(metadata)
+        if source_records:
+            incoming = classify_source_group(source_records)
+            if self.source_group is not None and incoming != self.source_group:
+                raise ValueError('Different source group requires a separate streaming checkpoint')
+            self.source_group = incoming
+
+        batch_ignored = 0
         batch_valid = 0
         batch_invalid = 0
         batch_dups = 0
@@ -273,6 +365,9 @@ class StreamingJob:
         batch_neg = 0
 
         for evt in events:
+            if not self._is_review_event(evt):
+                batch_ignored += 1
+                continue
             is_valid, reason, rating_val, evt_epoch, evt_key, prod_id = self._parse_and_validate_event(evt)
             if not is_valid:
                 batch_invalid += 1
@@ -354,6 +449,8 @@ class StreamingJob:
             "skipped_committed_batch": False,
             "micro_batch_size": batch_valid,
             "batch_valid_count": batch_valid,
+            "batch_ignored_count": batch_ignored,
+            "source_group": self.source_group or 'unverified',
             "batch_invalid_count": batch_invalid,
             "batch_duplicate_count": batch_dups,
             "batch_late_accepted": batch_late_accepted,
@@ -383,6 +480,7 @@ class StreamingJob:
                 "window_start_epoch": w["window_start_epoch"],
                 "window_end_epoch": w["window_end_epoch"],
                 "product_id": w["product_id"],
+                "source_group": self.source_group or 'unverified',
                 "review_count": w["review_count"],
                 "avg_rating": avg_r,
                 "negative_count": w["negative_count"],

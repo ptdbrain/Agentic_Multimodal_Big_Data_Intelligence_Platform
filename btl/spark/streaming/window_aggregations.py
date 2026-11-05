@@ -1,32 +1,20 @@
 from typing import List, Dict, Any, Optional
 from collections import defaultdict
 import datetime
+import math
 
 class WindowAggregator:
-    """Tumbling and sliding window aggregations for velocity metrics.
+    """Local tumbling-window summaries; not a Kafka transport benchmark.
     Robust against diverse timestamp encodings and nested/flat event payloads.
     """
 
     @staticmethod
     def _parse_timestamp(ts_val: Any) -> Optional[float]:
-        if ts_val is None:
+        from spark.etl.normalizer import EntityNormalizer
+        normalized = EntityNormalizer.normalize_timestamp(ts_val)
+        if normalized is None:
             return None
-        if isinstance(ts_val, (int, float)):
-            # If timestamp is in milliseconds, convert to seconds
-            return ts_val / 1000.0 if ts_val > 1e11 else float(ts_val)
-        if isinstance(ts_val, datetime.datetime):
-            return ts_val.timestamp()
-        if isinstance(ts_val, str):
-            try:
-                # Handle ISO format with Z or timezone offset
-                dt = datetime.datetime.fromisoformat(ts_val.replace("Z", "+00:00"))
-                return dt.timestamp()
-            except Exception:
-                try:
-                    return float(ts_val)
-                except ValueError:
-                    return None
-        return None
+        return datetime.datetime.fromisoformat(normalized.replace('Z','+00:00')).timestamp()
 
     @classmethod
     def aggregate_tumbling_window(
@@ -43,8 +31,12 @@ class WindowAggregator:
 
         for evt in events:
             # 1. Resolve timestamp (search root or payload)
+            if not isinstance(evt,dict):
+                continue
             payload = evt.get("payload", evt) if isinstance(evt.get("payload"), dict) else evt
-            raw_ts = evt.get(timestamp_field) or payload.get(timestamp_field)
+            raw_ts = evt.get(timestamp_field)
+            if raw_ts is None:
+                raw_ts = payload.get(timestamp_field)
             epoch = cls._parse_timestamp(raw_ts)
             if epoch is None:
                 continue
@@ -56,8 +48,11 @@ class WindowAggregator:
             val = payload.get(value_field) if value_field in payload else evt.get(value_field)
             if val is not None:
                 try:
-                    windows[window_start]["values"].append(float(val))
-                except (ValueError, TypeError):
+                    numeric = float(val)
+                    if (not isinstance(val,bool) and math.isfinite(numeric)
+                            and (value_field != 'rating' or 1 <= numeric <= 5)):
+                        windows[window_start]["values"].append(numeric)
+                except (ValueError, TypeError, OverflowError):
                     pass
 
         results = []
@@ -69,7 +64,9 @@ class WindowAggregator:
                 "window_start": w_time.isoformat(),
                 "window_duration_sec": window_seconds,
                 "event_count": data["count"],
-                "avg_rating": avg_val,
+                ("avg_rating" if value_field == 'rating' else "avg_value"): avg_val,
+                "value_field": value_field,
+                "value_sample_size": len(vals),
                 "rate_eps": round(data["count"] / window_seconds, 2)
             })
         return results
