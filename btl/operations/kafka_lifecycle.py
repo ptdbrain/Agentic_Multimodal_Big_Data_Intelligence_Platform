@@ -27,9 +27,13 @@ class TopicRegistry:
     def __init__(self, mode=None):
         self.mode = mode
         self.wh = WarehouseManager(mode=mode)
-        self.wh.execute(
-            "CREATE TABLE IF NOT EXISTS ops_topic_registry(topic TEXT PRIMARY KEY,payload_json TEXT NOT NULL)"
-        )
+        from operations.backup import writer_admission
+        try:
+            with writer_admission(mode):
+                self.wh.execute("CREATE TABLE IF NOT EXISTS ops_topic_registry(topic TEXT PRIMARY KEY,payload_json TEXT NOT NULL)")
+        except Exception:
+            self.wh.close()
+            raise
         self.param = "%s" if self.wh._engine_type == "postgres" else "?"
 
     def close(self):

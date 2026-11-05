@@ -23,4 +23,6 @@ These are implementation and scoped test results. Remaining service/hardware acc
 
 ## Verification
 
-Broad local gate:673 passed,62 integration/airflow/live deselected,0 failures/errors/skips (`operations_local_2026-11-05.xml`). The final combined operational and regression tests after expected-job registration and shared maintenance admission fixes additionally passed a69-case focused gate, including native Spark migration (overlaps the broad suite; do not sum). Ruff and authored whitespace checks pass. Both Compose files parse with a validation-only Grafana password; promtool validates all12 rules. Historical native reports retain their actual fixture and execution boundaries.
+Broad local gate:673 passed,62 integration/airflow/live deselected,0 failures/errors/skips (`operations_local_2026-11-05.xml`). The final combined operational and regression tests after expected-job registration and shared maintenance admission fixes additionally passed a70-case focused gate, including native Spark migration (overlaps the broad suite; do not sum). Ruff and authored whitespace checks pass. Both Compose files parse with a validation-only Grafana password; promtool validates all12 rules. Historical native reports retain their actual fixture and execution boundaries.
+
+Final safety regression also fences registry/lease schema initialization; maintenance cannot race first-use DDL. The final70-case gate includes actual Spark replay, admission, backup, Kafka lifecycle, monitoring, DLQ, Airflow manifest and article/producer regressions.

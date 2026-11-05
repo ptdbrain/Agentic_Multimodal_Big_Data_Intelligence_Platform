@@ -47,3 +47,10 @@ def test_batch_latency_uses_complete_same_binary_cohorts_only():
     rows[1]['source_fingerprint']['sha256']='code'
     rows[0]['completed']=False
     with pytest.raises(ValueError,match='Incomplete'):summarize(rows)
+
+def test_maintenance_blocks_registry_schema_initialization():
+    from operations.backup import maintenance_guard
+    from operations.kafka_lifecycle import TopicRegistry
+    with maintenance_guard('test'):
+        with pytest.raises(RuntimeError,match='busy'):
+            TopicRegistry('test')

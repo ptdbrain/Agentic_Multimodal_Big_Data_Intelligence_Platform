@@ -57,7 +57,13 @@ class RunLease:
     def __init__(self, mode):
         from database.warehouse import WarehouseManager
         self.wh=WarehouseManager(mode=mode)
-        self.wh.execute('CREATE TABLE IF NOT EXISTS pipeline_run_lease (resource TEXT PRIMARY KEY, run_id TEXT NOT NULL)')
+        from operations.backup import writer_admission
+        try:
+            with writer_admission(mode):
+                self.wh.execute('CREATE TABLE IF NOT EXISTS pipeline_run_lease (resource TEXT PRIMARY KEY, run_id TEXT NOT NULL)')
+        except Exception:
+            self.wh.close()
+            raise
 
     def acquire(self,run_id):
         with self.wh._conn:
