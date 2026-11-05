@@ -26,7 +26,19 @@ class StreamProducer:
         self.virtual_queue: List[Dict[str, Any]] = []
         self.producer = None
         self.current_batch_sent: int = 0
+        self._writer_guard = None
         self._init_producer()
+        if not self.enable_offline_buffer:
+            from operations.backup import writer_admission
+            guard=writer_admission(settings.runtime_mode)
+            try:
+                guard.__enter__()
+            except Exception:
+                if self.producer is not None:
+                    self.producer.close()
+                    self.producer=None
+                raise
+            self._writer_guard=guard
 
     def _init_producer(self):
         if self.enable_offline_buffer:
@@ -45,7 +57,10 @@ class StreamProducer:
                 bootstrap_timeout_ms=1000,
                 request_timeout_ms=1000,
                 max_block_ms=1000,
-                retries=1
+                acks="all",
+                retries=5,
+                retry_backoff_ms=200,
+                max_in_flight_requests_per_connection=1
             )
         except Exception as e:
             # Raise exception if Kafka is unavailable in production
@@ -201,11 +216,13 @@ class StreamProducer:
 
     def close(self):
         if self.producer is not None:
-            try:
-                self.producer.flush()
-                self.producer.close()
-            except Exception:
-                pass
+            self.producer.flush()
+            self.producer.close()
+            self.producer=None
+        guard=getattr(self,'_writer_guard',None)
+        if guard:
+            guard.__exit__(None,None,None)
+            self._writer_guard=None
 
 
 if __name__ == "__main__":

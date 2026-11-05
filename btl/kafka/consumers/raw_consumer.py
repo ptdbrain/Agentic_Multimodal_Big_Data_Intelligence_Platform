@@ -286,7 +286,12 @@ class RawConsumer:
             return (storage.base_dir / object_path).resolve()
         return str(Path(object_path).as_posix())
 
-    def consume_batch_once(
+    def consume_batch_once(self,*args,**kwargs):
+        from operations.backup import writer_admission
+        with writer_admission(settings.runtime_mode):
+            return self._consume_batch_once(*args,**kwargs)
+
+    def _consume_batch_once(
         self,
         topics: Optional[List[str]] = None,
         max_records: int = 100,

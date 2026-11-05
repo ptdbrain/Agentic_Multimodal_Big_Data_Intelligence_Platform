@@ -48,6 +48,9 @@ class KafkaSettings:
     topic_reviews: str = get_env("KAFKA_TOPIC_REVIEWS", "raw.reviews")
     topic_prices: str = get_env("KAFKA_TOPIC_PRICES", "raw.prices")
     topic_articles: str = get_env("KAFKA_TOPIC_ARTICLES", "raw.articles")
+    replication_factor: int = int(get_env("KAFKA_REPLICATION_FACTOR", "1"))
+    min_insync_replicas: int = int(get_env("KAFKA_MIN_INSYNC_REPLICAS", "1"))
+    retention_ms: int = int(get_env("KAFKA_RETENTION_MS", "604800000"))
     topic_events: str = get_env("KAFKA_TOPIC_EVENTS", "raw.events")
 
 @dataclass

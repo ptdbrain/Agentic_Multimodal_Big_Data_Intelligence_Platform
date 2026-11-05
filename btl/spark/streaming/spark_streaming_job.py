@@ -495,7 +495,7 @@ class SparkStreamingJob:
             expected_count=final_count,
         )
 
-    def start_review_stream(
+    def _start_review_stream(
         self,
         output_path: Optional[str] = None,
         window_duration: str = "1 minute",
@@ -566,6 +566,22 @@ class SparkStreamingJob:
         self._active_query = w_writer.start()
         return self._active_query
 
+    def start_review_stream(self,*args,**kwargs):
+        from operations.backup import writer_admission
+        if getattr(self,'_writer_guard',None) is not None:
+            raise RuntimeError('Stream already owns writer admission; stop it before restart')
+        self._writer_guard=writer_admission(settings.runtime_mode)
+        try:
+            self._writer_guard.__enter__()
+        except Exception:
+            self._writer_guard=None
+            raise
+        try:
+            return self._start_review_stream(*args,**kwargs)
+        except Exception:
+            self.stop()
+            raise
+
     def await_termination(self, timeout: Optional[float] = None) -> None:
         if self._quarantine_query is not None and self._quarantine_query.isActive:
             self._quarantine_query.awaitTermination(timeout)
@@ -586,6 +602,12 @@ class SparkStreamingJob:
                     self._quarantine_query.stop()
             except Exception:
                 pass
+
+        if not any(query is not None and query.isActive for query in (self._active_query,self._quarantine_query)):
+            guard=getattr(self,'_writer_guard',None)
+            if guard:
+                guard.__exit__(None,None,None)
+                self._writer_guard=None
 
     def restart(self, **override_kwargs):
         """Stops any active query and restarts the streaming job from the same checkpointLocation."""

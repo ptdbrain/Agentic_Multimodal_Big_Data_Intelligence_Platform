@@ -57,11 +57,18 @@ except ImportError:
             return other
 
 
+def report_run_failure(context):
+    from operations.status import OperationStatus
+    with OperationStatus(mode=context.get('params',{}).get('mode',settings.runtime_mode)) as status:
+        status.fail(str(context.get('run_id')))
+
+
 default_args = {
     'owner': 'sentinel_data_engineering',
     'depends_on_past': False,
     'start_date': datetime.datetime(2026, 9, 24),
     'email_on_failure': False,
+    'on_failure_callback': report_run_failure,
     'retries': 2,
     'retry_delay': datetime.timedelta(minutes=5),
 }
@@ -98,7 +105,7 @@ def _manifest(context):
     return m
 
 
-def task_start(**context):
+def _task_start(**context):
     mode = context.get("params", {}).get("mode", settings.runtime_mode)
     mode = configure_pipeline_mode(mode)
     run_id = str(context.get("run_id") or uuid.uuid4())
@@ -119,7 +126,17 @@ def task_start(**context):
         raise
     finally:
         lease.close()
+    from operations.status import OperationStatus
+    with OperationStatus(mode=mode) as status:
+        status.start(run_id,'commerce','unverified')
     return {"manifest_path": path, "run_id": run_id}
+
+
+def task_start(**context):
+    from operations.backup import writer_admission
+    mode=context.get('params',{}).get('mode',settings.runtime_mode)
+    with writer_admission(mode):
+        return _task_start(**context)
 
 
 def task_collect_and_publish(**context):
@@ -186,6 +203,12 @@ def task_finish(**context):
         }]), conflict_keys=["metric_id"])
     finally:
         wh.close()
+    from operations.status import OperationStatus
+    with OperationStatus(mode=m.mode) as status:
+        received=sum(int(row.get('records_received',0)) for row in m.dq_metrics)
+        valid=sum(int(row.get('records_valid',0)) for row in m.dq_metrics)
+        quarantined=sum(int(row.get('records_quarantined',0)) for row in m.dq_metrics)
+        status.finish(m.run_id,received,valid,quarantined)
     m.status = "finished"
     save_manifest(m)
     lease = RunLease(m.mode)

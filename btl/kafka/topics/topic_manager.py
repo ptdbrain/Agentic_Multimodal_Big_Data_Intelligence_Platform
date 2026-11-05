@@ -60,7 +60,7 @@ class TopicManager:
             for topic_name, partitions in topic_configs:
                 if topic_name not in existing_topics:
                     to_create.append(
-                        NewTopic(name=topic_name, num_partitions=partitions, replication_factor=1)
+                        NewTopic(name=topic_name, num_partitions=partitions, replication_factor=settings.kafka.replication_factor, topic_configs={"retention.ms": str(settings.kafka.retention_ms), "min.insync.replicas": str(settings.kafka.min_insync_replicas)})
                     )
 
             created = []

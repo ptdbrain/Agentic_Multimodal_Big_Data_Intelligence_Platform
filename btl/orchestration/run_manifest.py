@@ -98,8 +98,10 @@ def canonical_writer(function):
         lease=RunLease(mode)
         acquired=False
         try:
-            lease.acquire(run_id);acquired=True
-            return function(*args,**kwargs)
+            from operations.backup import writer_admission
+            with writer_admission(mode):
+                lease.acquire(run_id);acquired=True
+                return function(*args,**kwargs)
         finally:
             if acquired: lease.release(run_id)
             lease.close()
