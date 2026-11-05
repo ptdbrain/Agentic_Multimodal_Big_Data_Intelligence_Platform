@@ -12,6 +12,10 @@ def isolated_local_runtime(request, tmp_path):
     old_storage = dict(storage.__dict__)
     old_env = dict(os.environ)
     mode='integration' if request.node.get_closest_marker('integration') else 'test'
+    if mode == 'test':
+        # Legacy deterministic UI fixtures have no verified source metadata.
+        # They explicitly opt into diagnostics; default-real UI tests clear this.
+        os.environ['DASHBOARD_DATA_SCOPE'] = 'all'
     settings.set_runtime_mode(mode)
     settings.storage.local_data_dir = tmp_path / 'lake'
     settings.database.sqlite_path = tmp_path / 'warehouse.sqlite'

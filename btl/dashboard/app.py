@@ -1,62 +1,8 @@
+"""Application entrypoint with one route registry and a custom shared sidebar."""
+
 import streamlit as st
-import pandas as pd
-from dashboard.utils import create_kpi_card, render_sidebar_source
-from dashboard.db_connector import DashboardDB
+from dashboard.navigation import page_groups
 
-st.set_page_config(
-    page_title="SentinelAI — Big Data Intelligence Platform",
-    page_icon="⚡",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-st.title("⚡ SentinelAI Platform")
-st.subheader("Data Foundation & Analytics Dashboard (Phase 1)")
-
-# Render active data warehouse source prominently
-render_sidebar_source()
-
-# Load baseline stats strictly from warehouse
-db = DashboardDB()
-st.caption(f"Active Warehouse Source: `{db.get_active_source_label()}`")
-kpis = db.get_kpi_summary()
-db.close()
-rating_label = str(kpis['avg_rating']) if kpis['avg_rating'] is not None else 'Unavailable'
-dq_label = f"{kpis['avg_dq_score']:.1f}%" if kpis['avg_dq_score'] is not None else 'Unavailable'
-
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.markdown(create_kpi_card("Total Products", f"{kpis['total_products']:,}", "Catalog Active"), unsafe_allow_html=True)
-with col2:
-    st.markdown(create_kpi_card("Total Reviews", f"{kpis['total_reviews']:,}", f"Avg Rating: {rating_label}"), unsafe_allow_html=True)
-with col3:
-    st.markdown(create_kpi_card("Active Brands", f"{kpis['total_brands']}", "Multi-vendor sync"), unsafe_allow_html=True)
-with col4:
-    st.markdown(create_kpi_card("Data Quality Score", dq_label, "Recorded pipeline reports"), unsafe_allow_html=True)
-
-st.divider()
-
-col_left, col_right = st.columns([2, 1])
-
-with col_left:
-    st.markdown("### 🏛️ System Architecture Status")
-    st.markdown("""
-    - **Data Lake (MinIO/Local)**: `sentinel-raw`, `sentinel-silver`, `sentinel-gold` (Active)
-    - **Streaming Engine**: Kafka Topics (`raw.products`, `raw.reviews`, `raw.prices`, `raw.events`)
-    - **Compute Engine**: Apache Spark Batch & Structured Streaming
-    - **Data Warehouse**: PostgreSQL / SQLite (`product_daily_stats`, `brand_daily_stats`)
-    - **Search Indexer**: Elasticsearch / In-memory full-text search
-    """)
-
-with col_right:
-    st.markdown("### 🧭 Navigation Guide")
-    st.info("""
-    Use the sidebar to explore platform views:
-    1. **Overview**: Executive KPIs & Trends
-    2. **Data Pipeline**: Kafka & Spark metrics
-    3. **Product Analytics**: Pricing, rating distributions
-    4. **Review Analytics**: Feedback, sentiment heuristic
-    5. **Trend Analytics**: Time series & moving averages
-    6. **Anomaly Center**: Price spikes & review bursts
-    7. **Data Quality & Lineage**: DQ scorecards & lineage
-    """)
+st.set_page_config(page_title="SentinelAI · Phân tích dữ liệu", page_icon=":material/monitoring:", layout="wide")
+pages = page_groups()
+st.navigation({label: [page for _, page in entries] for label, entries in pages}, position="hidden").run()

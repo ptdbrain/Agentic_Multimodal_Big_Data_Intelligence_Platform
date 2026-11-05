@@ -1,0 +1,21 @@
+{
+  "counts": {
+    "products": 40,
+    "reviews": 65,
+    "articles": 50
+  },
+  "pages": {
+    "home": "passed",
+    "1_Overview": "passed",
+    "2_Pipeline": "passed",
+    "3_Products": "passed",
+    "4_Reviews": "passed",
+    "5_Trends": "passed",
+    "6_Anomalies": "passed",
+    "7_Data_Quality": "passed",
+    "8_Web_Content": "passed"
+  },
+  "mode": "PostgreSQL + MinIO, persisted real data, AppTest",
+  "scope": "real",
+  "browser_visual_review": "unavailable: browser access host unavailable"
+}

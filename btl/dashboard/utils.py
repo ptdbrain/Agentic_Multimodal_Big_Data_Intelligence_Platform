@@ -5,18 +5,21 @@ import plotly.graph_objects as go
 from pathlib import Path
 from storage.storage_manager import storage
 
+
 def _load_table(table: str, silver_name: str = None, sample_name: str = None, db=None) -> pd.DataFrame:
     from dashboard.db_connector import DashboardDB
+
     owns_connection = db is None
-    db = db if db is not None else DashboardDB()
+    db = db if db is not None else open_dashboard_db()
     try:
-        frame = db.query(f"SELECT * FROM {table}")
+        frame = db.read_table(table)
         integration = db.is_integration
     finally:
         if owns_connection:
             db.close()
     frame.attrs["data_source"] = "PostgreSQL warehouse" if integration else "SQLite warehouse"
-    if integration or not frame.empty:
+    frame.attrs["data_scope"] = db.data_scope
+    if integration or db.data_scope != "all" or not frame.empty:
         return frame
     frame = storage.read_silver_parquet(silver_name) if silver_name else storage.read_gold_parquet(table)
     frame.attrs["data_source"] = "Silver lake" if silver_name else "Gold lake"
@@ -48,24 +51,31 @@ def load_gold_mart(mart_name: str) -> pd.DataFrame:
 
 def render_data_sources(*frames: pd.DataFrame) -> None:
     import streamlit as st
+
     sources = sorted({frame.attrs.get("data_source", "Unknown") for frame in frames})
-    st.caption("Data source: " + ", ".join(sources))
+    st.caption("Nguồn đang đọc: " + ", ".join(sources))
 
 
 def summarize_analytics_frame(frame: pd.DataFrame) -> dict:
     """Return provenance/coverage metadata for dashboard captions and warnings."""
     if frame is None or frame.empty:
         return {
-            "rows": 0, "timed_rows": 0, "untimed_rows": 0, "unknown_time_rows": 0,
-            "data_as_of": None, "catalog_price_fallback_rows": 0,
+            "rows": 0,
+            "timed_rows": 0,
+            "untimed_rows": 0,
+            "unknown_time_rows": 0,
+            "data_as_of": None,
+            "catalog_price_fallback_rows": 0,
             "rating_sample_size": 0,
         }
     timed = untimed = None
     unknown_time = len(frame)
     if "time_available" in frame:
-        normalized = frame["time_available"].map(
-            lambda value: value.strip().lower() if isinstance(value, str) else value
-        ).map({True: True, False: False, "true": True, "false": False, "1": True, "0": False})
+        normalized = (
+            frame["time_available"]
+            .map(lambda value: value.strip().lower() if isinstance(value, str) else value)
+            .map({True: True, False: False, "true": True, "false": False, "1": True, "0": False})
+        )
         unknown_time = int(normalized.isna().sum())
         if normalized.notna().any():
             timed = int(normalized.eq(True).sum())
@@ -77,7 +87,9 @@ def summarize_analytics_frame(frame: pd.DataFrame) -> dict:
     fallback_rows = int((frame["price_source"] == "catalog_fallback").sum()) if "price_source" in frame else 0
     sample_size = None
     if "rating_sample_size" in frame:
-        samples = pd.to_numeric(frame["rating_sample_size"], errors="coerce").replace([float("inf"), -float("inf")], float("nan"))
+        samples = pd.to_numeric(frame["rating_sample_size"], errors="coerce").replace(
+            [float("inf"), -float("inf")], float("nan")
+        )
         samples = samples[samples.ge(0)]
         if not samples.empty:
             sample_size = int(samples.sum())
@@ -92,54 +104,75 @@ def summarize_analytics_frame(frame: pd.DataFrame) -> dict:
     }
 
 
-def render_sidebar_source():
+def filter_source_scope(frame, scope):
+    """Filter a bounded operational sample using the same labels as SQL views."""
+    if scope == "all":
+        return frame
+    groups = (
+        frame.get("source_group", pd.Series(None, index=frame.index, dtype=object)).fillna("").astype(str).str.strip()
+    )
+    observed = groups.isin(["marketplace", "web_content"])
+    simulated = groups.eq("simulation")
+    methods = (
+        frame.get("acquisition_method", pd.Series(None, index=frame.index, dtype=object))
+        .fillna("")
+        .astype(str)
+        .str.strip()
+    )
+    observed &= methods.isin(["live", "snapshot_replay"])
+    simulated &= methods.eq("generated")
+    masks = {"real": observed, "simulation": simulated, "unverified": ~(observed | simulated)}
+    if scope not in masks:
+        raise ValueError("Unknown source scope")
+    return frame.loc[masks[scope]].copy()
+
+
+def open_dashboard_db():
     import streamlit as st
     from dashboard.db_connector import DashboardDB
-    try:
-        db = DashboardDB()
-        label = db.get_active_source_label()
-        db.close()
-        st.sidebar.markdown("---")
-        if db.is_integration:
-            st.sidebar.success(f"🟢 **Warehouse Source (Integration)**\n\n`{label}`")
-        else:
-            st.sidebar.warning(f"🟡 **Warehouse Source (Local/Test)**\n\n`{label}`")
-    except Exception as e:
-        st.sidebar.error(f"🔴 **Warehouse Disconnected**\n\n{e}")
+
+    scope = st.session_state.get("dashboard_data_scope", os.environ.get("DASHBOARD_DATA_SCOPE", "real"))
+    return DashboardDB(data_scope=scope)
+
+
+def render_sidebar_source():
+    from dashboard.ui import sidebar
+
+    sidebar()
+
 
 def get_datalake_metrics() -> dict:
     return storage.get_storage_stats()
 
-def create_kpi_card(title: str, value: str, delta: str = None) -> str:
-    return f"""
-    <div style="background-color: #1e293b; padding: 18px; border-radius: 10px; border-left: 5px solid #38bdf8; margin-bottom: 10px;">
-        <span style="font-size: 13px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">{title}</span>
-        <div style="font-size: 28px; font-weight: 700; color: #f8fafc; margin-top: 4px;">{value}</div>
-        {f'<div style="font-size: 12px; color: #34d399; margin-top: 4px;">{delta}</div>' if delta else ''}
-    </div>
-    """
 
+def create_kpi_card(title: str, value: str, delta: str = None) -> str:
+    from dashboard.ui import metric_html
+
+    return metric_html(title, value, delta)
 
 
 def render_analytics_quality(frame: pd.DataFrame) -> None:
-    """Explain coverage and provenance without inferring unknown metadata."""
+    """Coverage metadata stays available without overwhelming the main view."""
     import streamlit as st
+
     summary = summarize_analytics_frame(frame)
-    as_of = summary["data_as_of"] or "unknown"
-    st.caption(f"Data as of: {as_of}")
-    if summary["untimed_rows"] is None:
-        st.info("Observation-time coverage: unknown (metadata unavailable)")
-    elif summary["untimed_rows"]:
-        st.warning(f"{summary['untimed_rows']} records without valid observation time")
-    if summary["unknown_time_rows"] and summary["untimed_rows"] is not None:
-        st.info(f"{summary['unknown_time_rows']} records have unknown observation-time coverage")
-    if "price_source" not in frame:
-        st.caption("Price provenance: unknown")
-    elif summary["catalog_price_fallback_rows"]:
-        st.warning(f"{summary['catalog_price_fallback_rows']} catalog price fallback records")
-    if summary["rating_sample_size"] is not None:
-        st.caption(f"Rating sample size: {summary['rating_sample_size']}")
-        if summary["rating_sample_size"] == 0:
-            st.warning("No valid rating sample; rating metrics are unavailable")
-    else:
-        st.caption("Rating sample size: unknown")
+    with st.expander("Thông tin chất lượng & nguồn gốc"):
+        st.caption("Dữ liệu đến: " + (summary["data_as_of"] or "Chưa xác định"))
+        if summary["untimed_rows"] is None:
+            st.info("Chưa biết độ bao phủ thời gian quan sát do thiếu metadata.")
+        elif summary["untimed_rows"]:
+            st.warning(f"{summary['untimed_rows']} bản ghi không có thời gian quan sát hợp lệ.")
+        if summary["unknown_time_rows"] and summary["untimed_rows"] is not None:
+            st.info(f"{summary['unknown_time_rows']} bản ghi chưa biết độ bao phủ thời gian quan sát.")
+        if "price_source" not in frame:
+            st.caption("Nguồn gốc giá: Chưa xác định")
+        elif summary["catalog_price_fallback_rows"]:
+            st.warning(
+                f"{summary['catalog_price_fallback_rows']} bản ghi dùng giá danh mục thay cho quan sát giá theo thời gian."
+            )
+        if summary["rating_sample_size"] is not None:
+            st.caption(f"Số mẫu điểm hợp lệ: {summary['rating_sample_size']:,}")
+            if not summary["rating_sample_size"]:
+                st.warning("Chưa có mẫu điểm hợp lệ; chỉ số điểm đánh giá chưa khả dụng.")
+        else:
+            st.caption("Số mẫu điểm hợp lệ: Chưa xác định")

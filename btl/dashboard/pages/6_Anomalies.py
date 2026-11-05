@@ -1,56 +1,73 @@
-import streamlit as st
 import pandas as pd
-from dashboard.db_connector import DashboardDB
-from dashboard.utils import render_sidebar_source
+import streamlit as st
+from dashboard import ui
+from dashboard.experience import options, search_frame, clear_keys
 
-st.set_page_config(page_title="Anomaly Center", page_icon="🚨", layout="wide")
-st.title("🚨 Anomaly Center & Incident Intelligence")
-
-render_sidebar_source()
-
-st.markdown("""
-Pre-computed analytical anomaly incidents served directly from **PostgreSQL DW (`anomaly_events`)** / **Gold Layer**:
-**Review Bursts**, **Price Outliers**, and **Sudden Rating Drops**.
-""")
-
-db = DashboardDB()
-try:
-    df_anom = db.get_anomaly_events()
-finally:
-    db.close()
-
-all_anomalies = df_anom.to_dict(orient="records") if not df_anom.empty else []
-
-# Overview metrics
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    st.metric("Total Detected Incidents", len(all_anomalies))
-with c2:
-    burst_count = sum(1 for a in all_anomalies if "BURST" in str(a.get("anomaly_type", "")) or "BOMBING" in str(a.get("anomaly_type", "")))
-    st.metric("Review Bursts / Spikes", burst_count)
-with c3:
-    drop_count = sum(1 for a in all_anomalies if "RATING_DROP" in str(a.get("anomaly_type", "")))
-    st.metric("Rating Drops", drop_count)
-with c4:
-    price_count = sum(1 for a in all_anomalies if "PRICE" in str(a.get("anomaly_type", "")))
-    st.metric("Price Outliers", price_count)
-
-st.divider()
-
-if not df_anom.empty:
-    st.subheader(f"Recorded Incidents ({len(df_anom)} events recorded)")
-    display_cols = [c for c in ["event_id", "entity_type", "entity_id", "anomaly_type", "score", "timestamp", "run_id", "data_quality_status", "baseline_window_hours", "baseline_window_days", "baseline_sample_size", "baseline_sample_unit", "baseline_method", "baseline_start", "baseline_end", "current_sample_size", "description"] if c in df_anom.columns]
-    st.dataframe(df_anom[display_cols] if display_cols else df_anom, use_container_width=True)
-
-    # Dynamic Drill-Down
-    st.divider()
-    st.subheader("Incident Drill-Down")
-    if "entity_id" in df_anom.columns:
-        affected_ids = sorted(list(set(str(e) for e in df_anom["entity_id"].dropna().unique())))
-        if affected_ids:
-            selected_entity = st.selectbox("Inspect Affected Entity", affected_ids)
-            entity_events = df_anom[df_anom["entity_id"] == selected_entity]
-            st.write(f"Audit log for **{selected_entity}**:")
-            st.dataframe(entity_events, use_container_width=True)
-else:
-    st.info("No anomaly incidents are recorded. This does not establish normal behavior; detection may lack history or a successful quality check.")
+ui.setup_page(
+    "Theo dõi bất thường",
+    "Khám phá các tín hiệu đã được phát hiện, kèm ngữ cảnh và mẫu dữ liệu dùng để so sánh.",
+    "anomalies",
+)
+with ui.warehouse() as db:
+    events = db.get_anomaly_events()
+records = events.to_dict("records") if not events.empty else []
+kind = events.get("anomaly_type", pd.Series(dtype=str)).fillna("").astype(str)
+for col, (label, value, note) in zip(
+    st.columns(4),
+    [
+        ("Sự kiện đã ghi nhận", len(events), "Tối đa 100 sự kiện gần nhất"),
+        ("Tăng đột biến", int(kind.str.contains("BURST|BOMBING", regex=True).sum()), "Theo quy tắc phát hiện"),
+        ("Sụt giảm điểm", int(kind.str.contains("RATING_DROP", regex=False).sum()), "So sánh với lịch sử"),
+        ("Bất thường giá", int(kind.str.contains("PRICE", regex=False).sum()), "Giữ đơn vị tiền tệ nguồn"),
+    ],
+):
+    with col:
+        ui.metric(label, ui.number(value), note)
+st.write("")
+if events.empty:
+    ui.empty_state(
+        "Chưa ghi nhận sự kiện bất thường",
+        "Điều này chưa đủ để kết luận dữ liệu bình thường. Việc phát hiện cần lịch sử và đầu vào đạt chất lượng.",
+        "✓",
+    )
+    ui.footer()
+    st.stop()
+with st.container(border=True):
+    a, b, c = st.columns([2, 1, 0.65])
+    query = a.text_input("Tìm sự kiện", placeholder="Mã đối tượng hoặc mô tả…", key="events_query")
+    selected = b.multiselect("Loại bất thường", options(events, "anomaly_type"), key="events_types")
+    with c:
+        st.caption("Bộ lọc")
+        st.button("Xóa bộ lọc", on_click=clear_keys, args=("events_query", "events_types"), width="stretch")
+shown = search_frame(events, query, ["entity_id", "event_id", "description", "anomaly_type"])
+if selected:
+    shown = shown.loc[shown["anomaly_type"].isin(selected)]
+with st.container(border=True):
+    st.subheader("Nhật ký phát hiện")
+    if shown.empty:
+        ui.empty_state("Không có sự kiện phù hợp", "Thử thay từ khóa hoặc xóa bộ lọc.", "⌕")
+    else:
+        ui.download(shown, "bat-thuong.csv")
+        ui.table(
+            shown,
+            [
+                "event_id",
+                "entity_id",
+                "anomaly_type",
+                "score",
+                "timestamp",
+                "description",
+                "run_id",
+                "data_quality_status",
+                "baseline_sample_size",
+                "baseline_sample_unit",
+                "baseline_method",
+                "baseline_start",
+                "baseline_end",
+                "current_sample_size",
+            ],
+        )
+        with st.expander("Chi tiết đối tượng"):
+            entity = st.selectbox("Chọn đối tượng", options(shown, "entity_id"))
+            ui.table(shown.loc[shown["entity_id"].astype(str).eq(entity)])
+ui.footer()

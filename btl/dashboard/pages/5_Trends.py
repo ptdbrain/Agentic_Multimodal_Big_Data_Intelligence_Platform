@@ -1,60 +1,81 @@
-from dashboard.utils import render_analytics_quality
 import streamlit as st
-import pandas as pd
 import plotly.express as px
-from dashboard.utils import load_reviews_data, render_sidebar_source, render_data_sources
 from analytics.trend.trends import TrendAnalyzer
+from dashboard import ui
+from dashboard.utils import load_reviews_data, render_data_sources, render_analytics_quality
 
-st.set_page_config(page_title="Trend Analytics", page_icon="📈", layout="wide")
-st.title("📈 Temporal & Trend Analytics")
-
-render_sidebar_source()
-
-revs = load_reviews_data()
-render_data_sources(revs)
-render_analytics_quality(revs)
-
-if revs.empty:
-    st.warning("No review data available to analyze trends. Please run the E2E pipeline.")
-    st.stop()
-
-# Interactive Controls
-col_ctrl1, col_ctrl2 = st.columns(2)
-with col_ctrl1:
-    window_days = st.slider("Rolling Window (Days)", min_value=3, max_value=30, value=7, step=1)
-with col_ctrl2:
-    sentiment_cut = st.slider("Positive Rating Cutoff (Stars)", min_value=3.0, max_value=5.0, value=4.0, step=0.5)
-
-daily = TrendAnalyzer.daily_review_trends(
-    revs,
-    rolling_window=window_days,
-    positive_threshold=sentiment_cut,
-    negative_threshold=2.0
+ui.setup_page(
+    "Diễn biến & xu hướng", "Theo dõi điểm đánh giá theo thời gian với cửa sổ quan sát và độ bao phủ rõ ràng.", "trends"
 )
-
-st.subheader("Daily Review Volume & Positive/Negative Trajectory")
-if not daily.empty:
-    insufficient = daily["trend_status"] == "insufficient_data"
-    if insufficient.any():
-        st.warning("Insufficient calendar coverage or review sample; smoothed trend is hidden for those dates.")
-    st.caption("Rolling rating is weighted by review volume; missing calendar days are not invented observations.")
-    st.dataframe(daily[["date", "rating_sample_size", "rolling_rating_sample_size", "observed_days",
-                        "missing_days", "baseline_start", "baseline_end", "trend_status"]],
-                 use_container_width=True)
-    rating_plot = daily.copy()
-    rating_plot.loc[insufficient, "rolling_avg_rating"] = float("nan")
-    fig_vol = px.line(daily, x="date", y=["positive_count", "negative_count"],
-                      labels={"value": "Reviews Count", "date": "Date"},
-                      title=f"Daily Sentiment Trajectory (>= {sentiment_cut}★ Positive vs <= 2.0★ Negative)",
-                      color_discrete_map={"positive_count": "#34d399", "negative_count": "#f87171"})
-    st.plotly_chart(fig_vol, use_container_width=True)
-
-    st.subheader(f"Average Rating Evolution ({window_days}-Day Moving Window)")
-    fig_rating = px.line(rating_plot, x="date", y=["avg_rating", "rolling_avg_rating"],
-                         labels={"value": "Rating", "date": "Date"},
-                         title=f"Daily Average Rating & {window_days}-Day Smoothed Trend",
-                         color_discrete_map={"avg_rating": "#94a3b8", "rolling_avg_rating": "#38bdf8"})
-    st.plotly_chart(fig_rating, use_container_width=True)
-else:
-    st.info("No temporal records found in review dates.")
-
+with ui.warehouse() as db:
+    reviews = load_reviews_data(db=db)
+render_data_sources(reviews)
+if reviews.empty:
+    ui.empty_state(
+        "Chưa đủ dữ liệu để phân tích xu hướng", "Cần đánh giá có ngày quan sát hợp lệ trong phạm vi đang chọn."
+    )
+    ui.footer()
+    st.stop()
+with st.container(border=True):
+    a, b = st.columns(2)
+    window = a.slider("Cửa sổ trung bình (ngày)", 3, 30, 7, 1)
+    threshold = b.slider("Ngưỡng đánh giá tích cực (sao)", 3.0, 5.0, 4.0, 0.5)
+    st.caption("Phân nhóm tích cực/tiêu cực theo điểm số. Ngày thiếu không được coi là ngày có 0 đánh giá.")
+daily = TrendAnalyzer.daily_review_trends(
+    reviews, rolling_window=window, positive_threshold=threshold, negative_threshold=2.0
+)
+if daily.empty:
+    ui.empty_state(
+        "Chưa có mốc thời gian hợp lệ",
+        "Các bản ghi thiếu thời gian vẫn được giữ trong dữ liệu, không được đưa vào xu hướng theo ngày.",
+    )
+    ui.footer()
+    st.stop()
+insufficient = daily["trend_status"].eq("insufficient_data")
+if insufficient.any():
+    st.warning("Chưa đủ độ bao phủ theo ngày hoặc số mẫu; đường trung bình được ẩn tại các ngày chưa đủ dữ liệu.")
+plot = daily.copy()
+plot.loc[insufficient, "rolling_avg_rating"] = float("nan")
+with st.container(border=True):
+    st.subheader("Phản hồi tích cực & tiêu cực")
+    ui.chart(
+        px.line(
+            daily,
+            x="date",
+            y=["positive_count", "negative_count"],
+            color_discrete_map={"positive_count": "#20b5a2", "negative_count": "#ea8b83"},
+            labels={"date": "Ngày", "value": "Số đánh giá", "variable": "Nhóm điểm"},
+        ),
+        340,
+    )
+with st.container(border=True):
+    st.subheader("Diễn biến điểm trung bình")
+    st.caption("Trung bình trượt được tính theo số mẫu đánh giá, không trung bình đều giữa các ngày.")
+    ui.chart(
+        px.line(
+            plot,
+            x="date",
+            y=["avg_rating", "rolling_avg_rating"],
+            color_discrete_map={"avg_rating": "#b7becf", "rolling_avg_rating": "#7560e9"},
+            labels={"date": "Ngày", "value": "Điểm đánh giá", "variable": "Chuỗi"},
+        ),
+        320,
+    )
+with st.expander("Dữ liệu và độ bao phủ cửa sổ"):
+    ui.download(daily, "xu-huong.csv")
+    ui.table(
+        daily[
+            [
+                "date",
+                "rating_sample_size",
+                "rolling_rating_sample_size",
+                "observed_days",
+                "missing_days",
+                "baseline_start",
+                "baseline_end",
+                "trend_status",
+            ]
+        ]
+    )
+render_analytics_quality(reviews)
+ui.footer()

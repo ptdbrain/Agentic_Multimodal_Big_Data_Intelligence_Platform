@@ -1,66 +1,67 @@
-from dashboard.utils import render_analytics_quality
 import streamlit as st
 import plotly.express as px
 from analytics.trend.trends import TrendAnalyzer
-from dashboard.utils import create_kpi_card, render_sidebar_source
-from dashboard.db_connector import DashboardDB
+from dashboard import ui
+from dashboard.utils import render_analytics_quality
 
-st.set_page_config(page_title="Executive Overview", page_icon="📊", layout="wide")
-st.title("📊 Executive Overview")
-
-render_sidebar_source()
-
-# Load verified analytical data from PostgreSQL DW / Gold Marts
-db = DashboardDB()
-kpis = db.get_kpi_summary()
-p_stats = db.get_product_daily_stats()
-b_stats = db.get_brand_daily_stats()
-c_stats = db.get_category_daily_stats()
-db.close()
-render_analytics_quality(p_stats)
-
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    st.markdown(create_kpi_card("Total Reviews", f"{kpis['total_reviews']:,}"), unsafe_allow_html=True)
-with c2:
-    st.markdown(create_kpi_card("Total Products", f"{kpis['total_products']:,}"), unsafe_allow_html=True)
-with c3:
-    st.markdown(create_kpi_card("Total Brands", f"{kpis['total_brands']}"), unsafe_allow_html=True)
-with c4:
-    rating = f"⭐ {kpis['avg_rating']} / 5.0" if kpis['avg_rating'] is not None else 'Unavailable'
-    st.markdown(create_kpi_card("Average Rating", rating, f"Sample: {kpis['rating_sample_size']:,} reviews"), unsafe_allow_html=True)
-
-st.divider()
-
-col_chart1, col_chart2 = st.columns(2)
-
-with col_chart1:
-    st.subheader("Daily Review Volume Trend")
-    if not p_stats.empty and 'date' in p_stats.columns and 'review_count' in p_stats.columns:
-        daily_trends = TrendAnalyzer.daily_volume_trends(p_stats)
-        if not daily_trends.empty:
-            insufficient = daily_trends['trend_status'] == 'insufficient_data'
+ui.setup_page("Tổng quan phân tích", "Nắm bắt mức độ bao phủ dữ liệu và diễn biến đánh giá theo thời gian.", "overview")
+with ui.warehouse() as db:
+    kpis = db.get_kpi_summary()
+    products = db.get_product_daily_stats()
+    categories = db.get_category_daily_stats()
+for col, (title, value, note) in zip(
+    st.columns(4),
+    [
+        ("Đánh giá đã thu", ui.number(kpis["total_reviews"]), "Từ dữ liệu đã xử lý"),
+        ("Sản phẩm", ui.number(kpis["total_products"]), "Trong phạm vi đang chọn"),
+        ("Thương hiệu", ui.number(kpis["total_brands"]), "Đã có thống kê"),
+        ("Điểm trung bình", ui.number(kpis["avg_rating"], 2), f"{kpis['rating_sample_size']:,} mẫu điểm hợp lệ"),
+    ],
+):
+    with col:
+        ui.metric(title, value, note)
+st.write("")
+left, right = st.columns([1.6, 1], gap="large")
+with left:
+    with st.container(border=True):
+        st.subheader("Đánh giá theo ngày")
+        if not products.empty and {"date", "review_count"}.issubset(products):
+            daily = TrendAnalyzer.daily_volume_trends(products)
+            insufficient = daily["trend_status"].eq("insufficient_data")
             if insufficient.any():
-                st.warning('Insufficient calendar coverage; smoothed volume is hidden for those dates.')
-            st.caption('7 calendar days; average over observed days. Missing days remain unknown.')
-            with st.expander('Volume window coverage'):
-                st.dataframe(daily_trends[['date', 'observed_days', 'missing_days', 'baseline_start',
-                                          'baseline_end', 'trend_status']], use_container_width=True)
-            plotted = daily_trends.copy()
-            plotted.loc[insufficient, 'rolling_avg_count'] = float('nan')
-            fig = px.line(plotted, x="date", y=["review_count", "rolling_avg_count"],
-                          labels={"value": "Reviews", "date": "Date"},
-                          title="Review Volume & 7-Day Moving Average",
-                          color_discrete_map={"review_count": "#38bdf8", "rolling_avg_count": "#f59e0b"})
-            st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No daily review trends available yet. Run the Spark Batch pipeline to populate.")
-
-with col_chart2:
-    st.subheader("Products by Category Share")
-    if not c_stats.empty and 'category' in c_stats.columns and 'product_count' in c_stats.columns:
-        cat_counts = c_stats.groupby('category')['product_count'].sum().reset_index()
-        fig_pie = px.pie(cat_counts, values="product_count", names="category", title="Category Distribution", hole=0.4)
-        st.plotly_chart(fig_pie, use_container_width=True)
-    else:
-        st.info("No category distribution available yet. Run the Spark Batch pipeline to populate.")
+                st.warning("Chưa đủ độ bao phủ theo ngày; đường trung bình được ẩn tại các ngày thiếu dữ liệu.")
+            plotted = daily.copy()
+            plotted.loc[insufficient, "rolling_avg_count"] = float("nan")
+            ui.chart(
+                px.line(
+                    plotted,
+                    x="date",
+                    y=["review_count", "rolling_avg_count"],
+                    labels={"date": "Ngày", "value": "Đánh giá", "variable": "Chuỗi"},
+                    color_discrete_map={"review_count": "#7560e9", "rolling_avg_count": "#20b5a2"},
+                )
+            )
+            with st.expander("Độ bao phủ cửa sổ 7 ngày"):
+                st.caption("Trung bình tính trên ngày có quan sát. Ngày thiếu được giữ là chưa biết.")
+                ui.table(
+                    daily[["date", "observed_days", "missing_days", "baseline_start", "baseline_end", "trend_status"]]
+                )
+        else:
+            ui.empty_state("Chưa có diễn biến theo ngày", "Cần đánh giá có thời gian quan sát hợp lệ để hiển thị.")
+with right:
+    with st.container(border=True):
+        st.subheader("Danh mục sản phẩm")
+        if not categories.empty and {"category", "product_count"}.issubset(categories):
+            # Latest date avoids counting the same catalog once per historical day.
+            snapshot = categories
+            if "date" in snapshot:
+                snapshot = snapshot.loc[snapshot["date"].eq(snapshot["date"].max())]
+            counts = snapshot.groupby("category", as_index=False)["product_count"].sum()
+            ui.chart(
+                px.pie(counts, values="product_count", names="category", hole=0.7, color_discrete_sequence=ui.COLORS)
+            )
+            st.caption("Cơ cấu danh mục tại ngày thống kê gần nhất.")
+        else:
+            ui.empty_state("Chưa có cơ cấu danh mục", "Thống kê danh mục sẽ xuất hiện sau khi dữ liệu được xử lý.")
+render_analytics_quality(products)
+ui.footer()
