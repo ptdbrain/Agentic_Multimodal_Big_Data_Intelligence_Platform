@@ -8,9 +8,9 @@ CREATE TABLE IF NOT EXISTS products (
     category VARCHAR(100) NOT NULL,
     subcategory VARCHAR(100),
     price NUMERIC(15, 2) NOT NULL,
-    currency VARCHAR(10) DEFAULT 'VND',
+    currency VARCHAR(10),
     rating NUMERIC(3, 2),
-    review_count INTEGER DEFAULT 0,
+    review_count INTEGER,
     seller VARCHAR(255),
     source VARCHAR(100),
     normalization_status VARCHAR(30),
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     review_date DATE,
     sentiment VARCHAR(20),
     verified_purchase BOOLEAN,
-    helpful_count INTEGER DEFAULT 0,
+    helpful_count INTEGER,
     source VARCHAR(100),
     normalization_status VARCHAR(30),
     normalization_errors TEXT,
@@ -180,3 +180,19 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE INDEX IF NOT EXISTS idx_reviews_product_id ON reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_date ON reviews(review_date);
 
+
+-- Independent public web content; never represented as product reviews.
+CREATE TABLE IF NOT EXISTS articles (
+    article_id TEXT PRIMARY KEY, source_group TEXT NOT NULL, source_name TEXT NOT NULL,
+    source_url TEXT NOT NULL, acquisition_method TEXT NOT NULL, title TEXT NOT NULL,
+    body TEXT NOT NULL, published_at TIMESTAMP, collected_at TIMESTAMP NOT NULL,
+    content_sha256 TEXT NOT NULL, run_id TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS article_daily_stats (
+    date DATE NOT NULL, source_name TEXT NOT NULL, article_count INTEGER NOT NULL,
+    total_text_characters INTEGER NOT NULL, run_id TEXT NOT NULL,
+    PRIMARY KEY(date, source_name)
+);
+CREATE TABLE IF NOT EXISTS article_pipeline_runs (
+    run_id TEXT PRIMARY KEY, manifest_json TEXT NOT NULL
+);

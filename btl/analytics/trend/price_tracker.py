@@ -23,6 +23,8 @@ class PriceTracker:
         if filtered.empty:
             return pd.DataFrame()
 
+        from analytics.currency import require_single_currency
+        currency = require_single_currency(filtered)
         filtered["date"] = pd.to_datetime(
             filtered[timestamp_col], errors="coerce", utc=True
         ).dt.date
@@ -39,6 +41,7 @@ class PriceTracker:
             max_price=(price_col, "max")
         ).reset_index().sort_values("date")
 
+        daily["currency"] = currency
         return daily
 
     @staticmethod
@@ -50,6 +53,8 @@ class PriceTracker:
         if df_prices.empty or product_id_col not in df_prices.columns or price_col not in df_prices.columns:
             return pd.DataFrame()
 
+        from analytics.currency import require_single_currency
+        currency = require_single_currency(df_prices)
         clean = df_prices.copy()
         clean[price_col] = pd.to_numeric(clean[price_col], errors="coerce")
         clean = clean[clean[price_col].gt(0) & np.isfinite(clean[price_col])].dropna(subset=[price_col])
@@ -69,5 +74,6 @@ class PriceTracker:
             stats["std_price"] / stats["mean_price"].replace(0, float("nan"))
         ).round(4)
         stats["volatility_status"] = np.where(stats["data_points"] >= 2, "available", "insufficient_data")
+        stats["currency"] = currency
         return stats.sort_values(by="volatility_ratio", ascending=False)
 

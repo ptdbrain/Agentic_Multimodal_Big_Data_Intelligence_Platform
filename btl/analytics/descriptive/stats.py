@@ -32,6 +32,8 @@ class DescriptiveStats:
                 star_counts = r_series.round().value_counts().to_dict()
                 star_dist = {f"{int(k)}_star_ratio": round(v / len(r_series), 4) for k, v in star_counts.items()}
 
+        from analytics.currency import require_single_currency
+        currency = require_single_currency(df_products)
         price_stats = {}
         if df_products is not None and not df_products.empty and "price" in df_products.columns:
             p_series = pd.to_numeric(df_products["price"], errors="coerce")
@@ -54,6 +56,7 @@ class DescriptiveStats:
             "rating_sample_size": rating_sample_size,
             "rating_availability_status": "available" if rating_sample_size else "unavailable",
             "star_distribution": star_dist,
+            "currency": currency,
             "price_stats": price_stats
         }
 

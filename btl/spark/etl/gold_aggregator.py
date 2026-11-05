@@ -46,6 +46,10 @@ class GoldAggregator:
         products = (df_products if df_products is not None else mgr.read_silver_parquet('products')).copy()
         reviews = df_reviews if df_reviews is not None else mgr.read_silver_parquet('reviews')
         prices = df_prices if df_prices is not None else pd.DataFrame()
+        from ingestion.provenance import classify_source_group
+        source_group = classify_source_group(products, reviews, prices)
+        from analytics.currency import require_single_currency
+        currency = require_single_currency(products, prices)
         positive = positive_threshold if positive_threshold is not None else settings.analytics.sentiment_positive_threshold
         negative = negative_threshold if negative_threshold is not None else settings.analytics.sentiment_negative_threshold
         marts = {}
@@ -128,6 +132,8 @@ class GoldAggregator:
 
         effective_run = run_id or f'gold-{uuid.uuid4().hex}'
         for name, frame in marts.items():
+            frame['currency'] = currency
+            frame['source_group'] = source_group
             frame['run_id'] = effective_run
             frame['source_run_id'] = source_run_id
             if 'time_available' not in frame:
@@ -138,7 +144,7 @@ class GoldAggregator:
             for name, dimension in [('product_daily_stats','product_id'),('brand_daily_stats','brand'),
                                     ('category_daily_stats','category'),('price_daily_stats','product_id')]:
                 if name not in marts:
-                    columns = {'date':'datetime64[ns]',dimension:'str','run_id':'str','source_run_id':'str',
+                    columns = {'date':'datetime64[ns]',dimension:'str','source_group':'str','run_id':'str','source_run_id':'str',
                                'data_as_of':'datetime64[ns]','time_available':'bool'}
                     if name == 'price_daily_stats':
                         columns.update({key:'float64' for key in ['min_price','max_price','avg_price','price_std']})
@@ -155,7 +161,7 @@ class GoldAggregator:
             from storage.write_lock import write_lock
             from spark.spark_session import SparkSessionFactory
             with write_lock(SparkSessionFactory.resolve_storage_path('', layer='gold')):
-                snapshot = {'run_id':effective_run,'source_run_id':source_run_id,'status':'publishing',
+                snapshot = {'run_id':effective_run,'source_run_id':source_run_id,'status':'publishing','source_group':source_group,
                             'rows':{name:len(frame) for name,frame in marts.items()}}
                 mgr.write_json('gold/_snapshot.json', snapshot)
                 for name, frame in marts.items():

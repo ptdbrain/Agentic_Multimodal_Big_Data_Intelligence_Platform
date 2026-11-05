@@ -17,6 +17,8 @@ class ComparativeAnalytics:
     ) -> pd.DataFrame:
         if df_products is None or df_products.empty or dimension not in df_products.columns:
             return pd.DataFrame()
+        from analytics.currency import require_single_currency
+        currency = require_single_currency(df_products)
         products = df_products.copy()
         result = products.groupby(dimension)[product_id_col].nunique().rename("product_count").reset_index()
         # Catalog price is a per-product statistic, independent of review volume.
@@ -57,6 +59,7 @@ class ComparativeAnalytics:
         for col in ("avg_price", "min_price", "max_price"):
             if col in result:
                 result[col] = result[col].round(2)
+        result["currency"] = currency
         return result.sort_values("review_count", ascending=False)
 
     @classmethod

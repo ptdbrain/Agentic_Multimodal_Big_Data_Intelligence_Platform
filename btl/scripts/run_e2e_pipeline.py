@@ -15,7 +15,9 @@ import sys
 import os
 import uuid
 import hashlib
+import json
 import argparse
+from collections import Counter
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 import pandas as pd
@@ -140,6 +142,9 @@ def stage_1_ingest_sources(
         src_revs_ref = str(sample_revs_path)
         src_prices_ref = str(sample_prices_path)
 
+    from ingestion.provenance import classify_source_group
+    source_group = classify_source_group(products_raw, reviews_raw, prices_raw)
+
     # Guarantee ingest-time PII sanitization on all records
     products_raw = sanitize_records_pii(products_raw, remove_user_id=remove_user_id)
     reviews_raw = sanitize_records_pii(reviews_raw, remove_user_id=remove_user_id)
@@ -191,6 +196,7 @@ def stage_1_ingest_sources(
     )
     return {
         "source_type": resolved_source_type,
+        "source_group": source_group,
         "products_raw": products_raw,
         "reviews_raw": reviews_raw,
         "prices_raw": prices_raw,
@@ -209,6 +215,17 @@ def stage_2_kafka_produce_and_consume(
     """Stage 2: Kafka Producer -> Kafka -> RawConsumer with delivery & offset verification."""
     print("\n[Stage 2/6] Kafka Producer -> Kafka -> RawConsumer...")
     is_local = effective_mode not in ("integration", "production")
+
+    def payload_hash(row):
+        return hashlib.sha256(json.dumps(row, sort_keys=True, ensure_ascii=False,
+                                         allow_nan=False).encode('utf-8')).hexdigest()
+
+    # Capture before handing mutable source objects to transport. Counts alone
+    # cannot prove that a reused Kafka topic delivered this input generation.
+    sources = [('products', products_raw, settings.kafka.topic_products),
+               ('reviews', reviews_raw, settings.kafka.topic_reviews),
+               ('prices', prices_raw, settings.kafka.topic_prices)]
+    expected_content = {topic: Counter(payload_hash(row) for row in rows) for _, rows, topic in sources}
 
     TopicManager.ensure_topics(mode=effective_mode)
 
@@ -306,6 +323,46 @@ def stage_2_kafka_produce_and_consume(
         raise RuntimeError("Stage 2 verification failed: No valid price records consumed to Bronze.")
     if not is_local and not consume_result.get("committed_offsets"):
         raise RuntimeError("Stage 2 verification failed: Kafka offsets were not committed in integration mode.")
+
+    # Bronze DQ only sees accepted transport records. Measure source schema
+    # rejection separately so a lost half-catalog cannot appear 100% healthy.
+    source_contracts = {}
+    rejected = 0
+    for dataset, rows, topic in sources:
+        if not rows:
+            continue
+        actual_content = Counter()
+        for path in consume_result['batches_by_topic'].get(topic, []):
+            actual_content.update(payload_hash(envelope['payload']) for envelope in storage.read_json(path))
+        for rejected_record in consume_result['dlq_records']:
+            if rejected_record['source_topic'] == topic:
+                envelope = rejected_record['payload']
+                actual_content[payload_hash(envelope['payload'])] += 1
+        if actual_content != expected_content[topic]:
+            raise RuntimeError(f'Source content mismatch for {dataset}: Bronze and DLQ differ from delivered input')
+        accepted = topic_counts.get(topic, 0)
+        if accepted > len(rows):
+            raise RuntimeError('Source contract counts include unexpected broker records')
+        missing = len(rows) - accepted
+        rejected += missing
+        source_contracts[dataset] = {'records_received': len(rows), 'records_accepted': accepted,
+                                     'records_rejected': missing, 'dq_score': 100 * accepted / len(rows),
+                                     'content_verified': True,
+                                     'payload_multiset_sha256': hashlib.sha256(json.dumps(
+                                         sorted(actual_content.items())).encode('utf-8')).hexdigest()}
+    if rejected != dlq_count:
+        raise RuntimeError('Source contract rejections do not reconcile with durable DLQ')
+    consume_result['source_contracts'] = source_contracts
+    source_report = f"source_quality/{uuid.uuid4().hex}.json"
+    storage.write_json(source_report, source_contracts)
+    consume_result['source_quality_path'] = source_report
+    threshold = settings.quality.min_dq_score
+    import math
+    if not math.isfinite(threshold) or not 0 <= threshold <= 100:
+        raise ValueError('Invalid source quality threshold')
+    failed = [name for name, metric in source_contracts.items() if metric['dq_score'] < threshold]
+    if failed:
+        raise RuntimeError(f"Source contract quality gate failed for {failed}; metrics={source_report}")
 
     print(
         f"[Stage 2 OK] Consumed {consumed} messages ({valid_count} valid to Bronze, {dlq_count} to DLQ). "
@@ -574,6 +631,8 @@ def stage_5_spark_gold_marts(
             'event_id', 'entity_type', 'entity_id', 'anomaly_type', 'score', 'timestamp',
             'run_id', 'data_quality_status', 'baseline_sample_size',
         ])
+    from ingestion.provenance import classify_source_group
+    df_anom['source_group'] = classify_source_group(df_prods, df_revs, df_prices)
     # A verified empty current result replaces the previous snapshot. Warehouse
     # incidents remain historical; never silently reuse old Gold as current output.
     storage.write_gold_parquet("anomaly_events", df_anom, allow_empty=True)

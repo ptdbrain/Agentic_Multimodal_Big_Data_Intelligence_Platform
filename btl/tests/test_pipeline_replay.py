@@ -17,12 +17,14 @@ def test_pipeline_without_optional_prices_clears_previous_price_snapshot(tmp_pat
     storage.write_silver_parquet('prices', pd.DataFrame([{
         'price_id':'old-price','product_id':'old-product','price':77,
         'currency':'VND','timestamp':'2026-10-01T00:00:00Z',
+        'source_group':'simulation','acquisition_method':'generated',
     }]))
     wh = WarehouseManager(mode='test')
     try:
         wh.initialize_schema()
         wh.upsert_dataframe('price_daily_stats', pd.DataFrame([{
             'date':'2026-10-01','product_id':'old-product','avg_price':77,'data_points':1,
+            'currency':'VND','source_group':'simulation',
         }]), ['date', 'product_id'])
     finally:
         wh.close()

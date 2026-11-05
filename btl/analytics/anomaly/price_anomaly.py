@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any, Optional
 from config.settings import settings
+from spark.etl.normalizer import EntityNormalizer
 
 class PriceAnomalyDetector:
     """Statistical Price Outlier & Anomaly Detector using Z-Score and IQR (Section 34).
@@ -31,7 +32,11 @@ class PriceAnomalyDetector:
 
         thresh = threshold if threshold is not None else settings.analytics.price_zscore_threshold
         min_pts = min_points if min_points is not None else settings.analytics.price_min_data_points
-        curr = currency_symbol or settings.analytics.default_currency
+        from analytics.currency import require_single_currency
+        observed_currency = require_single_currency(df_prices)
+        if currency_symbol and observed_currency and EntityNormalizer.normalize_currency(currency_symbol) != observed_currency:
+            raise ValueError('Explicit currency conflicts with observed currency')
+        curr = observed_currency or currency_symbol or 'unknown currency'
 
         # Clean prices to numeric
         df = df_prices.copy()
@@ -81,6 +86,7 @@ class PriceAnomalyDetector:
                         "score": abs(z_val),
                         "baseline_mean": round(base_mean, 2),
                         "baseline_std": round(0.0 if np.isnan(base_std) else base_std, 2),
+                        "currency": observed_currency,
                         "observed_price": round(candidate_price, 2),
                         "timestamp": ts_str,
                         "run_id": run_id,
@@ -118,7 +124,11 @@ class PriceAnomalyDetector:
 
         factor = k if k is not None else settings.analytics.price_iqr_k
         min_pts = min_points if min_points is not None else settings.analytics.price_min_data_points
-        curr = currency_symbol or settings.analytics.default_currency
+        from analytics.currency import require_single_currency
+        observed_currency = require_single_currency(df_prices)
+        if currency_symbol and observed_currency and EntityNormalizer.normalize_currency(currency_symbol) != observed_currency:
+            raise ValueError('Explicit currency conflicts with observed currency')
+        curr = observed_currency or currency_symbol or 'unknown currency'
 
         df = df_prices.copy()
         df[price_col] = pd.to_numeric(df[price_col], errors="coerce")
@@ -166,6 +176,7 @@ class PriceAnomalyDetector:
                         "baseline_median": round(base_median, 2),
                         "lower_bound": round(lower_bound, 2),
                         "upper_bound": round(upper_bound, 2),
+                        "currency": observed_currency,
                         "observed_price": round(candidate_price, 2),
                         "timestamp": ts_str,
                         "run_id": run_id,

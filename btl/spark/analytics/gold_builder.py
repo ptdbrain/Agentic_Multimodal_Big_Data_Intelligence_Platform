@@ -166,6 +166,8 @@ class SparkGoldBuilder:
             return None
         if 'product_id' not in frame.columns:
             raise ValueError('Catalog requires product_id')
+        from analytics.currency import require_single_currency
+        require_single_currency(frame)
         frame = frame.withColumn('product_id', F.col('product_id').cast(StringType()))
         invalid = frame.groupBy('product_id').count().filter(
             (F.col('count') > 1) | F.col('product_id').isNull() | (F.length(F.trim('product_id')) == 0)
@@ -229,6 +231,8 @@ class SparkGoldBuilder:
         if silver_products is not None:
             df_prods = self._catalog_frame(silver_products)
 
+        from analytics.currency import require_single_currency
+        require_single_currency(df_prods, df_prices)
         if df_prices is not None and not df_prices.rdd.isEmpty():
             pr = self._with_observation_date(
                 df_prices, ("timestamp", "created_at")
@@ -373,6 +377,8 @@ class SparkGoldBuilder:
         if df_prices is None or df_prices.rdd.isEmpty():
             return None
 
+        from analytics.currency import require_single_currency
+        require_single_currency(df_prices)
         pr = self._with_observation_date(
             df_prices, ("timestamp", "created_at")
         ).filter(F.col("date").isNotNull())
@@ -392,14 +398,17 @@ class SparkGoldBuilder:
         return stats
 
     @staticmethod
-    def _add_lineage(df: Any, run_id: str, source_run_id: Optional[str]) -> Any:
+    def _add_lineage(df: Any, run_id: str, source_run_id: Optional[str], source_group: str = "unverified",
+                     currency: Optional[str] = None) -> Any:
         if "date" in df.columns:
             available = F.col("time_available") if "time_available" in df.columns else F.col("date").isNotNull()
             data_as_of = F.max(F.when(available, F.col("date"))).over(Window.partitionBy())
         else:
             data_as_of = F.lit(None).cast(DateType())
             available = F.lit(False)
-        return (df.withColumn("run_id", F.lit(run_id))
+        return (df.withColumn("currency", F.lit(currency).cast(StringType()))
+                  .withColumn("source_group", F.lit(source_group))
+                  .withColumn("run_id", F.lit(run_id))
                   .withColumn("source_run_id", F.lit(source_run_id).cast(StringType()))
                   .withColumn("data_as_of", data_as_of)
                   .withColumn("time_available", available))
@@ -518,6 +527,18 @@ class SparkGoldBuilder:
         else:
             resolved_prices = silver_prices
 
+        from ingestion.provenance import classify_source_group
+        source_group = classify_source_group(*[
+            self._ensure_spark_df(data, name) if isinstance(data, str) else data
+            for name, data in [('products', resolved_products), ('reviews', resolved_reviews), ('prices', resolved_prices)]
+        ])
+
+        from analytics.currency import require_single_currency
+        currency = require_single_currency(*[
+            self._ensure_spark_df(data, name) if isinstance(data, str) else data
+            for name, data in [('products', resolved_products), ('prices', resolved_prices)]
+        ])
+
         gated = not settings.is_local_mode or enforce_dq_gate or min_dq_score is not None or dq_metrics is not None
         if gated:
             consumed = set(required_datasets or ['products', 'reviews'])
@@ -553,35 +574,35 @@ class SparkGoldBuilder:
         # 1. Product Daily Stats
         df_p = self.build_product_daily_stats(resolved_reviews, resolved_products, resolved_prices)
         if df_p is not None:
-            marts['product_daily_stats'] = self._add_lineage(df_p, effective_run_id, effective_source_run_id)
+            marts['product_daily_stats'] = self._add_lineage(df_p, effective_run_id, effective_source_run_id, source_group, currency)
 
         # 2. Brand Daily Stats
         df_b = self.build_brand_daily_stats(resolved_reviews, resolved_products)
         if df_b is not None:
-            marts['brand_daily_stats'] = self._add_lineage(df_b, effective_run_id, effective_source_run_id)
+            marts['brand_daily_stats'] = self._add_lineage(df_b, effective_run_id, effective_source_run_id, source_group, currency)
 
         # 3. Category Daily Stats
         df_c = self.build_category_daily_stats(resolved_reviews, resolved_products)
         if df_c is not None:
-            marts['category_daily_stats'] = self._add_lineage(df_c, effective_run_id, effective_source_run_id)
+            marts['category_daily_stats'] = self._add_lineage(df_c, effective_run_id, effective_source_run_id, source_group, currency)
 
         # 4. Price Daily Stats
         df_pr = self.build_price_daily_stats(resolved_prices, resolved_products)
         if df_pr is not None:
-            marts['price_daily_stats'] = self._add_lineage(df_pr, effective_run_id, effective_source_run_id)
+            marts['price_daily_stats'] = self._add_lineage(df_pr, effective_run_id, effective_source_run_id, source_group, currency)
 
         # Persist to Gold layer using Spark Distributed Parquet Writer / StorageManager
         if save_gold:
             for name in ('product_daily_stats','brand_daily_stats','category_daily_stats','price_daily_stats'):
                 if name not in marts:
-                    marts[name] = self._add_lineage(self._empty_mart(name), effective_run_id, effective_source_run_id)
+                    marts[name] = self._add_lineage(self._empty_mart(name), effective_run_id, effective_source_run_id, source_group, currency)
             # Reject the complete group before publishing any individual mart.
             for mart_name, df_mart in marts.items():
                 self._validate_mart(df_mart, mart_name)
             from storage.write_lock import write_lock
             with write_lock(SparkSessionFactory.resolve_storage_path('', layer='gold')):
                 snapshot = {'run_id':effective_run_id,'source_run_id':effective_source_run_id,
-                            'status':'publishing','rows':{name:frame.count() for name,frame in marts.items()}}
+                            'status':'publishing','source_group':source_group,'rows':{name:frame.count() for name,frame in marts.items()}}
                 storage.write_json('gold/_snapshot.json', snapshot)
                 for mart_name, df_mart in marts.items():
                     gold_dest = SparkSessionFactory.resolve_storage_path(mart_name, layer="gold")

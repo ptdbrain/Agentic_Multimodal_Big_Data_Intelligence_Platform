@@ -131,6 +131,22 @@ class WarehouseManager:
         self._migrate_anomaly_schema()
         self._migrate_analytics_schema()
         self._migrate_silver_schema()
+        self._migrate_article_schema()
+
+    def _migrate_article_schema(self):
+        with self._conn:
+            cur = self._conn.cursor()
+            for table, additions in {'articles': {'evidence_sha256': 'TEXT', 'published_at_raw': 'TEXT',
+                                                  'publication_time_precision': 'TEXT', 'collected_at_raw': 'TEXT',
+                                                  'source_record_id':'TEXT','evidence_ref':'TEXT','parser_version':'TEXT',
+                                                  'schema_version':'TEXT','collection_run_id':'TEXT',
+                                                  'original_acquisition_method':'TEXT'},
+                                      'article_daily_stats': {'source_group': 'TEXT'}}.items():
+                existing = ({row[1] for row in cur.execute(f'PRAGMA table_info({table})').fetchall()}
+                            if self._engine_type == 'sqlite' else self._postgres_columns(cur, table))
+                for name, sql_type in additions.items():
+                    if name not in existing:
+                        cur.execute(f'ALTER TABLE {table} ADD COLUMN {name} {sql_type}')
 
     def _postgres_columns(self, cursor, table: str) -> dict:
         """Inspect the active schema without taking an ALTER TABLE lock."""
@@ -143,6 +159,11 @@ class WarehouseManager:
         common = {"normalization_status": "VARCHAR(30)", "normalization_errors": "TEXT",
                   "time_available": "BOOLEAN", "ingestion_time_available": "BOOLEAN",
                   "ingested_at_raw": "TEXT"}
+        common.update({name: "TEXT" for name in (
+            "currency_raw", "source_group", "source_name", "source_record_id", "source_url", "acquisition_method",
+            "collected_at", "evidence_sha256", "evidence_ref", "parser_version", "schema_version", "collection_run_id",
+            "generator_seed", "generator_config",
+        )})
         extras = {
             "products": {"price_raw": "TEXT", "created_at_raw": "TEXT", "updated_at_raw": "TEXT",
                          "timestamp_raw": "TEXT", "ingested_at": "TIMESTAMP"},
@@ -165,7 +186,7 @@ class WarehouseManager:
 
     def _migrate_analytics_schema(self):
         """Keep Gold lineage available in serving; legacy values stay unknown."""
-        common = {"run_id": "VARCHAR(100)", "source_run_id": "VARCHAR(100)",
+        common = {"currency": "TEXT", "source_group": "TEXT", "run_id": "VARCHAR(100)", "source_run_id": "VARCHAR(100)",
                   "data_as_of": "DATE", "time_available": "BOOLEAN"}
         tables = ("product_daily_stats", "brand_daily_stats", "category_daily_stats", "price_daily_stats")
         with self._conn:
@@ -190,6 +211,8 @@ class WarehouseManager:
     def _migrate_anomaly_schema(self):
         """Add anomaly lineage fields without rewriting existing incidents."""
         additions = {
+            "currency": "TEXT",
+            "source_group": "TEXT",
             "run_id": "VARCHAR(100)",
             "data_quality_status": "VARCHAR(30)",
             "baseline_window_hours": "INTEGER",
@@ -217,7 +240,7 @@ class WarehouseManager:
 
     def _migrate_dq_schema(self):
         """Idempotent additive DQ migration, preserving legacy history and indexes."""
-        additions = {"run_id": "VARCHAR(100)", "timing_status": "VARCHAR(30)",
+        additions = {"source_group": "TEXT", "run_id": "VARCHAR(100)", "timing_status": "VARCHAR(30)",
                      "records_quarantined": "INTEGER", "records_missing_observation_time": "INTEGER",
                      "untimed_silver_count": "INTEGER", "normalization_error_counts": "TEXT",
                      "quarantine_reason_counts": "TEXT",
@@ -303,6 +326,14 @@ class WarehouseManager:
                     except Exception as e:
                         logger.warning(f"Could not auto-create warehouse table {table_name}: {e}")
 
+                # Older schemas default these source facts to zero. Absence
+                # means unknown; an explicitly observed zero remains zero.
+                source_counts = {'products': ['review_count','currency'], 'reviews': ['helpful_count']}
+                missing_counts = {name: None for name in source_counts.get(table_name, [])
+                                  if name in table_cols and name not in df.columns}
+                if missing_counts:
+                    df = df.assign(**missing_counts)
+
                 # Align column names with schema.sql aliases
                 if "positive_ratio" in table_cols and "positive_ratio" not in df.columns and "high_rating_ratio" in df.columns:
                     df = df.copy()
@@ -346,10 +377,15 @@ class WarehouseManager:
                         col_names = ", ".join(columns)
                         sql = f"INSERT INTO {table_name} ({col_names}) VALUES ({placeholders})"
                     
-                    for _, row in df.iterrows():
-                        val_tuple = tuple(_database_value(row[c], sqlite=False) for c in columns)
-                        cursor.execute(sql, val_tuple)
-                        rows_affected += 1
+                    from psycopg2.extras import execute_batch
+                    # Tuple iteration preserves large integer identities which
+                    # iterrows can coerce to float in mixed numeric rows. Batch
+                    # sequential INSERTs to preserve last-input-wins semantics
+                    # for repeated keys while bounding client memory/RPC count.
+                    values = (tuple(_database_value(value, sqlite=False) for value in row)
+                              for row in df[columns].itertuples(index=False, name=None))
+                    execute_batch(cursor, sql, values, page_size=1000)
+                    rows_affected = len(df)
                     
                 else:
                     placeholders = ", ".join(["?"] * len(columns))
@@ -360,13 +396,14 @@ class WarehouseManager:
                         null_clause = " OR ".join([f"{k} IS NULL" for k in conflict_keys])
                         cursor.execute(f"DELETE FROM {table_name} WHERE {null_clause}")
 
-                    for _, row in df.iterrows():
+                    key_positions = [columns.index(key) for key in conflict_keys]
+                    for row in df[columns].itertuples(index=False, name=None):
                         if conflict_keys:
                             where_clause = " AND ".join([f"{k} = ?" for k in conflict_keys])
-                            del_vals = tuple(_database_value(row[k], sqlite=True) for k in conflict_keys)
+                            del_vals = tuple(_database_value(row[position], sqlite=True) for position in key_positions)
                             cursor.execute(f"DELETE FROM {table_name} WHERE {where_clause}", del_vals)
                         
-                        val_tuple = tuple(_database_value(row[c], sqlite=True) for c in columns)
+                        val_tuple = tuple(_database_value(value, sqlite=True) for value in row)
                         cursor.execute(insert_sql, val_tuple)
                         rows_affected += 1
 

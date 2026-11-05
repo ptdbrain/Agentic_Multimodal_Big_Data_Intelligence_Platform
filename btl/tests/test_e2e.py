@@ -655,29 +655,30 @@ def test_pii_anonymization_and_user_id_hashing_at_ingest():
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-def test_e2e_pipeline_with_crawler_and_public_dataset():
-    """Verify canonical 6-stage E2E pipeline runs end-to-end with both Crawler and Public Dataset sources."""
+@pytest.mark.parametrize("source_type,options,expected_group,product_count,review_count", [
+    ("public_dataset", {}, "unverified", 4, 80),
+    ("crawler", {"crawler_platform":"mock", "crawler_query":"iphone 15",
+                 "crawler_max_products":3, "crawler_reviews_per_product":5}, "simulation", 3, 15),
+])
+def test_e2e_pipeline_with_crawler_and_public_dataset(
+    source_type, options, expected_group, product_count, review_count
+):
+    """Local six-stage compatibility, each source class in its own fixture namespace.
+
+    This is not live-crawl or real-service acceptance. Deliberately reusing one
+    Silver namespace for public/unknown and generated data must be rejected.
+    """
     from ingestion.privacy import is_anonymized_user_id
 
-    assert run_end_to_end(
-        mode="local",
-        source_type="public_dataset",
-    ) is True
-    df_revs_pub = storage.read_silver_parquet("reviews")
-    assert not df_revs_pub.empty
-    assert all(is_anonymized_user_id(uid) for uid in df_revs_pub["user_id"].dropna())
-
-    assert run_end_to_end(
-        mode="local",
-        source_type="crawler",
-        crawler_platform="mock",
-        crawler_query="iphone 15",
-        crawler_max_products=3,
-        crawler_reviews_per_product=5,
-    ) is True
-    df_revs_crawl = storage.read_silver_parquet("reviews")
-    assert not df_revs_crawl.empty
-    assert all(is_anonymized_user_id(uid) for uid in df_revs_crawl["user_id"].dropna())
+    assert run_end_to_end(mode="local", source_type=source_type, **options) is True
+    products = storage.read_silver_parquet("products")
+    reviews = storage.read_silver_parquet("reviews")
+    assert len(products) == product_count
+    assert len(reviews) == review_count
+    from ingestion.provenance import classify_source_group
+    assert classify_source_group(products) == expected_group
+    assert classify_source_group(reviews) == expected_group
+    assert all(is_anonymized_user_id(uid) for uid in reviews["user_id"].dropna())
 
 
 def test_real_benchmark_execution_and_report_consistency():

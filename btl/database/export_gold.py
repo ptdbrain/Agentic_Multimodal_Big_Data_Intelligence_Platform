@@ -95,7 +95,52 @@ def export_gold_to_db(
                 frames[table] = storage.read_silver_parquet(table)
             except Exception as exc:
                 raise RuntimeError(f"Failed to read Silver table '{table}' from storage: {exc}") from exc
+        # A separate lake bucket alone is insufficient: generated snapshots
+        # must not overwrite an observed warehouse (or vice versa).
+        from ingestion.provenance import classify_source_group
+        incoming = set()
+        if generation and generation.get('source_group'):
+            incoming.add(generation['source_group'])
+        for name, frame in frames.items():
+            if frame.empty:
+                continue
+            if name in ('products', 'reviews'):
+                incoming.add(classify_source_group(frame))
+            elif name in canonical_marts[:4]:
+                incoming.update(frame['source_group'].fillna('unverified').unique()
+                                if 'source_group' in frame else ['unverified'])
+        if len(incoming) > 1:
+            raise ValueError('mixed source groups cannot share a warehouse snapshot')
+        if not incoming.issubset({'marketplace', 'simulation', 'unverified'}):
+            raise ValueError('Unsupported warehouse source group')
         with wh.transaction():
+            # Check the source class under a database-wide export lock. Two
+            # writers must not both observe an empty warehouse and mix classes.
+            cursor = wh._conn.cursor()
+            if wh._engine_type == 'postgres':
+                cursor.execute('SELECT pg_advisory_xact_lock(1397048148)')
+            elif not wh._conn.in_transaction:
+                cursor.execute('BEGIN IMMEDIATE')
+            current = set()
+            for table in ['products', 'reviews'] + canonical_marts[:4]:
+                existing = wh.query(f'SELECT DISTINCT source_group FROM {table}')
+                current.update(str(value).strip() if value is not None and str(value).strip() else 'unverified'
+                               for value in existing['source_group'])
+            if incoming and current and incoming != current:
+                raise ValueError('Warehouse source group differs; use an isolated database for this source class')
+            if current - {'unverified'} and not incoming and any(name in canonical_marts[:4] for name in frames):
+                raise ValueError('Empty snapshot lacks source group provenance')
+            from analytics.currency import require_single_currency
+            monetary_frames = [frame for frame in frames.values()
+                               if {'price','avg_price','min_price','max_price'}.intersection(frame.columns)
+                               and not frame.empty]
+            # Existing catalog products remain after upsert, so the namespace
+            # currency contract must hold across generations, under the lock.
+            existing_money = [wh.query('SELECT price,currency FROM products')]
+            for table in canonical_marts[:4]:
+                if table not in frames:
+                    existing_money.append(wh.query(f'SELECT avg_price,currency FROM {table}'))
+            require_single_currency(*existing_money, *monetary_frames)
             for name, frame in frames.items():
                 if name in canonical_marts[:4]:
                     # Daily marts are complete snapshots; incidents/DQ remain history.

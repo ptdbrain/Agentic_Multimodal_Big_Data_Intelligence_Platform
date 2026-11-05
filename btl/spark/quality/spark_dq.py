@@ -612,6 +612,7 @@ class SparkDataQualityEvaluator:
             value = metrics.get(name)
             return json.dumps(value, ensure_ascii=False, sort_keys=True) if isinstance(value, dict) else value
         return {
+            "source_group": metrics.get("source_group") or "unverified",
             "batch_id": bid,
             "run_id": run_id,
             "intra_batch_duplicate_count": int(metrics.get("intra_batch_duplicate_count", metrics.get("records_duplicate", 0))),

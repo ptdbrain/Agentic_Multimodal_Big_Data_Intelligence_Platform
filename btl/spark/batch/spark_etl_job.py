@@ -255,9 +255,14 @@ class SparkBatchETLJob:
         raw_fields = time_fields | {numeric_field}
         # Capture before trimming; retain earlier raw evidence during replay.
         for field in raw_fields:
+            value = F.col(field).cast(StringType()) if field in df.columns else F.lit(None).cast(StringType())
             if f"{field}_raw" not in df.columns:
-                value = F.col(field).cast(StringType()) if field in df.columns else F.lit(None).cast(StringType())
                 df = df.withColumn(f"{field}_raw", value)
+            else:
+                # Mixed sources can supply raw metadata on only some rows.
+                # Preserve existing evidence; capture the actual input where
+                # metadata is absent instead of nulling a valid source value.
+                df = df.withColumn(f"{field}_raw", F.coalesce(F.col(f"{field}_raw").cast(StringType()), value))
         for field, dtype in df.dtypes:
             if dtype == "string" and not field.startswith("__") and not field.endswith("_raw"):
                 df = df.withColumn(field, F.trim(F.col(field)))
@@ -307,12 +312,14 @@ class SparkBatchETLJob:
                                    .otherwise(F.coalesce(F.element_at(mapping, F.lower(value)), F.initcap(value))))
         if dataset_type in {"products", "prices"}:
             from spark.etl.normalizer import EntityNormalizer
-            value = F.trim(F.col("currency")) if "currency" in df.columns else F.lit(None).cast(StringType())
+            incoming = F.col("currency").cast(StringType()) if "currency" in df.columns else F.lit(None).cast(StringType())
+            raw_currency = F.coalesce(F.col('currency_raw').cast(StringType()), incoming) if 'currency_raw' in df.columns else incoming
+            df = df.withColumn('currency_raw', raw_currency)
+            value = F.trim(F.col('currency_raw'))
             mapping = F.create_map(*[F.lit(item) for pair in EntityNormalizer.CURRENCY_ALIASES.items() for item in pair])
             df = df.withColumn("currency", F.coalesce(
                 F.element_at(mapping, F.lower(value)),
                 F.when(F.upper(value).rlike(r"^[A-Z]{3}$"), F.upper(value)),
-                F.lit(settings.analytics.default_currency),
             ))
         new_errors = F.filter(F.array(*errors), lambda code: code.isNotNull())
         if "normalization_errors" in df.columns:
@@ -451,11 +458,14 @@ class SparkBatchETLJob:
         # 1. Read Bronze JSON
         raw_df = self.read_bronze_json(bronze_source)
         input_count = raw_df.count()
+        from ingestion.provenance import classify_source_group
+        source_group = classify_source_group(raw_df) if 'source_group' in raw_df.columns else 'unverified'
 
         if input_count == 0:
             return {
                 "processing_time_ms": int((time.perf_counter() - processing_started) * 1000),
             "dataset_name": dataset_name,
+                "source_group": source_group,
                 "input_count": 0,
                 "valid_count": 0,
                 "valid_input_count": 0,
@@ -579,6 +589,7 @@ class SparkBatchETLJob:
         return {
             "processing_time_ms": int((time.perf_counter() - processing_started) * 1000),
             "dataset_name": dataset_name,
+                "source_group": source_group,
             "input_count": input_count,
             "valid_count": valid_count,
             "valid_input_count": valid_input_count,
@@ -633,6 +644,8 @@ class SparkBatchETLJob:
         if not replace_existing:
             existing_df = SafeParquetIO.read_parquet_safely(self.spark, silver_path, check_exists_first=True)
             if existing_df is not None and not existing_df.rdd.isEmpty():
+                from ingestion.provenance import classify_source_group
+                classify_source_group(existing_df, new_batch_df)
                 if dataset_name == "reviews" and "user_id" in existing_df.columns:
                     uid_trimmed = F.trim(F.col("user_id").cast(StringType()))
                     existing_df = existing_df.withColumn(
@@ -725,6 +738,7 @@ class SparkBatchETLJob:
                 from storage.storage_manager import storage
                 storage.write_json(f'silver/_snapshot_{name}.json', {
                     'run_id':run_id,'rows':result['silver_written_count'],'path':result['silver_path'],
+                    'source_group':result.get('source_group', 'unverified'),
                 })
 
         def _build_dq_dict(res: Dict[str, Any]) -> Dict[str, Any]:
@@ -732,6 +746,7 @@ class SparkBatchETLJob:
                 "run_id": run_id,
                 "processing_time_ms": res["processing_time_ms"],
                 "dataset_name": res["dataset_name"],
+                "source_group": res.get("source_group", "unverified"),
                 "records_received": res["input_count"],
                 "records_valid": res["unique_valid_count"],
                 "records_invalid": res["row_invalid_count"],

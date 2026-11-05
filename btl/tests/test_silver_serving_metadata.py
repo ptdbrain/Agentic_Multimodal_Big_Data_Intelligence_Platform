@@ -58,3 +58,32 @@ def test_existing_silver_tables_upgrade_without_inventing_metadata():
         assert row[metric] == (10 if table == 'products' else 4)
         assert all(pd.isna(row[field]) for field in ['normalization_status', 'normalization_errors', 'time_available', 'ingestion_time_available'])
     wh.close()
+
+
+@pytest.mark.parametrize('table,key,count', [('products','product_id','review_count'),
+                                           ('reviews','review_id','helpful_count')])
+def test_unknown_source_count_does_not_take_legacy_database_zero_default(table, key, count):
+    wh = WarehouseManager(mode='test')
+    try:
+        # Reproduce an older deployed schema whose default would invent a zero.
+        wh.execute(f'CREATE TABLE {table}({key} TEXT PRIMARY KEY, {count} INTEGER DEFAULT 0)')
+        wh.upsert_dataframe(table, pd.DataFrame([{key:'unknown'}]), [key])
+        wh.upsert_dataframe(table, pd.DataFrame([{key:'observed-zero', count:0}]), [key])
+        rows = wh.query(f'SELECT * FROM {table}').set_index(key)
+        assert pd.isna(rows.loc['unknown', count])
+        assert rows.loc['observed-zero', count] == 0
+    finally:
+        wh.close()
+
+
+def test_missing_currency_does_not_acquire_a_legacy_vnd_database_default():
+    wh=WarehouseManager(mode='test')
+    try:
+        wh.execute("CREATE TABLE products(product_id TEXT PRIMARY KEY,currency TEXT DEFAULT 'VND')")
+        wh.upsert_dataframe('products',pd.DataFrame([{'product_id':'unknown'}]),['product_id'])
+        wh.upsert_dataframe('products',pd.DataFrame([{'product_id':'observed','currency':'VND'}]),['product_id'])
+        rows=wh.query('SELECT * FROM products').set_index('product_id')
+        assert pd.isna(rows.loc['unknown','currency'])
+        assert rows.loc['observed','currency'] == 'VND'
+    finally:
+        wh.close()
