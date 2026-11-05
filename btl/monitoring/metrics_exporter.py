@@ -3,6 +3,9 @@ Collects and formats operational metrics across Kafka, MinIO Data Lake, Spark Ba
 Supports Prometheus exposition format and JSON health telemetry.
 """
 import time
+import argparse
+import math
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -22,12 +25,13 @@ class SentinelMetricsExporter:
     def collect_all_metrics(cls, mode: Optional[str] = None) -> Dict[str, Any]:
         """Gathers system health and processing metrics."""
         db = DashboardDB(mode=mode)
-        lake_stats = storage.get_storage_stats()
-        kpis = db.get_kpi_summary()
-        dq_df = db.get_data_quality_metrics()
-        anom_df = db.get_anomaly_events()
-
-        avg_dq = kpis.get("avg_dq_score", 100.0)
+        try:
+            lake_stats = storage.get_storage_stats()
+            kpis = db.get_kpi_summary()
+            anom_df = db.get_anomaly_events()
+        finally:
+            db.close()
+        avg_dq = kpis.get("avg_dq_score")
         total_anoms = len(anom_df) if not anom_df.empty else 0
 
         return {
@@ -46,7 +50,7 @@ class SentinelMetricsExporter:
                 "total_brands": kpis.get("total_brands", 0),
                 "avg_rating": kpis.get("avg_rating", 0.0),
                 "avg_dq_score": avg_dq,
-                "active_anomalies": total_anoms
+                "recent_anomalies": total_anoms
             }
         }
 
@@ -56,6 +60,9 @@ class SentinelMetricsExporter:
         data = cls.collect_all_metrics(mode=mode)
         lake = data["datalake"]
         wh = data["warehouse"]
+
+        quality = wh["avg_dq_score"]
+        quality = str(quality) if quality is not None and math.isfinite(float(quality)) else "NaN"
 
         lines = [
             "# HELP sentinel_datalake_size_bytes Total bytes stored across Data Lake tiers",
@@ -72,7 +79,7 @@ class SentinelMetricsExporter:
             "",
             "# HELP sentinel_data_quality_score Current average DQ score percentage",
             "# TYPE sentinel_data_quality_score gauge",
-            f'sentinel_data_quality_score {wh["avg_dq_score"]}',
+            f'sentinel_data_quality_score {quality}',
             "",
             "# HELP sentinel_warehouse_records Total records in Data Warehouse entities",
             "# TYPE sentinel_warehouse_records gauge",
@@ -80,12 +87,47 @@ class SentinelMetricsExporter:
             f'sentinel_warehouse_records{{entity="reviews"}} {wh["total_reviews"]}',
             f'sentinel_warehouse_records{{entity="brands"}} {wh["total_brands"]}',
             "",
-            "# HELP sentinel_active_anomalies Number of active anomaly incidents detected",
-            "# TYPE sentinel_active_anomalies gauge",
-            f'sentinel_active_anomalies {wh["active_anomalies"]}',
+            "# HELP sentinel_recent_anomalies Number of recent anomaly records returned (up to 100; includes history)",
+            "# TYPE sentinel_recent_anomalies gauge",
+            f'sentinel_recent_anomalies {wh["recent_anomalies"]}',
             ""
         ]
         return "\n".join(lines)
 
+def create_metrics_server(host="127.0.0.1", port=8000, mode=None, metrics_provider=None):
+    """Return a server; callers own its serve/shutdown lifecycle."""
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path != "/metrics":
+                self.send_error(404)
+                return
+            try:
+                provider = metrics_provider or (lambda: SentinelMetricsExporter.generate_prometheus_metrics(mode=mode))
+                body = provider().encode("utf-8")
+            except Exception:
+                # A failed scrape must not look like zero/healthy metrics.
+                self.send_error(503, "Metrics collection unavailable")
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format, *args):
+            pass
+
+    return ThreadingHTTPServer((host, port), Handler)
+
+
 if __name__ == "__main__":
-    print(SentinelMetricsExporter.generate_prometheus_metrics())
+    parser = argparse.ArgumentParser(description="Export measured Sentinel metrics")
+    parser.add_argument("--serve", action="store_true")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8000)
+    args = parser.parse_args()
+    if args.serve:
+        with create_metrics_server(args.host, args.port) as server:
+            server.serve_forever()
+    else:
+        print(SentinelMetricsExporter.generate_prometheus_metrics())

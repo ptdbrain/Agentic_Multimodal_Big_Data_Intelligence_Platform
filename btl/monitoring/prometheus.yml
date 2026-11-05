@@ -1,16 +1,18 @@
+# Run Prometheus on the same host/network as the exporter.
+# Start exporter: python monitoring/metrics_exporter.py --serve --port 8000
+# For a separate container, configure an accessible exporter address explicitly.
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'sentinel-kafka'
+  - job_name: sentinel-platform
+    metrics_path: /metrics
     static_configs:
-      - targets: ['kafka:9092']
-
-  - job_name: 'sentinel-spark'
+      - targets: ['127.0.0.1:8000']
+  - job_name: sentinel-dependencies
+    metrics_path: /metrics
+    scrape_interval: 30s
+    scrape_timeout: 20s
     static_configs:
-      - targets: ['spark-master:8080']
-
-  - job_name: 'sentinel-postgres'
-    static_configs:
-      - targets: ['postgres:5432']
+      - targets: ['127.0.0.1:8001']
