@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "boundary": "actual native Prometheus2.54.1 + Alertmanager0.27.0 + real SQL status + HTTP webhook, isolated labelled fault injection; no Docker or Grafana runtime certification",
+  "rules_count": 12,
+  "notifications": [
+    {
+      "status": "firing",
+      "alerts": [
+        "SentinelPipelineFailed"
+      ]
+    },
+    {
+      "status": "resolved",
+      "alerts": [
+        "SentinelPipelineFailed"
+      ]
+    }
+  ],
+  "timing": "test scrape/evaluation1s, receiver group_wait/group_interval1s; checked-in production timers unchanged"
+}

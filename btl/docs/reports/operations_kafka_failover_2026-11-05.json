@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "boundary": "three native Kafka3.7 brokers on one host; one broker/controller process stopped and restarted; fixture payloads only",
+  "acknowledged": 200,
+  "received": 200,
+  "unique": 200,
+  "replication_factor": 3,
+  "minimum_isr": 2,
+  "write_recovery_seconds": 0.3173701149999033,
+  "total_seconds": 5.239270110000007,
+  "topic": "ops-native-aa8a7defd2b7",
+  "whole_host_failure_certified": false
+}

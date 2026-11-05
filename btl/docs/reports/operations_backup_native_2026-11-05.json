@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "scope": "Actual PostgreSQL16 custom dump/restore + actual MinIO object copy and SHA256; local fixture checkpoint/orchestration/registry only",
+  "airflow_metadata_drill": false,
+  "spark_restart_drill": false,
+  "outside_host_copy": false,
+  "elapsed_seconds": 0.34446708199993736,
+  "rto_target_seconds": 3600,
+  "database_rows": 2,
+  "minio_objects": 1,
+  "source_db": "backup_source_8bd238aeb5",
+  "restored_db": "backup_restore_8bd238aeb5",
+  "backup_path": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/backup-drill-8bd238aeb5/backups/backup-20261105T045503-9287cbc0e46b"
+}

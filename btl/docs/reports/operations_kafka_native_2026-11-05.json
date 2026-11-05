@@ -1,0 +1,11 @@
+{
+  "mode": "actual native Kafka/PostgreSQL/MinIO; controlled fixture, not live collection",
+  "schema": "ops_kafka_75a2df1be2",
+  "bucket": "ops-kafka-75a2df1be2",
+  "delivered": 1,
+  "consumed": 1,
+  "cleaned_topics": [
+    "raw.articles.37cb02ed23f9c0ef0750"
+  ],
+  "source_data_untouched": true
+}
