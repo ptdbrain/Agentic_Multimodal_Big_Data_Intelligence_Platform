@@ -1,0 +1,57 @@
+groups:
+  - name: sentinel-operations
+    rules:
+      - alert: SentinelExporterUnavailable
+        expr: up{job=~"sentinel-.*"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "Metrics collection unavailable", runbook: "docs/operations-monitoring.md#exporter"}
+      - alert: SentinelPipelineFailed
+        expr: sentinel_ops_run_state{state="failed"} == 1
+        labels: {severity: critical}
+        annotations: {summary: "Pipeline failed", runbook: "docs/operations-monitoring.md#pipeline"}
+      - alert: SentinelPipelineStale
+        expr: time() - sentinel_ops_last_success_timestamp{pipeline=~"commerce|articles"} > 93600
+        labels: {severity: warning}
+        annotations: {summary: "Daily pipeline has no success within 26 hours", runbook: "docs/operations-monitoring.md#pipeline"}
+      - alert: SentinelPipelineNeverSucceeded
+        expr: (time() - sentinel_ops_expected_since_timestamp{pipeline=~"commerce|articles"} > 93600) and (sentinel_ops_last_success_timestamp != sentinel_ops_last_success_timestamp)
+        labels: {severity: warning}
+        annotations: {summary: "Registered pipeline has never succeeded", runbook: "docs/operations-monitoring.md#pipeline"}
+      - alert: SentinelInputShortage
+        expr: (sentinel_ops_received < sentinel_ops_expected_min) and on(pipeline, source) (sentinel_ops_run_state{state="success"} == 1)
+        labels: {severity: warning}
+        annotations: {summary: "Input below configured expectation", runbook: "docs/operations-monitoring.md#pipeline"}
+      - alert: SentinelKafkaBacklog
+        expr: sentinel_ops_consumer_lag > 1000
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Consumer lag exceeds 1000 messages", runbook: "docs/operations-monitoring.md#kafka"}
+      - alert: SentinelKafkaUnderReplicated
+        expr: sentinel_ops_under_replicated_partitions > 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "Kafka partitions lack replicas", runbook: "docs/operations-monitoring.md#kafka"}
+      - alert: SentinelBackupStale
+        expr: time() - sentinel_ops_backup_last_complete_timestamp > 93600
+        labels: {severity: critical}
+        annotations: {summary: "No complete backup within 26 hours", runbook: "docs/operations-monitoring.md#backup"}
+      - alert: SentinelBackupNeverObserved
+        expr: sentinel_ops_backup_last_complete_timestamp != sentinel_ops_backup_last_complete_timestamp
+        for: 26h
+        labels: {severity: warning}
+        annotations: {summary: "No verified backup has been observed", runbook: "docs/operations-monitoring.md#backup"}
+      - alert: SentinelDiskLow
+        expr: sentinel_ops_disk_free_ratio < 0.15
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Configured filesystem has less than 15 percent free", runbook: "docs/operations-monitoring.md#storage"}
+      - alert: SentinelCheckpointFailure
+        expr: sentinel_ops_checkpoint_errors > 0
+        labels: {severity: critical}
+        annotations: {summary: "Checkpoint operation failed", runbook: "docs/operations-monitoring.md#checkpoint"}
+      - alert: SentinelOperationsMeasurementStale
+        expr: time() - {__name__=~"sentinel_ops_(consumer_lag|under_replicated_partitions|disk_free_ratio)_observed_timestamp"} > 120
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: "Operational probe measurement is stale", runbook: "docs/operations-monitoring.md#exporter"}
