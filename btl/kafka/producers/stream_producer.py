@@ -3,6 +3,7 @@ import time
 import json
 import uuid
 import hashlib
+import math
 import argparse
 from datetime import datetime, timezone
 from pathlib import Path
@@ -134,17 +135,23 @@ class StreamProducer:
         key_field: Optional[str] = None,
         event_type: str = "EVENT",
         source: str = "stream_producer",
-        timeout_sec: float = 15.0
+        timeout_sec: float = 15.0,
+        max_duration_sec: Optional[float] = None,
     ) -> Tuple[int, float]:
         """Produces a batch of records to Kafka with delivery verification across all messages."""
         target_rate = rate if rate is not None else settings.ingestion.rate_limit_rps
+        if max_duration_sec is not None and (not math.isfinite(max_duration_sec) or max_duration_sec <= 0):
+            raise ValueError('Duration must be positive and finite')
         interval = 1.0 / target_rate if target_rate > 0 else 0
         sent = 0
         self.current_batch_sent = 0
-        t0 = time.time()
+        t0 = time.perf_counter()
         pending_futures = []
 
         for rec in records:
+            message_started = time.perf_counter()
+            if max_duration_sec is not None and message_started - t0 >= max_duration_sec:
+                break
             if key_field:
                 key = rec.get(key_field)
             else:
@@ -167,7 +174,13 @@ class StreamProducer:
             sent += 1
             self.current_batch_sent = sent
             if interval > 0:
-                time.sleep(interval)
+                # Acknowledgement is part of the interval. Sleep only its
+                # remainder; slow delivery never triggers a catch-up burst.
+                remainder = interval - (time.perf_counter() - message_started)
+                if max_duration_sec is not None:
+                    remainder = min(remainder, max_duration_sec - (time.perf_counter() - t0))
+                if remainder > 0:
+                    time.sleep(remainder)
 
         # Flush and verify delivery of all asynchronously dispatched messages
         if self.producer and pending_futures:
@@ -178,7 +191,7 @@ class StreamProducer:
                 except Exception as e:
                     raise RuntimeError(f"Batch delivery verification failed on topic '{topic}': {e}")
 
-        duration = max(time.time() - t0, 0.001)
+        duration = max(time.perf_counter() - t0, 0.001)
         actual_rate = sent / duration
         print(f"Produced {sent} messages to '{topic}' in {duration:.2f}s ({actual_rate:.1f} msg/s)")
         return sent, actual_rate

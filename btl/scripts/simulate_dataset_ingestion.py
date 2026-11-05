@@ -82,6 +82,8 @@ def scale_dataset_volume(
     inject_dirty_ratio: float = 0.01,
 ) -> List[Dict[str, Any]]:
     """2. VOLUME: Amplify/replay pre-existing dataset to reach target volume + inject noisy records."""
+    if not 0 <= inject_dirty_ratio <= 1 or target_volume < 0:
+        raise ValueError("Dirty ratio must be within [0,1] and volume nonnegative")
     if not base_records:
         return []
 
@@ -92,8 +94,8 @@ def scale_dataset_volume(
     for i in range(target_volume):
         template = copy.deepcopy(base_records[i % base_len])
         # Assign deterministic sequential ID for new replayed events
+        template[id_field] = f"{prefix}_sim_{i:07d}"
         if i >= base_len:
-            template[id_field] = f"{prefix}_sim_{i:07d}"
             event_dt = base_time + timedelta(seconds=i * 2)
             if "review_date" in template:
                 template["review_date"] = event_dt.isoformat().replace("+00:00", "Z")
@@ -101,7 +103,7 @@ def scale_dataset_volume(
                 template["timestamp"] = event_dt.isoformat().replace("+00:00", "Z")
 
         # Inject a small fraction of dirty/malformed data to test Processing & Quarantine
-        if inject_dirty_ratio > 0 and i > 0 and (i % int(1 / inject_dirty_ratio) == 0):
+        if int((i + 1) * inject_dirty_ratio) > int(i * inject_dirty_ratio):
             if "rating" in template:
                 template["rating"] = 99.0  # Invalid rating (> 5.0)
             elif "price" in template:
@@ -114,7 +116,9 @@ def scale_dataset_volume(
         scaled.append(copy.deepcopy(scaled[0]))
         scaled.append(copy.deepcopy(scaled[1]))
 
-    return scaled
+    from data.generator import tag_generated
+    return tag_generated(scaled, generator="dataset_replay_simulator",
+                         config={"target_volume": target_volume, "inject_dirty_ratio": inject_dirty_ratio})
 
 
 def simulate_velocity_push(

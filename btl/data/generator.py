@@ -1,5 +1,6 @@
 import os
 import json
+import hashlib
 import random
 import datetime
 from pathlib import Path
@@ -66,6 +67,29 @@ from typing import List, Dict, Any, Optional
 from config.settings import settings
 from ingestion.privacy import anonymize_user_id
 
+def _input_fingerprint(value):
+    encoded = json.dumps(value,sort_keys=True,ensure_ascii=False,default=str).encode('utf-8')
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def tag_generated(records, seed=None, generator="deterministic_generator", config=None):
+    """Label generated records without preserving a live-source evidence claim."""
+    result = []
+    for value in records:
+        row = dict(value)
+        if row.get('source'):
+            row['simulated_channel'] = row['source']
+        if row.get('source_url'):
+            row['template_source_url'] = row.pop('source_url')
+        for field in ('evidence_sha256', 'collection_run_id', 'source_record_id'):
+            row.pop(field, None)
+        row.update(source='synthetic_generator', source_group='simulation', source_name=generator,
+                   acquisition_method='generated', generator_seed=str(seed) if seed is not None else None,
+                   generator_config=json.dumps(dict(config or {},generator_version=1), sort_keys=True))
+        result.append(row)
+    return result
+
+
 def generate_products(
     metadata: Optional[List[Dict[str, Any]]] = None,
     reference_date: Optional[datetime.datetime] = None,
@@ -119,7 +143,9 @@ def generate_products(
                 "created_at": now.isoformat().replace("+00:00", "Z"),
                 "updated_at": now.isoformat().replace("+00:00", "Z"),
             })
-    return products
+    return tag_generated(products, seed, "generate_products", {
+        'reference_date':now.isoformat(),'currency':curr,'dirty_ratio':dirty_ratio,
+        'metadata_sha256':_input_fingerprint(meta_list),'output_records':len(products)})
 
 def generate_reviews(
     products: List[Dict[str, Any]],
@@ -149,10 +175,10 @@ def generate_reviews(
         prod = rng.choice(valid_prods)
         delta_seconds = rng.randint(0, 35 * 86400)
         review_time = base_start + datetime.timedelta(seconds=delta_seconds)
-        
+
         is_vi = rng.random() < 0.65
         lang = "vi" if is_vi else "en"
-        
+
         # Rating bias towards 4 and 5 stars
         rating_roll = rng.random()
         if rating_roll < 0.60:
@@ -237,7 +263,13 @@ def generate_reviews(
                 "created_at": (burst_time + datetime.timedelta(minutes=b)).isoformat().replace("+00:00", "Z")
             })
 
-    return reviews
+    return tag_generated(reviews, seed, "generate_reviews", {
+        'requested_count':count,'inject_anomalies':inject_anomalies,'start_date':base_start.isoformat(),
+        'burst_product_id':target_burst_prod,'burst_count':burst_count if inject_anomalies else 0,
+        'dirty_ratio_requested':dirty_ratio,'effective_dirty_records':dirty_target,
+        'duplicate_ratio_requested':duplicate_ratio,'effective_duplicate_records':dup_target,
+        'remove_user_id':remove_user_id,'input_products_sha256':_input_fingerprint(products),
+        'output_records':len(reviews)})
 
 def generate_price_history(
     products: List[Dict[str, Any]],
@@ -249,9 +281,22 @@ def generate_price_history(
     rng = random.Random(seed) if seed is not None else random
     prices = []
     base_start = start_date or datetime.datetime(2026, 8, 20, 0, 0, 0)
-    curr = currency or settings.analytics.default_currency
+    from spark.etl.normalizer import EntityNormalizer
+    catalog_currencies = {EntityNormalizer.normalize_currency(row.get('currency')) for row in products
+                          if row.get('currency') is not None}
+    catalog_currencies.discard(None)
+    if len(catalog_currencies) > 1:
+        raise ValueError('Mixed catalog currency requires separate simulation runs')
+    catalog_currency = next(iter(catalog_currencies),None)
+    explicit_currency = EntityNormalizer.normalize_currency(currency)
+    if currency is not None and explicit_currency is None:
+        raise ValueError('Invalid simulation currency')
+    if explicit_currency and catalog_currency and explicit_currency != catalog_currency:
+        raise ValueError('Simulation currency differs from catalog; FX conversion is not configured')
+    curr = explicit_currency or catalog_currency or settings.analytics.default_currency
+    currency_source = 'explicit' if explicit_currency else ('catalog' if catalog_currency else 'configured_default')
     price_idx = 1
-    
+
     for prod in products:
         base = prod["price"]
         if base <= 0:
@@ -259,12 +304,19 @@ def generate_price_history(
         for day in range(days_history):
             cur_time = base_start + datetime.timedelta(days=day, hours=10)
             fluctuation = rng.uniform(-0.03, 0.03)
-            current_price = round(base * (1.0 + fluctuation), -4)
-            
+            precision = -4 if curr == 'VND' and base >= 10000 else 2
+            raw_price = base * (1.0 + fluctuation)
+            current_price = round(raw_price,precision)
+            if current_price <= 0:
+                current_price = raw_price
+
             # Anomaly injection for first product or galaxy_s24_ultra: sudden glitch drop
             is_anomaly_prod = prod["product_id"] == "galaxy_s24_ultra" or (prod == products[0] and len(products) == 1)
             if is_anomaly_prod and day == int(days_history * 0.65):
-                current_price = round(base * 0.15, -4)
+                raw_price = base * 0.15
+                current_price = round(raw_price,precision)
+                if current_price <= 0:
+                    current_price = raw_price
 
             prices.append({
                 "price_id": f"pr_{price_idx:06d}",
@@ -276,8 +328,10 @@ def generate_price_history(
                 "source": "price_poller"
             })
             price_idx += 1
-            
-    return prices
+
+    return tag_generated(prices, seed, "generate_price_history", {
+        'days_history':days_history,'start_date':base_start.isoformat(),'currency':curr,'currency_source':currency_source,
+        'input_products_sha256':_input_fingerprint(products),'output_records':len(prices)})
 
 def generate_streaming_events(
     products: List[Dict[str, Any]],
@@ -292,7 +346,7 @@ def generate_streaming_events(
         prod = rng.choice(products)
         event_time = start_t + datetime.timedelta(seconds=i * 2)
         event_type = rng.choice(["NEW_REVIEW", "PRICE_UPDATE", "RATING_UPDATE"])
-        
+
         if event_type == "NEW_REVIEW":
             payload = {"rating": rng.choice([4.0, 5.0, 5.0, 3.0]), "review_id": f"rv_stream_{i:04d}"}
         elif event_type == "PRICE_UPDATE":
@@ -308,7 +362,9 @@ def generate_streaming_events(
             "source": "stream_simulator",
             "payload": payload
         })
-    return events
+    return tag_generated(events, seed, "generate_streaming_events", {
+        'requested_count':count,'base_time':start_t.isoformat(),'input_products_sha256':_input_fingerprint(products),
+        'output_records':len(events)})
 
 if __name__ == "__main__":
     prods = generate_products(seed=42)
