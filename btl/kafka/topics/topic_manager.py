@@ -21,6 +21,7 @@ class TopicManager:
             (settings.kafka.topic_reviews, 3),
             (settings.kafka.topic_prices, 2),
             (settings.kafka.topic_events, 3),
+            (settings.kafka.topic_articles, 2),
             ("dead-letter", 1),
         ]
 

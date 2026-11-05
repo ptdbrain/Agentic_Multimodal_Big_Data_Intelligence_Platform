@@ -21,7 +21,13 @@ def test_review_identity_is_not_partition_identity():
 
 def test_price_observations_are_stable_and_distinct():
     c=TikiCrawler()
-    a={'product_id':'tiki_1','price':100,'updated_at':'2026-10-01T00:00:00Z','seller':'S'}
-    b=dict(a,updated_at='2026-10-02T00:00:00Z')
+    a={'product_id':'tiki_1','price':100,'collected_at':'2026-10-01T00:00:00Z','updated_at':'2000-01-01T00:00:00Z','seller':'S'}
+    b=dict(a,collected_at='2026-10-02T00:00:00Z')
     assert c.standardize_price(a)['price_id'] != c.standardize_price(b)['price_id']
     assert c.standardize_price(a,index=1)['price_id'] == c.standardize_price(a,index=99)['price_id']
+
+
+def test_catalog_edit_clock_does_not_change_observation_identity():
+    c = TikiCrawler()
+    record = {'product_id':'tiki_1','price':100,'collected_at':'2026-10-01T00:00:00Z','updated_at':'2000-01-01','seller':'S'}
+    assert c.standardize_price(record)['price_id'] == c.standardize_price(dict(record, updated_at='2001-01-01'))['price_id']

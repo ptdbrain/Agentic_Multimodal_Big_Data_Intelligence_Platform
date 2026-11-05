@@ -7,10 +7,12 @@ from ingestion.crawler.generic_html import UniversalProductScraper
 from ingestion.crawler.validator import CrawlerDataValidator, validate_crawler_payloads
 
 class WebCrawler(MockEcommerceCrawler):
-    """Backward-compatible WebCrawler maintaining legacy API while integrating
-    with the new extensible crawler ecosystem.
-    """
-    pass
+    """Legacy simulation shim; use an explicit real adapter for network collection."""
+
+    def __init__(self, *args, simulation=False, **kwargs):
+        if simulation is not True:
+            raise ValueError('WebCrawler is a legacy simulation; opt in with simulation=True or use a real adapter')
+        super().__init__(*args, **kwargs)
 
 __all__ = [
     "WebCrawler",

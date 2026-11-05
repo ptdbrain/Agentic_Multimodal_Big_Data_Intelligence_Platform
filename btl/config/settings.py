@@ -47,6 +47,7 @@ class KafkaSettings:
     topic_products: str = get_env("KAFKA_TOPIC_PRODUCTS", "raw.products")
     topic_reviews: str = get_env("KAFKA_TOPIC_REVIEWS", "raw.reviews")
     topic_prices: str = get_env("KAFKA_TOPIC_PRICES", "raw.prices")
+    topic_articles: str = get_env("KAFKA_TOPIC_ARTICLES", "raw.articles")
     topic_events: str = get_env("KAFKA_TOPIC_EVENTS", "raw.events")
 
 @dataclass

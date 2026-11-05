@@ -153,9 +153,9 @@ class EntityNormalizer:
     }
 
     @staticmethod
-    def normalize_currency(raw_currency: Any, default_currency: Optional[str] = None) -> str:
+    def normalize_currency(raw_currency: Any, default_currency: Optional[str] = None) -> Optional[str]:
         """Normalizes currency symbols/codes (e.g. 'vnđ', '₫', '$', 'usd') to ISO 4217 codes."""
-        fallback = default_currency or settings.analytics.default_currency
+        fallback = default_currency
         if raw_currency is None:
             return fallback
         cleaned = str(raw_currency).strip().lower()
@@ -237,6 +237,10 @@ class EntityNormalizer:
         item[numeric] = parsed if valid else None
         if missing or not valid:
             errors.add(f"{'MISSING' if missing else 'INVALID'}_{numeric.upper()}")
+
+        if dataset_type in {'products', 'prices'}:
+            raw_currency = item.setdefault('currency_raw', item.get('currency'))
+            item['currency'] = EntityNormalizer.normalize_currency(raw_currency)
 
         business_time = {"products": "created_at", "reviews": "review_date", "prices": "timestamp"}[dataset_type]
         time_fields = {business_time, "ingested_at"} | (set(item) & {"created_at", "updated_at", "timestamp", "review_date"})

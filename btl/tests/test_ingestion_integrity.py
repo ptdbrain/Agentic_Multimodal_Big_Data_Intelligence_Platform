@@ -15,13 +15,15 @@ def test_invalid_rating_never_becomes_valid(rating):
 def test_missing_content_is_not_generated():
     r=TikiCrawler().standardize_review({'id':1,'rating':5},'tiki_1')
     assert not r['review_text']
-    assert r['verified_purchase'] is False
+    assert r.get('verified_purchase') is None
     assert CrawlerDataValidator.validate_review(r)[0] is False
 
 
-@pytest.mark.parametrize('raw', [{'purchased':False},{'status':'approved'},{'purchased':'false'}])
-def test_purchase_requires_explicit_true(raw):
-    assert TikiCrawler().standardize_review(dict(raw,id=1),'tiki_1')['verified_purchase'] is False
+@pytest.mark.parametrize('raw,expected', [({'purchased':False},False), ({'status':'approved'},None),
+                                           ({'purchased':'false'},False), ({'purchased':True},True)])
+def test_purchase_preserves_explicit_values_and_unknown(raw, expected):
+    row = TikiCrawler().standardize_review(dict(raw, id=1), 'tiki_1')
+    assert row.get('verified_purchase') is expected
 
 
 def test_price_parser_retains_negative_sign():

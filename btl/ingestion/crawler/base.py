@@ -1,5 +1,6 @@
 from ingestion.identity import make_price_id
 import time
+import math
 import datetime
 import requests
 from abc import ABC, abstractmethod
@@ -24,6 +25,8 @@ class BaseEcommerceCrawler(ABC):
         retry_backoff_sec: Optional[float] = None,
         custom_headers: Optional[Dict[str, str]] = None,
         remove_user_id: bool = False,
+        evidence_dir=None,
+        collection_run_id: Optional[str] = None,
     ):
         self.platform_name = platform_name
         self.base_url = base_url.rstrip("/")
@@ -33,6 +36,10 @@ class BaseEcommerceCrawler(ABC):
         self.max_retries = max_retries if max_retries is not None else settings.crawler.max_retries
         self.retry_backoff_sec = retry_backoff_sec if retry_backoff_sec is not None else settings.crawler.retry_backoff_sec
         self.remove_user_id = remove_user_id
+        from ingestion.evidence import ResponseEvidence
+        self.evidence = ResponseEvidence(platform_name.lower(),
+            getattr(self, 'PARSER_VERSION', platform_name.lower() + '-mapper-v1'),
+            directory=evidence_dir, run_id=collection_run_id)
 
         self._min_interval = 1.0 / self.rate_limit_rps if self.rate_limit_rps > 0 else 0.0
         self._last_request_time = 0.0
@@ -131,15 +138,25 @@ class BaseEcommerceCrawler(ABC):
             standard_products.append(std_p)
             pid = std_p["product_id"]
 
-            all_prices.append({
-                "price_id": make_price_id(str(std_p.get("source") or self.platform_name.lower()), pid, str(std_p.get("seller", "Official Store")), str(std_p.get("updated_at") or now_iso)),
-                "product_id": pid,
-                "price": float(std_p.get("price", 0.0)),
-                "currency": str(std_p.get("currency", "VND")),
-                "seller": str(std_p.get("seller", "Official Store")),
-                "timestamp": str(std_p.get("updated_at") or now_iso),
-                "source": str(std_p.get("source") or f"{self.platform_name.lower()}_crawler"),
-            })
+            # A listing price is observed when collected, not when the catalog
+            # product was last edited. Missing values must not become zero/VND.
+            raw_price = std_p.get("price")
+            try:
+                price = float(raw_price) if raw_price is not None and not isinstance(raw_price, bool) else None
+            except (ValueError, TypeError, OverflowError):
+                price = None
+            if price is not None and math.isfinite(price) and price >= 0 and std_p.get("currency"):
+                observed_at = str(std_p.get("collected_at") or now_iso)
+                seller = std_p.get("seller")
+                snapshot = {
+                    "price_id": make_price_id(str(std_p.get("source") or self.platform_name.lower()), pid, str(seller or ""), observed_at),
+                    "product_id": pid, "price": price, "currency": std_p["currency"],
+                    "timestamp": observed_at, "source": str(std_p.get("source") or f"{self.platform_name.lower()}_crawler"),
+                }
+                if seller is not None:
+                    snapshot["seller"] = seller
+                from ingestion.provenance import inherit_source_metadata
+                all_prices.append(inherit_source_metadata(snapshot, std_p))
 
             # Extract platform product id to query reviews
             orig_id = str(p.get("id") or pid)

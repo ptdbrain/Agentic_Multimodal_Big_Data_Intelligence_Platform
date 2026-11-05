@@ -78,6 +78,9 @@ class APICollector:
                 "timestamp": time.time()
             })
             
+        from data.generator import tag_generated
+        items = tag_generated(items, generator='api_simulator',
+                              config={'page': page, 'page_size': p_size, 'total_items': self.total_items})
         return {
             "page": page,
             "page_size": p_size,

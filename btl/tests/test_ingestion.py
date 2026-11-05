@@ -36,8 +36,8 @@ def test_api_collector_pagination():
     assert page1["has_next"] is True
 
 
-def test_web_crawler_scrape():
-    crawler = WebCrawler()
+def test_explicit_legacy_simulation_scrape():
+    crawler = WebCrawler(simulation=True)
     scraped = crawler.scrape_product_page("iphone_15_pro")
     assert scraped["product_id"] == "iphone_15_pro"
     assert "stock_status" in scraped

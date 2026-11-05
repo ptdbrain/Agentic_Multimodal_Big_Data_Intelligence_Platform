@@ -42,14 +42,10 @@ class TestTikiCrawlerFallbackElimination:
             assert revs == []
             assert not any("Hàng chính hãng Tiki Trading" in str(r) for r in revs)
 
-    def test_explicit_legacy_fallback_works_when_explicitly_requested(self):
-        """For legacy tests that explicitly ask for allow_public_fallback=True."""
-        crawler = TikiCrawler(allow_public_fallback=True, use_polite_scraper=False)
-        with patch.object(crawler, "_request_with_retry", return_value=None):
-            prods = crawler.search_products("test", limit=3)
-            assert len(prods) == 3
-            revs = crawler.get_product_reviews("123", limit=2)
-            assert len(revs) == 2
+    def test_explicit_legacy_fallback_is_rejected(self):
+        """A live adapter must never masquerade a synthetic catalog as Tiki."""
+        with pytest.raises(ValueError, match="MockEcommerceCrawler"):
+            TikiCrawler(allow_public_fallback=True, use_polite_scraper=False)
 
 
 @pytest.mark.unit
@@ -314,14 +310,15 @@ class TestCrawlerDataValidator:
 
 
 @pytest.mark.unit
-class TestTikiGenuineReviews:
-    """Verify genuine customer review fetching and standardization without fake simulation."""
+class TestTikiReviewMapping:
+    """HTTP fixture parsing and PII mapping; not live-source acceptance evidence."""
 
-    def test_fetch_product_reviews_genuine_response(self):
-        crawler = PoliteTikiCrawler(delay_seconds=2.0)
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
+    def test_fetch_product_reviews_parses_explicit_http_fixture(self,tmp_path):
+        import requests
+        from ingestion.evidence import ResponseEvidence
+        crawler = PoliteTikiCrawler(delay_seconds=2.0,
+            evidence=ResponseEvidence('tiki','fixture-http-v1',directory=tmp_path))
+        fixture = {
             "data": [
                 {
                     "id": 112233,
@@ -335,6 +332,10 @@ class TestTikiGenuineReviews:
                 }
             ]
         }
+        mock_response = requests.Response()
+        mock_response.status_code = 200
+        mock_response.url = 'https://tiki.vn/api/v2/reviews?product_id=278505394'
+        mock_response._content = json.dumps(fixture).encode('utf-8')
         with patch.object(crawler, "_check_robots"), patch.object(crawler.session, "get", return_value=mock_response):
             reviews = crawler.fetch_product_reviews("278505394", limit=2)
             assert len(reviews) == 1

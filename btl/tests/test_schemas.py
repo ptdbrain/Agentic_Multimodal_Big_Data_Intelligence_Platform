@@ -163,3 +163,17 @@ def test_contract_wrong_schema_version_detected():
     ok_msg, msg_errs, _ = consumer.validate_message("raw.products", bad_envelope)
     assert not ok_msg
     assert any("schema_version" in e for e in msg_errs)
+
+
+@pytest.mark.unit
+def test_schema_constraint_replacement_is_seen_by_subsequent_validation(monkeypatch):
+    import copy
+    schema = copy.deepcopy(SchemaValidator.load_schema('review'))
+    monkeypatch.setitem(SchemaValidator._schemas, 'review', schema)
+    record = {'review_id':'r1','product_id':'p1','user_id':'anon_redacted','rating':4,
+              'review_title':'Fixture','review_text':'Actual fixture text','review_date':'2026-11-02'}
+    assert SchemaValidator.validate_record(record, 'review')[0]
+    schema['properties'] = dict(schema['properties'], rating={'type':'number','minimum':1,'maximum':3})
+    valid, errors = SchemaValidator.validate_record(record, 'review')
+    assert not valid
+    assert errors and 'maximum' in errors[0]

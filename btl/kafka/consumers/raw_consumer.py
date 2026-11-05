@@ -125,6 +125,8 @@ class RawConsumer:
             return "review"
         if topic_lower == settings.kafka.topic_prices.lower() or "price" in topic_lower:
             return "price"
+        if topic_lower == settings.kafka.topic_articles.lower() or "article" in topic_lower:
+            return "article"
         if topic_lower == settings.kafka.topic_events.lower() or "event" in topic_lower:
             return "event"
         return None

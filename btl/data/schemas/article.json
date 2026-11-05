@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IndependentWebArticle",
+  "type": "object",
+  "properties": {
+    "article_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_url": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1
+    },
+    "collected_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "content_sha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_group": {
+      "const": "web_content"
+    },
+    "acquisition_method": {
+      "enum": [
+        "live",
+        "snapshot_replay"
+      ]
+    },
+    "published_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "article_id",
+    "source_name",
+    "source_url",
+    "title",
+    "body",
+    "collected_at",
+    "content_sha256",
+    "source_group",
+    "acquisition_method",
+    "published_at"
+  ],
+  "additionalProperties": true
+}

@@ -102,12 +102,12 @@ def parse_price(value: Any) -> Optional[float]:
     text = str(value).strip()
     if not text:
         return None
-    digits = re.sub(r"[^0-9]", "", text)
-    if not digits:
+    from spark.etl.normalizer import EntityNormalizer, PRICE_TEXT_PATTERN
+    if not re.fullmatch(PRICE_TEXT_PATTERN, text):
         return None
     try:
-        val = float(digits)
-        return val if val >= 0 else None
+        val = EntityNormalizer.normalize_price(text)
+        return val if math.isfinite(val) and val >= 0 else None
     except ValueError:
         return None
 
@@ -179,6 +179,19 @@ def find_json_product(soup: BeautifulSoup) -> Optional[Dict[str, Any]]:
     return None
 
 
+def observed_currency(raw_currency, raw_price):
+    """Read a declared unit or explicit price token; never assume VND."""
+    from spark.etl.normalizer import EntityNormalizer
+    declared = EntityNormalizer.normalize_currency(raw_currency)
+    tokens = set()
+    if isinstance(raw_price,str):
+        for token in re.findall(r"(?i)(?<![A-Za-z])(?:VND|VNĐ|USD|₫|đ|[$])(?![A-Za-z])",raw_price):
+            tokens.add("USD" if token.upper() == "USD" or token == "$" else "VND")
+    if len(tokens) > 1 or (declared and tokens and declared not in tokens):
+        return None
+    return declared or next(iter(tokens),None)
+
+
 def extract_page_fields(html: str, product_url: str, category_seed: str = "Electronics") -> Dict[str, Any]:
     """Extract metadata, pricing, rating, and seller specs from a Tiki product HTML page."""
     soup = BeautifulSoup(html, "html.parser")
@@ -226,18 +239,17 @@ def extract_page_fields(html: str, product_url: str, category_seed: str = "Elect
     visible_text = soup.get_text(" ", strip=True)
     title_pos = visible_text.lower().find(name.lower()) if name else -1
     visible_region = visible_text[title_pos : title_pos + 1800] if title_pos >= 0 else visible_text[:1800]
-    if price is None:
+    if price is None and price_value is None:
         price_match = re.search(
-            r"(?<!\d)(\d{1,3}(?:[.,]\d{3})+|\d{5,})\s*(?:₫|đ|VNĐ|VND)",
+            r"(?<![\d+-])([+-]?(?:\d{1,3}(?:[.,]\d{3})+|\d{5,}))\s*(?:₫|đ|VNĐ|VND)",
             visible_region,
             re.IGNORECASE,
         )
-        if not price_match:
-            price_match = re.search(r"(?<!\d)(\d{1,3}(?:[.,]\d{3})+|\d{5,})(?!\d)", visible_region)
         if price_match:
             candidate_price = parse_price(price_match.group(1))
             if candidate_price is not None and 10_000 <= candidate_price <= 10_000_000_000:
                 price = candidate_price
+                price_value = price_match.group(0)
 
     brand = scalar_text(pick(product, "brand", "brand_name", "brandName", "manufacturer"))
     if not brand:
@@ -245,10 +257,34 @@ def extract_page_fields(html: str, product_url: str, category_seed: str = "Elect
         if brand_tag:
             brand = scalar_text(brand_tag.get("content") or brand_tag.get_text(" ", strip=True))
 
-    category = (
-        scalar_text(pick(product, "category", "category_name", "categoryName", "primary_category_name"))
-        or category_seed
-    )
+    category = scalar_text(pick(product, "category", "category_name", "categoryName", "primary_category_name"))
+    if not category:
+        # Breadcrumb category links are observed page facts; the query seed
+        # is never used as a substitute for a missing product category.
+        categories = []
+        for script in soup.select('script[type="application/ld+json"]'):
+            try:
+                document = json.loads(script.get_text())
+            except (ValueError,TypeError):
+                continue
+            for node in walk_dicts(document):
+                if "breadcrumblist" not in normalize_type(node.get("@type")):
+                    continue
+                entries = node.get("itemListElement",[])
+                if not isinstance(entries,list):
+                    continue
+                for entry in entries:
+                    if not isinstance(entry,dict):
+                        continue
+                    item = entry.get("item")
+                    href = item.get("@id") or item.get("url") if isinstance(item,dict) else item
+                    label = entry.get("name") or (item.get("name") if isinstance(item,dict) else None)
+                    if not isinstance(href,str):
+                        continue
+                    parts = urlsplit(urljoin("https://tiki.vn/",href))
+                    if parts.hostname == BASE_HOST and re.search(r"/c\d+/?$",parts.path) and scalar_text(label):
+                        categories.append(scalar_text(label))
+        category = categories[-1] if categories else None
     seller = scalar_text(pick(product, "seller", "seller_name", "sellerName", "merchant"))
     image = scalar_text(pick(product, "image", "image_url", "imageUrl", "thumbnail_url"))
 
@@ -267,7 +303,7 @@ def extract_page_fields(html: str, product_url: str, category_seed: str = "Elect
         rating = None
     try:
         parsed_rc = parse_price(review_count)
-        review_count = int(parsed_rc) if parsed_rc is not None else None
+        review_count = int(parsed_rc) if parsed_rc is not None and parsed_rc.is_integer() else None
     except (ValueError, TypeError):
         review_count = None
 
@@ -289,19 +325,20 @@ def extract_page_fields(html: str, product_url: str, category_seed: str = "Elect
     return {
         "id": int(clean_id) if clean_id.isdigit() else clean_id,
         "product_id": pid,
-        "product_name": name or "Unknown Tiki Product",
-        "name": name or "Unknown Tiki Product",
-        "brand": brand or "Generic",
-        "brand_name": brand or "Generic",
+        "product_name": name,
+        "name": name,
+        "brand": brand,
+        "brand_name": brand,
         "category": category,
         "primary_category_name": category,
-        "price": price if price is not None else 0.0,
-        "currency": (currency or "VND").upper(),
+        "price": price,
+        "price_raw": price_value,
+        "currency": observed_currency(currency, price_value),
         "rating": rating,
         "rating_average": rating,
-        "review_count": review_count or 0,
-        "seller": seller or "Tiki Trading",
-        "seller_name": seller or "Tiki Trading",
+        "review_count": review_count,
+        "seller": seller,
+        "seller_name": seller,
         "image_url": image or "",
         "thumbnail_url": image or "",
         "product_url": product_url,
@@ -318,7 +355,10 @@ class PoliteTikiCrawler:
     Supports catalog scraping and genuine customer review retrieval without simulating data.
     """
 
-    def __init__(self, delay_seconds: float = 2.0, timeout_seconds: int = 20):
+    def __init__(self, delay_seconds: float = 2.0, timeout_seconds: int = 20, evidence=None):
+        from ingestion.evidence import ResponseEvidence
+        self.evidence = evidence or ResponseEvidence("tiki", "polite-tiki-html-api-v2")
+        self._last_source_provenance = {}
         self.delay_seconds = max(2.0, delay_seconds)
         self.timeout_seconds = timeout_seconds
         self.last_request_at = 0.0
@@ -363,6 +403,7 @@ class PoliteTikiCrawler:
             raise RuntimeError(f"Tiki returned HTTP {response.status_code} for {url}.")
         response.raise_for_status()
         response.encoding = response.apparent_encoding or response.encoding
+        self._last_source_provenance = self.evidence.stamp([{}],response,url)[0]['_source_provenance']
         return response.text
 
     def discover_product_links(self, listing_url: str, max_products: int = 10) -> List[str]:
@@ -392,6 +433,7 @@ class PoliteTikiCrawler:
             try:
                 html = self.fetch_html(url)
                 record = extract_page_fields(html, url, category_seed)
+                record['_source_provenance'] = self._last_source_provenance.copy()
                 if not record.get("product_name") or record.get("price") is None:
                     unparsed.append({
                         "product_url": url,
@@ -447,7 +489,7 @@ class PoliteTikiCrawler:
                 data = resp.json()
                 items = data.get("data", [])
                 if isinstance(items, list):
-                    return items
+                    return self.evidence.stamp(items,resp,full_url)
             elif resp.status_code in (403, 429):
                 logger.warning(f"Tiki review endpoint returned HTTP {resp.status_code} for product {clean_id}")
             else:
@@ -465,6 +507,8 @@ class TikiCrawler(BaseEcommerceCrawler):
     when live queries fail or are blocked, raises or returns real results only.
     """
 
+    PARSER_VERSION = 'tiki-api-html-v5'
+
     def __init__(
         self,
         base_url: Optional[str] = None,
@@ -475,13 +519,15 @@ class TikiCrawler(BaseEcommerceCrawler):
         delay_seconds: float = 2.0,
         **kwargs,
     ):
+        if allow_public_fallback:
+            raise ValueError("Synthetic fallback removed: use MockEcommerceCrawler explicitly")
         b_url = base_url or settings.crawler.tiki_base_url
         super().__init__(platform_name="Tiki", base_url=b_url, **kwargs)
         self.products_endpoint = products_endpoint or settings.crawler.tiki_products_endpoint
         self.reviews_endpoint = reviews_endpoint or settings.crawler.tiki_reviews_endpoint
         self.allow_public_fallback = allow_public_fallback
         self.use_polite_scraper = use_polite_scraper
-        self.polite_crawler = PoliteTikiCrawler(delay_seconds=delay_seconds)
+        self.polite_crawler = PoliteTikiCrawler(delay_seconds=delay_seconds, evidence=self.evidence)
 
     def search_products(self, query: str, limit: int = 20, page: int = 1) -> List[Dict[str, Any]]:
         """Search products on Tiki by keyword or category.
@@ -497,7 +543,28 @@ class TikiCrawler(BaseEcommerceCrawler):
                 data = resp.json()
                 items = data.get("data", [])
                 if items:
-                    return items
+                    observed = self.evidence.stamp(items,resp,url)
+                    if self.use_polite_scraper:
+                        for index,item in enumerate(observed):
+                            if observed_currency(item.get('currency'),item.get('price')) is not None:
+                                continue
+                            path = item.get('product_url') or item.get('url_path')
+                            if not path:
+                                continue
+                            product_url = urljoin(self.base_url + '/',path)
+                            parts = urlsplit(product_url)
+                            if parts.hostname != BASE_HOST or not PRODUCT_URL_RE.search(parts.path):
+                                continue
+                            try:
+                                html = self.polite_crawler.fetch_html(product_url)
+                                offer = extract_page_fields(html,product_url,query)
+                                if offer.get('currency') and offer.get('price') is not None:
+                                    # Price and unit share the same HTML evidence.
+                                    offer['_source_provenance'] = self.polite_crawler._last_source_provenance.copy()
+                                    observed[index] = offer
+                            except Exception as error:
+                                logger.warning("Tiki offer evidence unavailable (%s)",type(error).__name__)
+                    return observed
             except Exception as e:
                 logger.warning(f"[Tiki] JSON decode error: {e}")
 
@@ -521,90 +588,8 @@ class TikiCrawler(BaseEcommerceCrawler):
             except Exception as exc:
                 logger.warning(f"[Tiki] Polite HTML scraping failed for '{query}': {exc}")
 
-        # 3. Guard against hardcoded fallback
-        if not self.allow_public_fallback:
-            logger.info(f"[Tiki] Real crawl completed with 0 items for '{query}' (synthetic fallback strictly disabled).")
-            return []
-
-        # Deprecated legacy mock fallback (strictly guarded by allow_public_fallback=True)
-        logger.warning(
-            "[Tiki] WARNING: Returning deprecated synthetic mock products catalog because allow_public_fallback=True."
-        )
-        base_catalog = [
-            {
-                "id": 271972435,
-                "name": "Apple iPhone 15 Pro Max 256GB Titan Tự Nhiên - Hàng Chính Hãng VN/A",
-                "brand_name": "Apple",
-                "primary_category_name": "Smartphone",
-                "primary_category_path": "Điện Thoại - Máy Tính Bảng/Điện thoại Smartphone",
-                "price": 29490000,
-                "rating_average": 4.9,
-                "review_count": 1420,
-                "seller_name": "Tiki Trading",
-                "url_path": "apple-iphone-15-pro-max-256gb-p271972435.html",
-                "thumbnail_url": "https://salt.tikicdn.com/cache/280x280/ts/product/iphone15promax.jpg",
-            },
-            {
-                "id": 274018291,
-                "name": "Điện Thoại Samsung Galaxy S24 Ultra 5G (12GB/256GB) - Hàng Chính Hãng",
-                "brand_name": "Samsung",
-                "primary_category_name": "Smartphone",
-                "primary_category_path": "Điện Thoại - Máy Tính Bảng/Điện thoại Smartphone",
-                "price": 27990000,
-                "rating_average": 4.8,
-                "review_count": 865,
-                "seller_name": "Samsung Flagship Store",
-                "url_path": "dien-thoai-samsung-galaxy-s24-ultra-p274018291.html",
-                "thumbnail_url": "https://salt.tikicdn.com/cache/280x280/ts/product/s24ultra.jpg",
-            },
-            {
-                "id": 273881004,
-                "name": "MacBook Air M3 13 inch 2024 (8GB/256GB) - Hàng Chính Hãng Apple Việt Nam",
-                "brand_name": "Apple",
-                "primary_category_name": "Laptop",
-                "primary_category_path": "Laptop - Máy Vi Tính/Laptop",
-                "price": 26890000,
-                "rating_average": 4.9,
-                "review_count": 512,
-                "seller_name": "Tiki Trading",
-                "url_path": "macbook-air-m3-13-inch-2024-p273881004.html",
-                "thumbnail_url": "https://salt.tikicdn.com/cache/280x280/ts/product/macbookairm3.jpg",
-            },
-            {
-                "id": 184059211,
-                "name": "Tai Nghe Chụp Tai Chống Ồn Sony WH-1000XM5 - Hàng Chính Hãng",
-                "brand_name": "Sony",
-                "primary_category_name": "Accessories",
-                "primary_category_path": "Thiết Bị Số - Phụ Kiện Số/Tai Nghe",
-                "price": 7490000,
-                "rating_average": 4.8,
-                "review_count": 640,
-                "seller_name": "Sony Official Store",
-                "url_path": "tai-nghe-sony-wh-1000xm5-p184059211.html",
-                "thumbnail_url": "https://salt.tikicdn.com/cache/280x280/ts/product/wh1000xm5.jpg",
-            },
-            {
-                "id": 275112098,
-                "name": "Máy Tính Bảng Xiaomi Pad 6 (8GB/256GB) - Hàng Chính Hãng",
-                "brand_name": "Xiaomi",
-                "primary_category_name": "Tablet",
-                "primary_category_path": "Điện Thoại - Máy Tính Bảng/Máy tính bảng",
-                "price": 8990000,
-                "rating_average": 4.7,
-                "review_count": 320,
-                "seller_name": "Xiaomi Official Store",
-                "url_path": "may-tinh-bang-xiaomi-pad-6-p275112098.html",
-                "thumbnail_url": "https://salt.tikicdn.com/cache/280x280/ts/product/xiaomipad6.jpg",
-            },
-        ]
-        results = []
-        for idx in range(limit):
-            template = dict(base_catalog[idx % len(base_catalog)])
-            if idx >= len(base_catalog):
-                template["id"] = int(template["id"]) + idx
-                template["name"] = f"{template['name']} (Edition {idx + 1})"
-            results.append(template)
-        return results
+        logger.info("[Tiki] No live products returned for %r", query)
+        return []
 
     def get_product_details(self, product_id: str) -> Optional[Dict[str, Any]]:
         """Fetch granular product specification and live seller pricing from Tiki."""
@@ -613,126 +598,106 @@ class TikiCrawler(BaseEcommerceCrawler):
         resp = self._request_with_retry("GET", url)
         if resp and resp.status_code == 200:
             try:
-                return resp.json()
+                item = resp.json()
+                return self.evidence.stamp([item],resp,url)[0] if isinstance(item,dict) else None
             except Exception:
                 return None
         return None
 
     def get_product_reviews(self, product_id: str, limit: int = 50, page: int = 1) -> List[Dict[str, Any]]:
-        """Fetch genuine customer feedback and ratings from Tiki reviews API.
-        In real crawl mode (allow_public_fallback=False), NEVER injects synthetic mock feedback.
-        """
+        """Collect up to limit observed rows using Tiki's maximum20-row pages."""
         clean_id = str(product_id).replace("tiki_", "")
-
-        # 1. Fetch genuine reviews via polite scraper
-        real_reviews = self.polite_crawler.fetch_product_reviews(clean_id, limit=limit, page=page)
-        if real_reviews:
-            return real_reviews
-
-        # 2. Secondary session query if polite scraper returned empty
-        url = f"{self.base_url}{self.reviews_endpoint}"
-        params = {"product_id": clean_id, "limit": limit, "page": page, "sort": "score|desc"}
-        resp = self._request_with_retry("GET", url, params=params)
-        if resp and resp.status_code == 200:
-            try:
-                data = resp.json()
-                items = data.get("data", [])
-                if items:
-                    return items
-            except Exception as e:
-                logger.warning(f"[Tiki] JSON decode error on reviews: {e}")
-
-        # 3. Guard against hardcoded fallback
-        if not self.allow_public_fallback:
-            return []
-
-        logger.warning(
-            "[Tiki] WARNING: Returning deprecated synthetic mock reviews because allow_public_fallback=True."
-        )
-        sample_feedback = [
-            (5, "Cực kỳ hài lòng", "Hàng chính hãng Tiki Trading, đóng gói niêm phong kỹ, giao nhanh trong 2h."),
-            (5, "Chất lượng tuyệt vời", "Máy chạy rất mượt, màn hình sắc nét, pin dùng thoải mái cả ngày."),
-            (4, "Tốt trong tầm giá", "Sản phẩm đẹp, hiệu năng ổn định nhưng hộp hơi móp nhẹ khi vận chuyển."),
-            (5, "Đáng đồng tiền", "Đã kiểm tra bảo hành chính hãng, rất yên tâm khi mua tại gian hàng."),
-            (3, "Tạm ổn", "Máy dùng ổn nhưng nóng nhẹ khi cập nhật phần mềm lần đầu."),
-        ]
-        base_ts = 1790236800  # 2026-09-24T08:00:00Z
-        fallback_reviews = []
-        for i in range(limit):
-            rating, title, content = sample_feedback[i % len(sample_feedback)]
-            fallback_reviews.append({
-                "id": f"{clean_id}_{page}_{i+1:04d}",
-                "product_id": clean_id,
-                "customer_id": f"tiki_raw_cust_{clean_id}_{i+1}",
-                "created_by": {
-                    "id": f"tiki_raw_cust_{clean_id}_{i+1}",
-                    "name": f"Khach Hang {i+1}",
-                    "full_name": f"Nguyen Thi Khach {i+1}",
-                },
-                "rating": rating,
-                "title": title,
-                "content": content,
-                "created_at": base_ts - (i * 3600),
-                "thank_count": (i * 3) % 15,
-            })
-        return fallback_reviews
+        if isinstance(limit,bool) or not isinstance(limit,int) or limit < 1:
+            raise ValueError("Review limit must be a positive integer")
+        if isinstance(page,bool) or not isinstance(page,int) or page < 1:
+            raise ValueError("Review page must be a positive integer")
+        page_size = min(limit,20)
+        collected, seen = [], set()
+        for current_page in range(page,page + math.ceil(limit / page_size)):
+            items = (self.polite_crawler.fetch_product_reviews(clean_id,limit=page_size,page=current_page)
+                     if self.use_polite_scraper else [])
+            if not items:
+                url = f"{self.base_url}{self.reviews_endpoint}"
+                params = {"product_id":clean_id,"limit":page_size,"page":current_page,"sort":"score|desc"}
+                response = self._request_with_retry("GET",url,params=params)
+                if response is not None and response.status_code == 200:
+                    try:
+                        candidates = response.json().get("data",[])
+                        if isinstance(candidates,list):
+                            items = self.evidence.stamp(candidates,response,url)
+                    except (ValueError,TypeError,AttributeError) as error:
+                        logger.warning("Tiki review response could not be decoded (%s)",type(error).__name__)
+            if not items:
+                break
+            added = 0
+            for item in items:
+                if not isinstance(item,dict):
+                    continue
+                identity = item.get("id")
+                identity = str(identity) if identity is not None else None
+                if identity is not None and identity in seen:
+                    continue
+                if identity is not None:
+                    seen.add(identity)
+                collected.append(item)
+                added += 1
+            if len(collected) >= limit or len(items) < page_size or not added:
+                break
+        return collected[:limit]
 
     def standardize_product(self, raw_item: Dict[str, Any]) -> Dict[str, Any]:
-        """Maps Tiki raw item (from API or HTML extraction) to SentinelAI canonical Product schema (raw.products)."""
+        """Map observed fields; unknown required facts stay invalid for validation."""
+        from ingestion.crawler.generic_html import _number, _now
         raw_id = raw_item.get("id") or raw_item.get("product_id")
-        clean_id = str(raw_id).replace("tiki_", "") if raw_id else "unknown"
-        p_id = f"tiki_{clean_id}"
-        now_iso = utc_now()
-
-        url_path = raw_item.get("url_path", "")
-        if raw_item.get("product_url"):
-            prod_url = raw_item["product_url"]
-        elif url_path:
-            prod_url = f"https://tiki.vn/{url_path}"
-        else:
-            prod_url = f"https://tiki.vn/p/{clean_id}.html"
-
-        p_name = str(raw_item.get("name") or raw_item.get("product_name") or "Unknown Product").strip()
-        p_brand = str(raw_item.get("brand") or raw_item.get("brand_name") or "Generic").strip()
-        p_cat = str(raw_item.get("category") or raw_item.get("primary_category_name") or "Electronics").strip()
-        p_subcat = str(raw_item.get("subcategory") or raw_item.get("primary_category_path") or p_cat).split("/")[-1].strip()
-
-        price_val = float(raw_item.get("price") or raw_item.get("original_price") or 0.0)
-        rating_val = raw_item.get("rating") if raw_item.get("rating") is not None else raw_item.get("rating_average")
-        rc_val = raw_item.get("review_count")
-
-        return {
-            "product_id": p_id,
-            "product_name": p_name,
-            "brand": p_brand,
-            "category": p_cat,
-            "subcategory": p_subcat,
-            "price": max(0.0, price_val),
-            "currency": "VND",
-            "rating": round(float(rating_val), 1) if rating_val is not None else 0.0,
-            "review_count": int(rc_val) if rc_val is not None else 0,
-            "seller": str(raw_item.get("seller") or raw_item.get("seller_name") or "Tiki Trading").strip(),
-            "product_url": prod_url,
-            "image_url": str(raw_item.get("image_url") or raw_item.get("thumbnail_url") or ""),
-            "source": "tiki_crawler",
-            "created_at": raw_item.get("collected_at") or now_iso,
-            "updated_at": raw_item.get("collected_at") or now_iso,
+        clean_id = str(raw_id).replace("tiki_", "") if raw_id is not None else None
+        collected_at = raw_item.get("collected_at") or _now()
+        url_path = raw_item.get("url_path")
+        product_url = raw_item.get("product_url") or (urljoin(self.base_url + '/', url_path) if url_path else None)
+        brand = raw_item.get("brand") or raw_item.get("brand_name")
+        brand = brand.get('name') if isinstance(brand, dict) else brand
+        category = raw_item.get("category") or raw_item.get("primary_category_name")
+        category = category.get('name') if isinstance(category, dict) else category
+        rating = raw_item.get("rating") if raw_item.get("rating") is not None else raw_item.get("rating_average")
+        record = {
+            "product_id": f"tiki_{clean_id}" if clean_id else None,
+            "product_name": raw_item.get("name") or raw_item.get("product_name"),
+            "brand": brand, "category": category,
+            "price": _number(raw_item.get("price")),
+            "price_raw": raw_item.get("price_raw") if raw_item.get("price_raw") is not None else raw_item.get("price"),
+            "currency": observed_currency(raw_item.get("currency"),
+                raw_item.get("price_raw") if raw_item.get("price_raw") is not None else raw_item.get("price")),
+            "source": "tiki_crawler", "source_group": "marketplace", "source_name": "tiki",
+            "source_record_id": clean_id, "source_url": product_url,
+            "acquisition_method": "live", "collected_at": collected_at,
         }
+        optional = {
+            "subcategory": raw_item.get("subcategory") or raw_item.get("primary_category_path"),
+            "rating": _number(rating), "rating_raw": rating,
+            "review_count": _number(raw_item.get("review_count"), True),
+            "seller": raw_item.get("seller") or raw_item.get("seller_name"),
+            "product_url": product_url,
+            "image_url": raw_item.get("image_url") or raw_item.get("thumbnail_url"),
+            "created_at": raw_item.get("created_at"), "updated_at": raw_item.get("updated_at"),
+        }
+        record.update({k: v for k, v in optional.items() if v is not None})
+        from ingestion.provenance import inherit_source_metadata
+        return inherit_source_metadata(record,raw_item.get('_source_provenance', {}))
 
     def standardize_price(self, std_product: Dict[str, Any], index: int = 1) -> Dict[str, Any]:
-        """Maps product details into SentinelAI canonical PriceHistory schema (raw.prices)."""
+        from ingestion.crawler.generic_html import _now
         pid = std_product["product_id"]
-        ts = std_product.get("updated_at") or utc_now()
-        clean_pid = pid.replace("tiki_", "")
-        return {
-            "price_id": make_price_id("tiki_crawler", pid, str(std_product.get("seller", "Tiki Trading")), ts),
-            "product_id": pid,
-            "price": float(std_product.get("price", 0.0)),
-            "currency": str(std_product.get("currency", "VND")),
-            "seller": str(std_product.get("seller", "Tiki Trading")),
-            "timestamp": ts,
-            "source": "tiki_crawler",
+        ts = std_product.get("collected_at") or _now()
+        seller = std_product.get("seller")
+        record = {
+            "price_id": make_price_id("tiki_crawler", pid, str(seller or ""), ts),
+            "product_id": pid, "price": std_product.get("price"),
+            "price_raw": std_product.get("price_raw"), "currency": std_product.get("currency"),
+            "timestamp": ts, "source": "tiki_crawler",
         }
+        if seller is not None:
+            record['seller'] = seller
+        from ingestion.provenance import inherit_source_metadata
+        return inherit_source_metadata(record, std_product)
 
     def standardize_review(self, raw_review: Dict[str, Any], product_id: Optional[str] = None) -> Dict[str, Any]:
         """Maps genuine Tiki raw review JSON to SentinelAI canonical Review schema (raw.reviews).
@@ -741,8 +706,9 @@ class TikiCrawler(BaseEcommerceCrawler):
         """
         rev_id = raw_review.get("id")
         tiki_p_id = raw_review.get("product_id")
-        clean_p_id = str(product_id or tiki_p_id or "unknown_product").replace("tiki_", "")
-        resolved_pid = f"tiki_{clean_p_id}"
+        original_product_id = product_id if product_id is not None else tiki_p_id
+        clean_p_id = str(original_product_id).replace("tiki_", "") if original_product_id is not None else None
+        resolved_pid = f"tiki_{clean_p_id}" if clean_p_id else None
 
         created_at_val = raw_review.get("created_at")
         if isinstance(created_at_val, (int, float)):
@@ -756,10 +722,10 @@ class TikiCrawler(BaseEcommerceCrawler):
         else:
             rev_time = None
 
-        title = str(raw_review.get("title") or "Đánh giá từ khách hàng").strip()
+        title = str(raw_review.get("title") or "").strip()
         raw_content = str(raw_review.get("content") or "").strip()
         # Preserve only text that actually exists in the source response.
-        text = raw_content or (title if title != "Đánh giá từ khách hàng" else "")
+        text = raw_content or title
         text_origin = "content" if raw_content else ("title" if text else "missing")
 
         created_by = raw_review.get("created_by") if isinstance(raw_review.get("created_by"), dict) else {}
@@ -771,11 +737,13 @@ class TikiCrawler(BaseEcommerceCrawler):
                 raw_rating = float(raw_rating)
             except ValueError:
                 pass
-        verified = raw_review.get("purchased") is True or raw_review.get("verified_purchase") is True
+        from ingestion.crawler.generic_html import _boolean, _number, _now
+        raw_verified = raw_review.get("purchased") if raw_review.get("purchased") is not None else raw_review.get("verified_purchase")
+        verified = _boolean(raw_verified)
 
-        helpful = int(raw_review.get("thank_count") or raw_review.get("helpful_count") or 0)
+        helpful = _number(raw_review.get("thank_count") if raw_review.get("thank_count") is not None else raw_review.get("helpful_count"), True)
 
-        return {
+        record = {
             "review_id": f"tiki_rv_{rev_id}" if rev_id is not None else None,
             "product_id": resolved_pid,
             "user_id": anonymize_user_id(raw_uid, remove=self.remove_user_id),
@@ -785,11 +753,19 @@ class TikiCrawler(BaseEcommerceCrawler):
             "review_text_origin": text_origin,
             "review_date": rev_time,
             "verified_purchase": verified,
-            "helpful_count": max(0, helpful),
+            "helpful_count": helpful,
             "source": "tiki_crawler",
-            "language": "vi",
+            "language": raw_review.get("language"),
             "created_at": rev_time,
+            "source_group": "marketplace", "source_name": "tiki", "source_record_id": str(rev_id) if rev_id is not None else None,
+            "source_url": f"{self.base_url}{self.reviews_endpoint}?product_id={clean_p_id}" if clean_p_id else None,
+            "acquisition_method": "live", "collected_at": _now(),
         }
+        for key in ('verified_purchase', 'helpful_count', 'language'):
+            if record.get(key) is None:
+                record.pop(key, None)
+        from ingestion.provenance import inherit_source_metadata
+        return inherit_source_metadata(record,raw_review.get('_source_provenance', {}))
 
     def crawl_category(
         self,

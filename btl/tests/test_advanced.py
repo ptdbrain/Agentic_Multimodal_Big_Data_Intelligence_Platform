@@ -694,6 +694,7 @@ class TestCrawlerEcosystem:
             "id": 123456,
             "name": "Apple iPhone 15 Pro",
             "price": 27990000,
+            "currency": "VND",
             "brand_name": "Apple",
             "primary_category_name": "Smartphone",
             "rating_average": 4.8,

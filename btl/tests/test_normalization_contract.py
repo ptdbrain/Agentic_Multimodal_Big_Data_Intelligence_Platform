@@ -105,3 +105,11 @@ def test_malformed_price_grammar_cannot_be_repaired_into_a_different_price(norma
     assert row['price'] is None
     assert row['price_raw'] == raw
     assert 'INVALID_PRICE' in row['normalization_errors']
+
+
+@pytest.mark.parametrize('dataset', ['products','prices'])
+@pytest.mark.parametrize('raw', ['', 'unsupported currency'])
+def test_missing_or_invalid_currency_stays_unknown_with_original_evidence(normalize, dataset, raw):
+    row = normalize({'price':10.0,'currency':raw}, dataset)
+    assert row['currency'] is None
+    assert row['currency_raw'] == raw

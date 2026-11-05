@@ -1,6 +1,7 @@
 from typing import Dict, Type, List, Any
 from ingestion.crawler.base import BaseEcommerceCrawler
 from ingestion.crawler.tiki import TikiCrawler
+from ingestion.crawler.lazada import LazadaCrawler
 from ingestion.crawler.generic_html import UniversalProductScraper
 from ingestion.crawler.mock import MockEcommerceCrawler
 
@@ -30,5 +31,6 @@ class CrawlerRegistry:
 
 # Pre-register built-in crawlers
 CrawlerRegistry.register("tiki", TikiCrawler)
+CrawlerRegistry.register("lazada", LazadaCrawler)
 CrawlerRegistry.register("universal", UniversalProductScraper)
 CrawlerRegistry.register("mock", MockEcommerceCrawler)

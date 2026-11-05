@@ -23,11 +23,12 @@ class MockEcommerceCrawler(BaseEcommerceCrawler):
         self.sellers = sellers or DEFAULT_MOCK_SELLERS
         self.warranty_options = warranty_options or [12, 24]
         self.max_shipping_days = max(1, max_shipping_days)
+        self.seed = seed
         self.rng = random.Random(seed)
 
     def scrape_product_page(self, product_id: str) -> Dict[str, Any]:
-        """Extracts detailed product specs and live seller quote (backward-compatible method)."""
-        return {
+        """Generate simulated specs; this method performs no HTTP collection."""
+        record = {
             "product_id": str(product_id),
             "scraped_url": f"https://{self.target_domain}/products/{product_id}",
             "scraped_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -36,6 +37,8 @@ class MockEcommerceCrawler(BaseEcommerceCrawler):
             "warranty_months": self.rng.choice(self.warranty_options),
             "shipping_days": self.rng.randint(1, self.max_shipping_days)
         }
+        from data.generator import tag_generated
+        return tag_generated([record], self.seed, 'mock_crawler')[0]
 
     def scrape_batch(self, product_ids: List[str]) -> List[Dict[str, Any]]:
         return [self.scrape_product_page(pid) for pid in product_ids]
@@ -81,7 +84,7 @@ class MockEcommerceCrawler(BaseEcommerceCrawler):
 
     def standardize_product(self, raw_item: Dict[str, Any]) -> Dict[str, Any]:
         now_iso = "2026-09-24T08:00:00Z"
-        return {
+        record = {
             "product_id": str(raw_item.get("id")),
             "product_name": str(raw_item.get("name")),
             "brand": str(raw_item.get("brand", "SentinelTech")),
@@ -99,6 +102,9 @@ class MockEcommerceCrawler(BaseEcommerceCrawler):
             "updated_at": now_iso
         }
 
+        from data.generator import tag_generated
+        return tag_generated([record], self.seed, 'mock_crawler')[0]
+
     def standardize_review(self, raw_review: Dict[str, Any], product_id: Optional[str] = None) -> Dict[str, Any]:
         created_at_val = raw_review.get("created_at")
         if isinstance(created_at_val, (int, float)):
@@ -106,7 +112,7 @@ class MockEcommerceCrawler(BaseEcommerceCrawler):
         else:
             now_iso = str(created_at_val or "2026-09-24T08:00:00Z")
         raw_uid = raw_review.get("customer_id") or raw_review.get("user_id")
-        return {
+        record = {
             "review_id": str(raw_review.get("id")),
             "product_id": product_id or str(raw_review.get("product_id")),
             "user_id": anonymize_user_id(raw_uid, remove=self.remove_user_id),
@@ -120,3 +126,5 @@ class MockEcommerceCrawler(BaseEcommerceCrawler):
             "language": "vi",
             "created_at": now_iso
         }
+        from data.generator import tag_generated
+        return tag_generated([record], self.seed, 'mock_crawler')[0]

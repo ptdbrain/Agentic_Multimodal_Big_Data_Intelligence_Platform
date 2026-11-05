@@ -1,147 +1,153 @@
-import re
-import json
+"""Extract observed web metadata without filling missing business facts."""
 import datetime
 import hashlib
+import json
+import math
 from typing import List, Dict, Any, Optional
 from urllib.parse import urlparse
+
+from bs4 import BeautifulSoup
 from ingestion.crawler.base import BaseEcommerceCrawler
 from ingestion.privacy import anonymize_user_id, sanitize_record_pii
 
+
+def _objects(value):
+    if isinstance(value, list):
+        for item in value:
+            yield from _objects(item)
+    elif isinstance(value, dict):
+        yield value
+        if '@graph' in value:
+            yield from _objects(value['@graph'])
+
+
+def _documents(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    for script in soup.find_all('script', type='application/ld+json'):
+        try:
+            yield from _objects(json.loads(script.string or script.get_text()))
+        except (ValueError, TypeError):
+            continue
+
+
+def _number(value, integer=False):
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        parsed = float(value)
+        if not math.isfinite(parsed) or (integer and not parsed.is_integer()):
+            return None
+        return int(parsed) if integer else parsed
+    except (ValueError, TypeError, OverflowError):
+        return None
+
+
+def _boolean(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return {'true': True, 'false': False}.get(value.strip().lower())
+    return None
+
+
+def _now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
+
+
 class UniversalProductScraper(BaseEcommerceCrawler):
-    """Universal e-commerce web scraper extracting standard Schema.org JSON-LD
-    and OpenGraph metadata from any e-commerce URL or HTML payload.
+    """Parse JSON-LD Product/Review and OpenGraph product metadata.
+
+    Absent required business fields intentionally remain absent: downstream
+    validation must quarantine incomplete records, rather than invent facts.
     """
 
     def __init__(self, **kwargs):
-        super().__init__(platform_name="Universal", base_url="https://generic.store", **kwargs)
+        super().__init__(platform_name='Universal', base_url='https://generic.store', **kwargs)
 
     def scrape_url(self, target_url: str) -> Optional[Dict[str, Any]]:
-        """Scrapes a live e-commerce product webpage and extracts structured metadata."""
-        resp = self._request_with_retry("GET", target_url)
-        if not resp or resp.status_code != 200:
+        resp = self._request_with_retry('GET', target_url)
+        if resp is None or resp.status_code != 200:
             return None
-
-        html_text = resp.text
-        return self._extract_metadata_from_html(html_text, target_url)
+        return self._extract_metadata_from_html(resp.text, target_url) or None
 
     def _extract_metadata_from_html(self, html: str, url: str) -> Dict[str, Any]:
-        """Extracts JSON-LD Schema.org Product markup or OpenGraph tags."""
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
-        domain = urlparse(url).netloc
-
-        # 1. Try to extract Schema.org JSON-LD
-        json_ld_matches = re.findall(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.DOTALL | re.IGNORECASE)
-        for block in json_ld_matches:
-            try:
-                data = json.loads(block.strip())
-                items = data if isinstance(data, list) else [data]
-                for item in items:
-                    if item.get("@type") in ["Product", "IndividualProduct"]:
-                        offers = item.get("offers", {})
-                        if isinstance(offers, list):
-                            offers = offers[0] if offers else {}
-                        agg_rating = item.get("aggregateRating", {})
-
-                        raw_price = offers.get("price") or 0.0
-                        return sanitize_record_pii({
-                            "product_id": str(item.get("sku") or f"web_{hashlib.sha256(url.encode()).hexdigest()[:12]}"),
-                            "product_name": str(item.get("name") or "Web Product").strip(),
-                            "brand": str(item.get("brand", {}).get("name") if isinstance(item.get("brand"), dict) else item.get("brand") or domain).strip(),
-                            "category": str(item.get("category") or "Retail").strip(),
-                            "subcategory": "E-Commerce",
-                            "price": float(raw_price),
-                            "currency": str(offers.get("priceCurrency") or "VND"),
-                            "rating": float(agg_rating.get("ratingValue") or 5.0),
-                            "review_count": int(agg_rating.get("reviewCount") or 0),
-                            "seller": str(offers.get("seller", {}).get("name") if isinstance(offers.get("seller"), dict) else domain),
-                            "product_url": url,
-                            "image_url": str(item.get("image") or ""),
-                            "source": "web_crawler",
-                            "created_at": now_iso,
-                            "updated_at": now_iso
-                        }, remove_user_id=self.remove_user_id)
-            except Exception:
+        domain = urlparse(url).netloc.lower()
+        for item in _documents(html):
+            types = item.get('@type', [])
+            types = [types] if isinstance(types, str) else types
+            if not isinstance(types, list) or not {'Product', 'IndividualProduct'}.intersection(types):
                 continue
+            offers = item.get('offers') or {}
+            if isinstance(offers, list):
+                offers = next((o for o in offers if isinstance(o, dict)), {})
+            offers = offers if isinstance(offers, dict) else {}
+            agg = item.get('aggregateRating') or {}
+            agg = agg if isinstance(agg, dict) else {}
+            brand = item.get('brand')
+            brand = brand.get('name') if isinstance(brand, dict) else brand
+            seller = offers.get('seller')
+            seller = seller.get('name') if isinstance(seller, dict) else seller
+            identity = str(item.get('sku') or item.get('@id') or url)
+            record = {
+                'product_id': 'web_' + hashlib.sha256(f'{domain}:{identity}'.encode()).hexdigest()[:24],
+                'product_name': item.get('name'), 'brand': brand, 'category': item.get('category'),
+                'price': _number(offers.get('price')), 'price_raw': offers.get('price'),
+                'currency': offers.get('priceCurrency'), 'rating': _number(agg.get('ratingValue')),
+                'rating_raw': agg.get('ratingValue'), 'review_count': _number(agg.get('reviewCount'), True),
+                'seller': seller, 'image_url': item.get('image'), 'product_url': url,
+                'source': 'web_crawler', 'collected_at': _now(),
+                'created_at': item.get('datePublished'), 'updated_at': item.get('dateModified'),
+            }
+            return sanitize_record_pii({k: v for k, v in record.items() if v is not None}, remove_user_id=self.remove_user_id)
 
-        # 2. OpenGraph Tag Fallback
-        def get_meta(prop: str) -> str:
-            match = re.search(rf'<meta[^>]*property=["\']{prop}["\'][^>]*content=["\'](.*?)["\']', html, re.IGNORECASE)
-            if not match:
-                match = re.search(rf'<meta[^>]*content=["\'](.*?)["\'][^>]*property=["\']{prop}["\']', html, re.IGNORECASE)
-            return match.group(1).strip() if match else ""
-
-        title = get_meta("og:title") or get_meta("twitter:title")
+        soup = BeautifulSoup(html, 'html.parser')
+        def meta(name):
+            tag = soup.find('meta', attrs={'property': name}) or soup.find('meta', attrs={'name': name})
+            return tag.get('content') if tag else None
+        title = meta('og:title') or meta('twitter:title')
         if not title:
-            t_match = re.search(r'<title>(.*?)</title>', html, re.IGNORECASE)
-            title = t_match.group(1).strip() if t_match else "Scraped Product"
-
-        price_str = get_meta("product:price:amount") or get_meta("og:price:amount") or "0"
-        currency = get_meta("product:price:currency") or get_meta("og:price:currency") or "VND"
-        image = get_meta("og:image") or ""
-
-        try:
-            price = float(price_str)
-        except ValueError:
-            price = 0.0
-
-        return sanitize_record_pii({
-            "product_id": f"web_{hashlib.sha256(url.encode()).hexdigest()[:12]}",
-            "product_name": title,
-            "brand": domain.replace("www.", "").split(".")[0].title(),
-            "category": "Electronics",
-            "subcategory": "Online Retail",
-            "price": price,
-            "currency": currency,
-            "rating": 4.5,
-            "review_count": 10,
-            "seller": domain,
-            "product_url": url,
-            "image_url": image,
-            "source": "web_crawler",
-            "created_at": now_iso,
-            "updated_at": now_iso
-        }, remove_user_id=self.remove_user_id)
+            return {}
+        record = {
+            'product_id': 'web_' + hashlib.sha256(url.encode()).hexdigest()[:24],
+            'product_name': title, 'price': _number(meta('product:price:amount') or meta('og:price:amount')),
+            'price_raw': meta('product:price:amount') or meta('og:price:amount'),
+            'currency': meta('product:price:currency') or meta('og:price:currency'),
+            'image_url': meta('og:image'), 'product_url': url,
+            'source': 'web_crawler', 'collected_at': _now(),
+        }
+        return sanitize_record_pii({k: v for k, v in record.items() if v is not None}, remove_user_id=self.remove_user_id)
 
     def extract_reviews_from_html(self, html: str, product_id: str) -> List[Dict[str, Any]]:
-        """Extracts Schema.org Review objects embedded in JSON-LD script blocks and hashes author PII."""
-        reviews: List[Dict[str, Any]] = []
-        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
-        json_ld_matches = re.findall(
-            r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
-            html,
-            re.DOTALL | re.IGNORECASE,
-        )
-        for block in json_ld_matches:
-            try:
-                data = json.loads(block.strip())
-                items = data if isinstance(data, list) else [data]
-                for item in items:
-                    raw_revs = item.get("review", [])
-                    if isinstance(raw_revs, dict):
-                        raw_revs = [raw_revs]
-                    for idx, rv in enumerate(raw_revs):
-                        author = rv.get("author", {})
-                        raw_author = author.get("name") if isinstance(author, dict) else author
-                        rating_obj = rv.get("reviewRating", {})
-                        raw_rating = rating_obj.get("ratingValue") if isinstance(rating_obj, dict) else rv.get("rating", 5.0)
-                        rev_date = str(rv.get("datePublished") or now_iso)
-                        rev_id = str(rv.get("@id") or rv.get("review_id") or f"web_rv_{product_id}_{idx+1:04d}")
-                        reviews.append(sanitize_record_pii({
-                            "review_id": rev_id,
-                            "product_id": product_id,
-                            "user_id": anonymize_user_id(raw_author, remove=self.remove_user_id),
-                            "rating": float(raw_rating) if raw_rating is not None else 5.0,
-                            "review_title": str(rv.get("name") or "Web Review"),
-                            "review_text": str(rv.get("reviewBody") or rv.get("description") or ""),
-                            "review_date": rev_date,
-                            "verified_purchase": bool(rv.get("verified_purchase", True)),
-                            "helpful_count": int(rv.get("helpful_count", 0)),
-                            "source": "web_crawler",
-                            "language": str(rv.get("inLanguage", "vi"))[:2].lower(),
-                            "created_at": rev_date,
-                        }, remove_user_id=self.remove_user_id))
-            except Exception:
+        reviews = []
+        for item in _documents(html):
+            types = item.get('@type', [])
+            types = [types] if isinstance(types, str) else types
+            values = [item] if isinstance(types, list) and 'Review' in types else item.get('review', [])
+            values = [values] if isinstance(values, dict) else values
+            if not isinstance(values, list):
                 continue
+            for rv in values:
+                if not isinstance(rv, dict):
+                    continue
+                author = rv.get('author')
+                author = author.get('name') if isinstance(author, dict) else author
+                rating = rv.get('reviewRating')
+                raw_rating = rating.get('ratingValue') if isinstance(rating, dict) else rv.get('rating')
+                user_id = anonymize_user_id(author, remove=self.remove_user_id)
+                text = str(rv.get('reviewBody') or rv.get('description') or '')
+                date = rv.get('datePublished')
+                fingerprint = json.dumps([product_id, user_id, text, date, raw_rating], ensure_ascii=False, sort_keys=True)
+                rev_id = rv.get('@id') or rv.get('review_id') or 'web_rv_' + hashlib.sha256(fingerprint.encode()).hexdigest()[:24]
+                record = {
+                    'review_id': str(rev_id), 'product_id': product_id, 'user_id': user_id,
+                    'rating': _number(raw_rating), 'rating_raw': raw_rating,
+                    'review_title': str(rv.get('name') or ''), 'review_text': text,
+                    'review_date': date, 'created_at': date,
+                    'verified_purchase': _boolean(rv.get('verified_purchase')),
+                    'helpful_count': _number(rv.get('helpful_count'), True),
+                    'language': rv.get('inLanguage'), 'source': 'web_crawler', 'collected_at': _now(),
+                }
+                reviews.append(sanitize_record_pii({k: v for k, v in record.items() if v is not None}, remove_user_id=self.remove_user_id))
         return reviews
 
     def search_products(self, query: str, limit: int = 20, page: int = 1) -> List[Dict[str, Any]]:
@@ -157,7 +163,7 @@ class UniversalProductScraper(BaseEcommerceCrawler):
         return sanitize_record_pii(raw_item, remove_user_id=self.remove_user_id)
 
     def standardize_review(self, raw_review: Dict[str, Any], product_id: Optional[str] = None) -> Dict[str, Any]:
-        rec = dict(raw_review)
-        if product_id and not rec.get("product_id"):
-            rec["product_id"] = product_id
-        return sanitize_record_pii(rec, remove_user_id=self.remove_user_id)
+        record = dict(raw_review)
+        if product_id and not record.get('product_id'):
+            record['product_id'] = product_id
+        return sanitize_record_pii(record, remove_user_id=self.remove_user_id)
