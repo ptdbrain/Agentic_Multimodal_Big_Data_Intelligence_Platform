@@ -1,0 +1,50 @@
+[
+  {
+    "run": 1,
+    "collected_at": "2026-11-02T11:04:01.589093+00:00",
+    "products": 20,
+    "prices": 20,
+    "reviews": 65,
+    "sha256": "e9356d93c46be2ba5b003e21e43a20c44e206687bbc4a7f8eb6a6f85e9bebe33",
+    "validation": {
+      "is_valid": true,
+      "stats": {
+        "products_total": 20,
+        "products_valid": 20,
+        "products_invalid": 0,
+        "prices_total": 20,
+        "prices_valid": 20,
+        "prices_invalid": 0,
+        "reviews_total": 65,
+        "reviews_valid": 65,
+        "reviews_invalid": 0
+      },
+      "errors_count": 0
+    },
+    "note": "Direct live collection with current mapper. No synthetic fallback. Serving acceptance is separate."
+  },
+  {
+    "run": 2,
+    "collected_at": "2026-11-02T11:04:43.533681+00:00",
+    "products": 20,
+    "prices": 20,
+    "reviews": 65,
+    "sha256": "8abaea9465f4bf0ffaff844a0e101c1475dd7b5c09ae898d5982119f92e7e0eb",
+    "validation": {
+      "is_valid": true,
+      "stats": {
+        "products_total": 20,
+        "products_valid": 20,
+        "products_invalid": 0,
+        "prices_total": 20,
+        "prices_valid": 20,
+        "prices_invalid": 0,
+        "reviews_total": 65,
+        "reviews_valid": 65,
+        "reviews_invalid": 0
+      },
+      "errors_count": 0
+    },
+    "note": "Direct live collection with current mapper. No synthetic fallback. Serving acceptance is separate."
+  }
+]

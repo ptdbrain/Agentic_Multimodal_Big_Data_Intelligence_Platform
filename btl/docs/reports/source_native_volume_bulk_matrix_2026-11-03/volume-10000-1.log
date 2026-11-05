@@ -1,0 +1,183 @@
+----------------------------------------------------------
+[Pre-Flight] Running Real Infrastructure Health Checks...
+----------------------------------------------------------
+Checking MinIO (127.0.0.1:29000, bucket='source-load-0bcaac58c435')...
+  [OK] MinIO is UP. Bucket 'source-load-0bcaac58c435' verified.
+Checking PostgreSQL (127.0.0.1:25432/source_load_0bcaac58c435)...
+  [OK] PostgreSQL is UP (SELECT 1 succeeded).
+:: loading settings :: file = ../.runtime/sentinel-ivy-settings.xml
+:: loading settings :: url = jar:file:/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pyspark/jars/ivy-2.5.1.jar!/org/apache/ivy/core/settings/ivysettings.xml
+Ivy Default Cache set to: /tmp/sentinel-ivy/cache
+The jars for the packages stored in: /tmp/sentinel-ivy/jars
+org.apache.spark#spark-sql-kafka-0-10_2.12 added as a dependency
+org.apache.hadoop#hadoop-aws added as a dependency
+:: resolving dependencies :: org.apache.spark#spark-submit-parent-726543df-dc6e-432a-9cf4-b8b98821ec6a;1.0
+	confs: [default]
+	found org.apache.spark#spark-sql-kafka-0-10_2.12;3.5.0 in central
+	found org.apache.spark#spark-token-provider-kafka-0-10_2.12;3.5.0 in central
+	found org.apache.kafka#kafka-clients;3.4.1 in central
+	found org.lz4#lz4-java;1.8.0 in central
+	found org.xerial.snappy#snappy-java;1.1.10.3 in central
+	found org.slf4j#slf4j-api;2.0.7 in central
+	found org.apache.hadoop#hadoop-client-runtime;3.3.4 in central
+	found org.apache.hadoop#hadoop-client-api;3.3.4 in central
+	found commons-logging#commons-logging;1.1.3 in central
+	found com.google.code.findbugs#jsr305;3.0.0 in central
+	found org.apache.commons#commons-pool2;2.11.1 in central
+	found org.apache.hadoop#hadoop-aws;3.3.4 in central
+	found com.amazonaws#aws-java-sdk-bundle;1.12.262 in central
+	found org.wildfly.openssl#wildfly-openssl;1.0.7.Final in central
+:: resolution report :: resolve 252ms :: artifacts dl 9ms
+	---------------------------------------------------------------------
+	|                  |            modules            ||   artifacts   |
+	|       conf       | number| search|dwnlded|evicted|| number|dwnlded|
+	---------------------------------------------------------------------
+	|      default     |   14  |   0   |   0   |   0   ||   14  |   0   |
+	---------------------------------------------------------------------
+:: retrieving :: org.apache.spark#spark-submit-parent-726543df-dc6e-432a-9cf4-b8b98821ec6a
+	confs: [default]
+	0 artifacts copied, 14 already retrieved (0kB/5ms)
+26/11/03 13:56:39 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+  [OK] Spark action succeeded on local[2]
+[Pre-Flight] All required integration services are HEALTHY.
+
+
+[Stage 1/6] Source / Dataset / Crawler Ingestion (source_type=dataset)...
+[Stage 1 OK] Loaded, PII-sanitized, and verified 100 products, 10000 reviews, 1000 prices from 'dataset'.
+Completed source_load_pii: 0.0806 sec
+
+[Stage 2/6] Kafka Producer -> Kafka -> RawConsumer...
+[TopicManager] Created Kafka topics: ['source-load-0bcaac58c435-products', 'source-load-0bcaac58c435-reviews', 'source-load-0bcaac58c435-prices', 'source-load-0bcaac58c435-events']
+Produced 100 messages to 'source-load-0bcaac58c435-products' in 0.12s (819.8 msg/s)
+Task <kafka.net.selector.Task object at 0x7fbcfa2a8990> ran for 0.231s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Produced 10000 messages to 'source-load-0bcaac58c435-reviews' in 1.30s (7715.6 msg/s)
+Produced 1000 messages to 'source-load-0bcaac58c435-prices' in 0.11s (8877.7 msg/s)
+Published 100 product events, 10000 review events, and 1000 price events to Kafka.
+Bronze Ingestion: Saved 10000 raw records to bronze/source-load-0bcaac58c435-reviews/year=2026/month=11/day=03/hour=06/batch_1793689007952_e5b105.json (MinIOBackend)
+Bronze Ingestion: Saved 100 raw records to bronze/source-load-0bcaac58c435-products/year=2026/month=11/day=03/hour=06/batch_1793689008136_bc451d.json (MinIOBackend)
+Bronze Ingestion: Saved 1000 raw records to bronze/source-load-0bcaac58c435-prices/year=2026/month=11/day=03/hour=06/batch_1793689008176_4ab877.json (MinIOBackend)
+[Stage 2 OK] Consumed 11100 messages (11100 valid to Bronze, 0 to DLQ). Committed partitions: 7
+Completed kafka_bronze: 5.2152 sec
+
+[Stage 3/6] Verifying MinIO Bronze Layer...
+[Stage 3 OK] Verified 3 Bronze batch files on MinIOBackend (s3a://source-load-0bcaac58c435) (11100 valid envelope records: {'source-load-0bcaac58c435-reviews': 10000, 'source-load-0bcaac58c435-products': 100, 'source-load-0bcaac58c435-prices': 1000}).
+Completed bronze_verify: 0.1096 sec
+
+[Stage 4/6] Executing Spark Batch ETL (Bronze -> Silver / Quarantine / DQ)...
+>>> Starting SentinelAI Real Spark Batch ETL (Bronze -> Silver)
+26/11/03 13:56:48 WARN MetricsConfig: Cannot locate configuration: tried hadoop-metrics2-s3a-file-system.properties,hadoop-metrics2.properties
+[Spark ETL] Silver path does not exist yet (s3a://source-load-0bcaac58c435/silver/products); initializing new Silver table.
+[Spark ETL] Written 100 records to Silver Parquet: s3a://source-load-0bcaac58c435/silver/products
+[Spark ETL] Routed 500 bad records to quarantine: s3a://source-load-0bcaac58c435/silver/quarantine/reviews
+[Spark ETL] Silver path does not exist yet (s3a://source-load-0bcaac58c435/silver/reviews); initializing new Silver table.
+[Spark ETL] Written 9200 records to Silver Parquet: s3a://source-load-0bcaac58c435/silver/reviews
+[Spark ETL] Silver path does not exist yet (s3a://source-load-0bcaac58c435/silver/prices); initializing new Silver table.
+[Spark ETL] Written 1000 records to Silver Parquet: s3a://source-load-0bcaac58c435/silver/prices
+Storage: Written 3 rows to Gold Mart (data_quality_metrics)
+[Stage 4 OK] Silver Parquet verified: 100 unique products, 9200 unique reviews, 1000 unique prices. DQ Scores -> Products: 100.0%, Reviews: 92.0%
+Completed spark_silver_dq: 12.8821 sec
+
+[Stage 5/6] Building Spark Gold Analytical Marts & Anomaly Events...
+>>> Aggregating Gold Analytical Marts via SparkGoldBuilder (Distributed Spark)
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:12 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+[Spark Gold] Validated publication completed for 'product_daily_stats'
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:13 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+[Spark Gold] Validated publication completed for 'brand_daily_stats'
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+[Spark Gold] Validated publication completed for 'category_daily_stats'
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 13:57:14 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+[Spark Gold] Validated publication completed for 'price_daily_stats'
+[Spark Gold] Successfully built and persisted 4 Gold Marts to Gold Layer.
+Storage: Written 0 rows to Gold Mart (anomaly_events)
+[Stage 5 OK] Verified Gold Marts ({'product_daily_stats': 200, 'brand_daily_stats': 10, 'category_daily_stats': 8, 'price_daily_stats': 100}) with 0 grain duplicates.
+Completed spark_gold_anomalies: 16.9661 sec
+
+[Stage 6/6] Syncing Gold to Warehouse & Verifying DashboardDB Reconciliation...
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:420: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:420: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:420: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:420: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:420: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:420: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:420: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+Prepared 200 rows for database table 'product_daily_stats' (postgres)
+Prepared 10 rows for database table 'brand_daily_stats' (postgres)
+Prepared 8 rows for database table 'category_daily_stats' (postgres)
+Prepared 100 rows for database table 'price_daily_stats' (postgres)
+Prepared 3 rows for database table 'data_quality_metrics' (postgres)
+Prepared 100 rows for database table 'products' (postgres)
+Prepared 9200 rows for database table 'reviews' (postgres)
+Database sync completed (postgres): synced 7 tables.
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:420: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/dashboard/db_connector.py:107: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/dashboard/db_connector.py:107: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+[Stage 6 OK] Warehouse (postgres) & DashboardDB reconciled: {'product_daily_stats': 200, 'brand_daily_stats': 10, 'category_daily_stats': 8, 'price_daily_stats': 100, 'products': 100, 'reviews': 9200, 'data_quality_metrics': 3}, KPIs={'total_products': 100, 'total_reviews': 9200, 'total_brands': 5, 'avg_dq_score': 97.3, 'avg_rating': 3.0, 'rating_sample_size': 9200}
+Completed postgres_dashboard: 0.9739 sec
+/mnt/DATA/TaiLieuHocTap/big data/btl/dashboard/db_connector.py:107: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)

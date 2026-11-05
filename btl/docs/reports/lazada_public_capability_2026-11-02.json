@@ -1,0 +1,33 @@
+[
+  {
+    "url": "https://www.lazada.vn/catalog/?ajax=true&q=iphone",
+    "status": 200,
+    "bytes": 65143,
+    "keys": [
+      "templates",
+      "mods",
+      "mainInfo",
+      "seoInfo"
+    ],
+    "accepted": false
+  },
+  {
+    "url": "https://www.lazada.vn/catalog/?_keyori=ss&ajax=true&from=input&page=1&q=smartphone",
+    "status": 200,
+    "bytes": 177389,
+    "keys": [
+      "templates",
+      "mods",
+      "mainInfo",
+      "seoInfo"
+    ],
+    "accepted": false
+  },
+  {
+    "url": "https://www.lazada.vn/",
+    "status": 200,
+    "bytes": 464856,
+    "keys": null,
+    "accepted": false
+  }
+]

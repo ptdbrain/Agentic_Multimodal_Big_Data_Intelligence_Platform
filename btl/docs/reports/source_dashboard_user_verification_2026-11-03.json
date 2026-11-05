@@ -1,0 +1,14 @@
+{
+  "verified": true,
+  "recorded_at": "2026-11-03T12:13:13.975854+00:00",
+  "verification_kind": "User manual browser confirmation in conversation; not automated screenshot testing",
+  "url": "http://127.0.0.1:8502",
+  "user_answer": "Hiển thị đúng các số trên",
+  "confirmed": {
+    "main_products": 40,
+    "main_reviews": 65,
+    "web_content_articles": 50,
+    "default_scope": "Real observed data"
+  },
+  "boundary": "Main page and Web Content counts/default scope manually verified. All9pages also have AppTest evidence; no claim of screenshots or full9page browser visual review."
+}

@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "executed_at": "2026-11-03T17:12:40.120782+00:00",
+  "boundary": "Actual new public Tiki HTTP review requests; raw response bodies private, no generated fallback",
+  "product_id": "tiki_135410778",
+  "requested": 45,
+  "selected": 45,
+  "unique_review_ids": 45,
+  "actual_http_pages": 3,
+  "http_candidate_rows": 60,
+  "not_selected_due_to_limit": 15,
+  "response_sha256": [
+    "53db98b97d09b3449b17a72c77a97236ee7eeaa3052775aca7b232beddb7e6ca",
+    "836b209870a0a7f36c0d3a7d1ff240a0bc9b07bf113ec421ec9b65c0da3b781b",
+    "d1ef5384746d81ee903631a92c2bd64d9c94dcffa7cd510a0e5c40be68682505"
+  ]
+}

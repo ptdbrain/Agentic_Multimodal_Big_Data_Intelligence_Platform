@@ -1,0 +1,72 @@
+{
+  "passed": true,
+  "executed_at": "2026-11-03T17:02:53.455117+00:00",
+  "database": "source_real_f3862f94de",
+  "oracle": {
+    "products": 40,
+    "reviews": 65,
+    "articles": 50
+  },
+  "pages": [
+    {
+      "page": "app.py",
+      "passed": true,
+      "default_scope": "real",
+      "simulation_scope_executed": true
+    },
+    {
+      "page": "pages/1_Overview.py",
+      "passed": true,
+      "default_scope": "real",
+      "simulation_scope_executed": true
+    },
+    {
+      "page": "pages/2_Pipeline.py",
+      "passed": true,
+      "default_scope": "real",
+      "simulation_scope_executed": true
+    },
+    {
+      "page": "pages/3_Products.py",
+      "passed": true,
+      "default_scope": "real",
+      "simulation_scope_executed": true
+    },
+    {
+      "page": "pages/4_Reviews.py",
+      "passed": true,
+      "default_scope": "real",
+      "simulation_scope_executed": true
+    },
+    {
+      "page": "pages/5_Trends.py",
+      "passed": true,
+      "default_scope": "real",
+      "simulation_scope_executed": true
+    },
+    {
+      "page": "pages/6_Anomalies.py",
+      "passed": true,
+      "default_scope": "real",
+      "simulation_scope_executed": true
+    },
+    {
+      "page": "pages/7_Data_Quality.py",
+      "passed": true,
+      "default_scope": "real",
+      "simulation_scope_executed": true
+    },
+    {
+      "page": "pages/8_Web_Content.py",
+      "passed": true,
+      "default_scope": "real",
+      "simulation_scope_executed": true
+    }
+  ],
+  "page_count": 9,
+  "http_url": "http://127.0.0.1:8502",
+  "http_health": 200,
+  "server_pid": 310970,
+  "boundary": "Streamlit AppTest executes all page code and actual PostgreSQL/MinIO queries plus HTTP health; excludes visual browser rendering.",
+  "visual_browser_status": "Automated browser host unavailable; user manually verified main/Web Content counts and real default scope. See source_dashboard_user_verification_2026-11-03.json"
+}

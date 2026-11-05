@@ -1,0 +1,122 @@
+{
+  "scope": "CPU-only JSON schema validation microbenchmark; synthetic fixtures, not ingestion throughput or live-source evidence",
+  "records_per_iteration": 300,
+  "iterations": 3,
+  "valid_per_iteration": 180,
+  "invalid_per_iteration": 120,
+  "cpu_sec": [
+    0.009546365000000001,
+    0.008928950000000005,
+    0.008683179999999999
+  ],
+  "median_cpu_sec": 0.008928950000000005,
+  "wall_sec": [
+    0.009585050999703526,
+    0.008965731999523996,
+    0.008712070000001404
+  ],
+  "result_sha256": [
+    "b953711dba562fde926e03abcafd548ed4602cc89c8ab7cfbcabd2106e0dab4b",
+    "b953711dba562fde926e03abcafd548ed4602cc89c8ab7cfbcabd2106e0dab4b",
+    "b953711dba562fde926e03abcafd548ed4602cc89c8ab7cfbcabd2106e0dab4b"
+  ],
+  "validator_source_sha256": "f95b5f56c689cffe29ab59e7fede2f13754f8f3a3d58824ce24b775cd90426c8",
+  "profile_top": [
+    {
+      "file": "validator.py",
+      "line": 31,
+      "function": "validate_record",
+      "calls": 300,
+      "self_cpu_sec": 0.002223931,
+      "cumulative_cpu_sec": 0.14001583
+    },
+    {
+      "file": "exceptions.py",
+      "line": 440,
+      "function": "best_match",
+      "calls": 270,
+      "self_cpu_sec": 0.00040384000000000004,
+      "cumulative_cpu_sec": 0.131535738
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.max>",
+      "calls": 270,
+      "self_cpu_sec": 0.0006626280000000001,
+      "cumulative_cpu_sec": 0.131131898
+    },
+    {
+      "file": "validators.py",
+      "line": 349,
+      "function": "iter_errors",
+      "calls": 360,
+      "self_cpu_sec": 0.001370901,
+      "cumulative_cpu_sec": 0.12935501200000002
+    },
+    {
+      "file": "_keywords.py",
+      "line": 290,
+      "function": "properties",
+      "calls": 360,
+      "self_cpu_sec": 0.0029644190000000003,
+      "cumulative_cpu_sec": 0.121559919
+    },
+    {
+      "file": "validators.py",
+      "line": 396,
+      "function": "descend",
+      "calls": 1980,
+      "self_cpu_sec": 0.013996229,
+      "cumulative_cpu_sec": 0.11706121900000001
+    },
+    {
+      "file": "validators.py",
+      "line": 339,
+      "function": "evolve",
+      "calls": 1890,
+      "self_cpu_sec": 0.011198248000000001,
+      "cumulative_cpu_sec": 0.036104302000000005
+    },
+    {
+      "file": "_keywords.py",
+      "line": 282,
+      "function": "type",
+      "calls": 2190,
+      "self_cpu_sec": 0.006887884,
+      "cumulative_cpu_sec": 0.031515544
+    },
+    {
+      "file": "validators.py",
+      "line": 452,
+      "function": "is_type",
+      "calls": 4050,
+      "self_cpu_sec": 0.005799996,
+      "cumulative_cpu_sec": 0.024309861000000002
+    },
+    {
+      "file": "_types.py",
+      "line": 94,
+      "function": "is_type",
+      "calls": 4140,
+      "self_cpu_sec": 0.007090374000000001,
+      "cumulative_cpu_sec": 0.019011703
+    },
+    {
+      "file": "~",
+      "line": 0,
+      "function": "<built-in method builtins.any>",
+      "calls": 2160,
+      "self_cpu_sec": 0.003084601,
+      "cumulative_cpu_sec": 0.018608394
+    },
+    {
+      "file": "<attrs generated methods jsonschema.validators.create.<locals>.Validator>",
+      "line": 26,
+      "function": "__init__",
+      "calls": 1890,
+      "self_cpu_sec": 0.0030689360000000004,
+      "cumulative_cpu_sec": 0.018504372
+    }
+  ]
+}

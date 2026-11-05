@@ -1,0 +1,50 @@
+{
+  "completed": true,
+  "executed_at": "2026-11-03T16:53:16.165270+00:00",
+  "boundary": "Resume two actual HTTP collection runs: preserve their observed HTML products/prices and clocks; collect reviews now with valid API page bounds under original collection IDs. No new product request or snapshot relabel.",
+  "prior_attempt": "tiki_current_http_v5_slow_capture_2026-11-03.json",
+  "runs": [
+    {
+      "iteration": 1,
+      "collection_run_id": "f9d4ab08dbf24559ba6a8017f3fb9461",
+      "prior_products_prices_capture_sha256": "3fa04938483643316a53c3029577502b6c83469590ded47c562204aae2859a9c",
+      "capture_sha256": "2497a58d9c1ca2805722044177d4042c417e7d09b05656d6cfaae39cea09f9e7",
+      "datasets": {
+        "products": {
+          "records": 20,
+          "schema_valid": 20
+        },
+        "reviews": {
+          "records": 65,
+          "schema_valid": 65
+        },
+        "prices": {
+          "records": 20,
+          "schema_valid": 20
+        }
+      },
+      "accepted": true
+    },
+    {
+      "iteration": 2,
+      "collection_run_id": "dee4912aa3e045b59416f45573d58178",
+      "prior_products_prices_capture_sha256": "56c638e9681f32d7e659c2b3d719c0b69f805237b89d208aae0338d85ad42a1a",
+      "capture_sha256": "bd36586bea0231718fe60ba2d2f99f1a0849d92ea112aa89b5f19d922eeb9936",
+      "datasets": {
+        "products": {
+          "records": 20,
+          "schema_valid": 20
+        },
+        "reviews": {
+          "records": 65,
+          "schema_valid": 65
+        },
+        "prices": {
+          "records": 20,
+          "schema_valid": 20
+        }
+      },
+      "accepted": true
+    }
+  ]
+}

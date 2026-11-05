@@ -1,0 +1,20 @@
+{
+  "passed": false,
+  "stage": "Independent serving assertion after a falsely successful canonical run",
+  "expected_products": 40,
+  "served_products": 20,
+  "served_sources": [
+    "tiki"
+  ],
+  "reviews": 65,
+  "transport_consumed": 145,
+  "transport_valid": 125,
+  "transport_dlq": 20,
+  "root_cause": "JSON list converted to pandas DataFrame introduced NaN optional fields on heterogeneous Lazada rows; source transport rejects were excluded from subsequent Bronze-only DQ.",
+  "fixes": [
+    "Preserve JSON/JSONL object shapes and integer types in FileLoader.load_records",
+    "Measure per-dataset source contract acceptance and enforce configured quality threshold before Gold"
+  ],
+  "regressions": "test_source_delivery_integrity.py:3RED then3GREEN",
+  "note": "Historical failure preserved; not an accepted source pipeline run"
+}

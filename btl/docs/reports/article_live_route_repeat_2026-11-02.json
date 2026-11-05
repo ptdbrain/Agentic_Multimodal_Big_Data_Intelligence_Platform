@@ -1,0 +1,550 @@
+{
+  "run_id": "919c8217-e923-4e63-8319-dc1c0d5399c8",
+  "executed_at": "2026-11-02T11:03:10.350018+00:00",
+  "collection": {
+    "acquisition_method": "live",
+    "articles_collected": 50,
+    "requested_articles": 50,
+    "pages_attempted": 64,
+    "requests": [
+      {
+        "url": "https://tinhte.vn/",
+        "collected_at": "2026-11-02T11:01:58.387481+00:00",
+        "http_status": 200,
+        "response_sha256": "80afc2de1541c0a925443dea3ca875d864a5f1be141d4bf65900273027be1930",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/80afc2de1541c0a925443dea3ca875d864a5f1be141d4bf65900273027be1930.html"
+      },
+      {
+        "url": "https://tinhte.vn/thread/xiaomi-giao-hon-50-000-xe-dien-trong-thang-10-cao-nhat-nam-2026.4189064/",
+        "collected_at": "2026-11-02T11:01:59.766410+00:00",
+        "http_status": 200,
+        "response_sha256": "10c468ee0cc4e55b9ac320e3aef1638fef7cf9f50899dc3d0dfb2f5792b49930",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/10c468ee0cc4e55b9ac320e3aef1638fef7cf9f50899dc3d0dfb2f5792b49930.html",
+        "article_id": "article_1ee8fd86948d258988140f31"
+      },
+      {
+        "url": "https://tinhte.vn/thread/nasa-ghep-xong-tang-loi-ten-lua-sls-cho-su-menh-artemis-iii.4189063/",
+        "collected_at": "2026-11-02T11:02:02.109314+00:00",
+        "http_status": 200,
+        "response_sha256": "99053364ea86dd872c846945ca781246e8eff233fd82b190c0ca0a7ff3a4e18c",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/99053364ea86dd872c846945ca781246e8eff233fd82b190c0ca0a7ff3a4e18c.html",
+        "article_id": "article_0c62072275740d0c6fe13eb9"
+      },
+      {
+        "url": "https://tinhte.vn/thread/dien-thoai-xiaomi-noi-dia-biet-nguoi-dung-cai-app-la-goi-screenshot-ve-may-chu-de-danh-gia.4189173/",
+        "collected_at": "2026-11-02T11:02:03.025963+00:00",
+        "http_status": 200,
+        "response_sha256": "a84ea2264f5c475f1db662bc134a02689a621af326cb33aff940270b27765f34",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/a84ea2264f5c475f1db662bc134a02689a621af326cb33aff940270b27765f34.html",
+        "article_id": "article_dc516eca6bae9ff2b2dbb144"
+      },
+      {
+        "url": "https://tinhte.vn/thread/chi-nen-de-2-3-long-giat-dung-de-full-kho-kho-va-nhan-lam.4189189/",
+        "collected_at": "2026-11-02T11:02:03.959087+00:00",
+        "http_status": 200,
+        "response_sha256": "2db853cb4377a85a0b1746a92623c85d55d96ee5c5b05a4b89ab4690949d0a04",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/2db853cb4377a85a0b1746a92623c85d55d96ee5c5b05a4b89ab4690949d0a04.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/bon-hang-ai-lon-thong-nhat-mot-tin-chan-viec-dung-noi-dung-cua-website-de-huan-luyen-ai.4189062/",
+        "collected_at": "2026-11-02T11:02:04.841696+00:00",
+        "http_status": 200,
+        "response_sha256": "f81796c4e9594aa2fba2301273021943b4cef9a31f1d87a2d900a52014b0e081",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/f81796c4e9594aa2fba2301273021943b4cef9a31f1d87a2d900a52014b0e081.html",
+        "article_id": "article_b3bc1a477ffcc88d9e5108e5"
+      },
+      {
+        "url": "https://tinhte.vn/thread/infographic-20-nam-macbook-pro-qua-13-cot-moc-dang-nho.4189215/",
+        "collected_at": "2026-11-02T11:02:05.759342+00:00",
+        "http_status": 200,
+        "response_sha256": "ca038ab36d3cdaf19534366f072bc3296243030b9727682099ac1d81af0d5019",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/ca038ab36d3cdaf19534366f072bc3296243030b9727682099ac1d81af0d5019.html",
+        "article_id": "article_2b621beee956dd62faa1164f"
+      },
+      {
+        "url": "https://tinhte.vn/thread/nguoi-dung-snapdragon-x2-elite-bao-cao-hieu-nang-ai-giam-87-sau-cap-nhat-driver.4189152/",
+        "collected_at": "2026-11-02T11:02:07.865026+00:00",
+        "http_status": 200,
+        "response_sha256": "afa051c64b9fadadc3828df8b55fc7a224887c20975afa03f8066df67263ed3b",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/afa051c64b9fadadc3828df8b55fc7a224887c20975afa03f8066df67263ed3b.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/tu-nhien-muon-xai-thu-googlebook-qua.4189127/",
+        "collected_at": "2026-11-02T11:02:08.774809+00:00",
+        "http_status": 200,
+        "response_sha256": "f2d0bd7db33fcf0897cb746425283f7934a0fe70c7b3a2798ae58ec2000b423e",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/f2d0bd7db33fcf0897cb746425283f7934a0fe70c7b3a2798ae58ec2000b423e.html",
+        "article_id": "article_ec1748dfef5944949eb2d765"
+      },
+      {
+        "url": "https://tinhte.vn/thread/apple-se-ra-ipad-air-man-oled-ipad-pro-co-buong-hoi-tan-nhiet-va-ipad-12-trong-nua-dau-2027.4189055/",
+        "collected_at": "2026-11-02T11:02:09.654582+00:00",
+        "http_status": 200,
+        "response_sha256": "71c1a5570a789e2ccc284589e1823c714040a3df70b84fbfed7682f077dc7f0d",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/71c1a5570a789e2ccc284589e1823c714040a3df70b84fbfed7682f077dc7f0d.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/lo-hong-sms-of-death-lam-sap-song-treo-may-android-chi-bang-tin-nhan-anh-em-cap-nhat-ban-va-ngay.4189054/",
+        "collected_at": "2026-11-02T11:02:10.675756+00:00",
+        "http_status": 200,
+        "response_sha256": "7790d4683c5aca85ee8fb8381ac16b34166723bdbff6ff3cc8c4f2229910072a",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/7790d4683c5aca85ee8fb8381ac16b34166723bdbff6ff3cc8c4f2229910072a.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/whatsapp-gioi-thieu-bon-tinh-nang-quan-ly-nhom-chat-gom-bo-loc-nhac-ten-va-ghim-tin-nhan-vinh-vien.4189045/",
+        "collected_at": "2026-11-02T11:02:11.753556+00:00",
+        "http_status": 200,
+        "response_sha256": "e4a472bba006770bfeb0ee61534753a56b1a4ac971deb2b941a60ecc4822aee4",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/e4a472bba006770bfeb0ee61534753a56b1a4ac971deb2b941a60ecc4822aee4.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/apple-intelligence-tai-trung-quoc-bat-dau-thu-nghiem-tu-4-11-dung-qwen-cua-alibaba-ban-chinh.4189044/",
+        "collected_at": "2026-11-02T11:02:12.952573+00:00",
+        "http_status": 200,
+        "response_sha256": "3e6413d5db1c83a8e68eedad837cea49cf6b9c79ffbbef6f9fd003496eb2dd02",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/3e6413d5db1c83a8e68eedad837cea49cf6b9c79ffbbef6f9fd003496eb2dd02.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/anh-em-viet-cho-nguoi-doc-nen-dung-so-cong-cu-quet-noi-dung-ai-don-gian-de-hieu-va-ca-tinh-la-duoc.4189050/",
+        "collected_at": "2026-11-02T11:02:13.854091+00:00",
+        "http_status": 200,
+        "response_sha256": "2da3e4bb16b7bd7f2010bb91f3d194861d32c201dfa1cc15e6134cc031335893",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/2da3e4bb16b7bd7f2010bb91f3d194861d32c201dfa1cc15e6134cc031335893.html",
+        "article_id": "article_69b287a6b001dfee9b8d6587"
+      },
+      {
+        "url": "https://tinhte.vn/thread/nhin-lai-thu-minh-vua-lap-xong-va-tu-nhu-dung-la-minh-lam-ra-no-that.4188774/",
+        "collected_at": "2026-11-02T11:02:15.937829+00:00",
+        "http_status": 200,
+        "response_sha256": "c8cfba90137671b16ae71e23d737f9466ed20a5302bddb7ad5e79236c9f8e5f2",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/c8cfba90137671b16ae71e23d737f9466ed20a5302bddb7ad5e79236c9f8e5f2.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/cai-gi-khong-co-ban-thi-minh-lam-ra-day-la-cai-rong-roc-mot-mon-do-nho-xiu-nhu-vay-ma-lam-thu.4188692/",
+        "collected_at": "2026-11-02T11:02:16.767785+00:00",
+        "http_status": 200,
+        "response_sha256": "54039dca5ac40ae71d1af66c30147c02ad02b29f2135af5c9a0e660fc818230c",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/54039dca5ac40ae71d1af66c30147c02ad02b29f2135af5c9a0e660fc818230c.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/tren-tay-den-lam-viec-milwaukee-2015r-co-tich-hop-pin-ben-trong.4188278/",
+        "collected_at": "2026-11-02T11:02:17.642123+00:00",
+        "http_status": 200,
+        "response_sha256": "55d37223fa97fa135a104508bd849c89383211fdea1715e0f4871bce758d226b",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/55d37223fa97fa135a104508bd849c89383211fdea1715e0f4871bce758d226b.html",
+        "article_id": "article_3b6e640ff05bfac5f0a1e4be"
+      },
+      {
+        "url": "https://tinhte.vn/thread/mo-hop-bo-wera-advent-calendar-2026.4188262/",
+        "collected_at": "2026-11-02T11:02:18.501286+00:00",
+        "http_status": 200,
+        "response_sha256": "b68a1376597e4a4885434fe640909283955967c1ce4e89da1ced29bf3c6b9a9b",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/b68a1376597e4a4885434fe640909283955967c1ce4e89da1ced29bf3c6b9a9b.html",
+        "article_id": "article_0930c7d6d386e01cd0b5d45c"
+      },
+      {
+        "url": "https://tinhte.vn/thread/diy-cho-de-ipad-va-macbook-air-m1-2-thanh-go-va-nam-cham.4187213/",
+        "collected_at": "2026-11-02T11:02:19.366349+00:00",
+        "http_status": 200,
+        "response_sha256": "fa03dcdcf8c0cd28b05e8d8d261c0de39b9bbc50a8a8360fc3d2f02d84c1be1c",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/fa03dcdcf8c0cd28b05e8d8d261c0de39b9bbc50a8a8360fc3d2f02d84c1be1c.html",
+        "article_id": "article_0d81e30eec92ac31643e45fb"
+      },
+      {
+        "url": "https://tinhte.vn/thread/diy-lam-den-de-ban-tu-ong-thong-gio.4187075/",
+        "collected_at": "2026-11-02T11:02:20.328945+00:00",
+        "http_status": 200,
+        "response_sha256": "8be7c0ab6f1d3dfea7d087f6ab28074a1535bfd85255bf6bb8e44d79790dbb16",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/8be7c0ab6f1d3dfea7d087f6ab28074a1535bfd85255bf6bb8e44d79790dbb16.html",
+        "article_id": "article_cb22532ea148ba88d8cb9cac"
+      },
+      {
+        "url": "https://tinhte.vn/thread/hom-nay-di-kham-mat-bac-si-soi-thay-giac-mac-minh-co-mot-vet-seo-nho-lai-la-do-lan-do-cat-sat.4186163/",
+        "collected_at": "2026-11-02T11:02:21.261715+00:00",
+        "http_status": 200,
+        "response_sha256": "5e5685f55c5049d0f350e2ca6ebfdec6d4c2ccc1a8d0fca287b811bc63c9f929",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/5e5685f55c5049d0f350e2ca6ebfdec6d4c2ccc1a8d0fca287b811bc63c9f929.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/minh-phat-hien-mot-dieu-thu-vi-cai-luoi-cua-nay-minh-mua-trong-dong-do-bai-nhat-luoi-rat-ben.4185632/",
+        "collected_at": "2026-11-02T11:02:22.197796+00:00",
+        "http_status": 200,
+        "response_sha256": "0b0dc0213f289183a4e0830daa4a584e7d87c16c111a039a21c75ee23391c2e7",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/0b0dc0213f289183a4e0830daa4a584e7d87c16c111a039a21c75ee23391c2e7.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/trai-nghiem-tai-su-kien-bosch-experience-day-2026.4184912/",
+        "collected_at": "2026-11-02T11:02:23.082803+00:00",
+        "http_status": 200,
+        "response_sha256": "4768f7bd7f4d38bb227d460c0cdf59fb14d9301d14c98edc22d8d2f8a73da8ab",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/4768f7bd7f4d38bb227d460c0cdf59fb14d9301d14c98edc22d8d2f8a73da8ab.html",
+        "article_id": "article_bd8393c38599946897bc23ea"
+      },
+      {
+        "url": "https://tinhte.vn/thread/tren-tay-dung-cu-giu-day-rut.4183894/",
+        "collected_at": "2026-11-02T11:02:23.975885+00:00",
+        "http_status": 200,
+        "response_sha256": "94f39bf392cf4fd32166cf3a1ea07858858773ceea009e7d982fe4276ce68b27",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/94f39bf392cf4fd32166cf3a1ea07858858773ceea009e7d982fe4276ce68b27.html",
+        "article_id": "article_531eedf7f5173f5a1dd3897f"
+      },
+      {
+        "url": "https://tinhte.vn/thread/con-nguoi-phan-biet-tieng-noi-va-am-nhac-thong-qua-su-khac-nhau-ve-bien-do-dao-dong-am-thanh.3831303/",
+        "collected_at": "2026-11-02T11:02:24.794897+00:00",
+        "http_status": 200,
+        "response_sha256": "c30bbe570f513d7c32556ab8e53e7999a06de0c850b17596441a374b1ac6879a",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/c30bbe570f513d7c32556ab8e53e7999a06de0c850b17596441a374b1ac6879a.html",
+        "article_id": "article_9916ae6e5acbe64d015fd247"
+      },
+      {
+        "url": "https://tinhte.vn/thread/microsoft-thu-nghiem-ung-dung-ai-project-pantheon-tren-windows-11.4188957/",
+        "collected_at": "2026-11-02T11:02:25.626517+00:00",
+        "http_status": 200,
+        "response_sha256": "5211b45620c1161e477bf25c59ee39664f63942e8add16b5bae6f6a921776c65",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/5211b45620c1161e477bf25c59ee39664f63942e8add16b5bae6f6a921776c65.html",
+        "article_id": "article_af6bfb9f8487a2e94925c342"
+      },
+      {
+        "url": "https://tinhte.vn/thread/pagani-huayra-70-anima-chiec-cuoi-cua-bo-ba-huayra-70-so-san-7-cap-son-pha-bot-kim-cuong.4188942/",
+        "collected_at": "2026-11-02T11:02:28.183086+00:00",
+        "http_status": 200,
+        "response_sha256": "cafd3952bc11bd4b2d97425c86d880f3e3d46e8f0c2bab56b523aac8652a096f",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/cafd3952bc11bd4b2d97425c86d880f3e3d46e8f0c2bab56b523aac8652a096f.html",
+        "article_id": "article_e09e02231c40d8614eef7b4e"
+      },
+      {
+        "url": "https://tinhte.vn/thread/chu-viet-ra-doi-tu-so-sach-tu-vien-dat-set-dem-lua-mach-den-chu-hinh-nem-luong-ha.4188925/",
+        "collected_at": "2026-11-02T11:02:30.328792+00:00",
+        "http_status": 200,
+        "response_sha256": "a848fc22c452fa580e5086deda9655c2fb2e4134fcdd314787b136ce47fac5ca",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/a848fc22c452fa580e5086deda9655c2fb2e4134fcdd314787b136ce47fac5ca.html",
+        "article_id": "article_f497defb265bb343561bc972"
+      },
+      {
+        "url": "https://tinhte.vn/thread/mercedes-maybach-moi-ra-mat-tai-viet-nam-them-ban-phev-s-580-e-gia-tu-8-639-ty-dong.4188265/",
+        "collected_at": "2026-11-02T11:02:31.109977+00:00",
+        "http_status": 200,
+        "response_sha256": "f3c55d3508d01ed1650807f09e1ca4e89b6904fba37f25eac31c87402d1ae0bb",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/f3c55d3508d01ed1650807f09e1ca4e89b6904fba37f25eac31c87402d1ae0bb.html",
+        "article_id": "article_6e27630ef85070b9ca2fced3"
+      },
+      {
+        "url": "https://tinhte.vn/thread/suzuki-xl7-moi-ra-mat-tai-viet-nam-dau-xe-lam-moi-them-mau-son-gia-tu-569-9-trieu-dong.4188456/",
+        "collected_at": "2026-11-02T11:02:32.111810+00:00",
+        "http_status": 200,
+        "response_sha256": "e74092e6498ad26589cc964c3e9cf9e2aaff3d40fec625a36b133301622f6e6e",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/e74092e6498ad26589cc964c3e9cf9e2aaff3d40fec625a36b133301622f6e6e.html",
+        "article_id": "article_11a33ea71751cd8f2a7f778b"
+      },
+      {
+        "url": "https://tinhte.vn/thread/mercedes-benz-cla-200-electric-ra-mat-tai-viet-nam-800v-di-toi-da-542-km-gia-1-59-ty-dong.4188264/",
+        "collected_at": "2026-11-02T11:02:33.063961+00:00",
+        "http_status": 200,
+        "response_sha256": "e27293ea46ec4f3a7e75464d33cce5dbe44abe22a6e14f56ad4d4ac01404c007",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/e27293ea46ec4f3a7e75464d33cce5dbe44abe22a6e14f56ad4d4ac01404c007.html",
+        "article_id": "article_cc9ea5a1318ae391e43836d1"
+      },
+      {
+        "url": "https://tinhte.vn/thread/loat-xe-phev-moi-cua-mercedes-ra-mat-tai-viet-nam-glc-350-e-e-350-e-s-580-e-gia-tu-2-999-ty.4188267/",
+        "collected_at": "2026-11-02T11:02:33.918569+00:00",
+        "http_status": 200,
+        "response_sha256": "adeeeef8d7b50074da4733481a75570c0bfa4aaea76e9a5d7c4973453fcb0013",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/adeeeef8d7b50074da4733481a75570c0bfa4aaea76e9a5d7c4973453fcb0013.html",
+        "article_id": "article_ba23b6a4f8a2f937c37a70c3"
+      },
+      {
+        "url": "https://tinhte.vn/thread/ifi-ra-mat-dac-amp-di-dong-idsd-gr2-mt-phien-ban-tinh-chinh-boi-steve-levine-gia-699.4184167/",
+        "collected_at": "2026-11-02T11:02:34.746666+00:00",
+        "http_status": 200,
+        "response_sha256": "67d00f309faa7c48178f69229bd01fbf16635231369fec64f8df70658d717311",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/67d00f309faa7c48178f69229bd01fbf16635231369fec64f8df70658d717311.html",
+        "article_id": "article_f536c1c31e369b28ebe2c1ea"
+      },
+      {
+        "url": "https://tinhte.vn/thread/stax-sr-x9000-phien-ban-tai-sinh-cua-huyen-thoai-sr-o.4169746/",
+        "collected_at": "2026-11-02T11:02:35.598911+00:00",
+        "http_status": 200,
+        "response_sha256": "d9b55d28774dfb5e55ceb9e21cfd5c18d677c0cc3fe6c11d1e7eb9edabe00e9e",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/d9b55d28774dfb5e55ceb9e21cfd5c18d677c0cc3fe6c11d1e7eb9edabe00e9e.html",
+        "article_id": "article_01072be91f1afd6a729a340e"
+      },
+      {
+        "url": "https://tinhte.vn/thread/magna-evo-i-tai-nghe-the-he-moi-cua-raal-1995.4173072/",
+        "collected_at": "2026-11-02T11:02:36.535415+00:00",
+        "http_status": 200,
+        "response_sha256": "1be404e5cca8520e9cf7539a9d08989fe204e7f582956e3c0d8219b7e2e81e9a",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/1be404e5cca8520e9cf7539a9d08989fe204e7f582956e3c0d8219b7e2e81e9a.html",
+        "article_id": "article_8e8c74213056bddf44079e76"
+      },
+      {
+        "url": "https://tinhte.vn/thread/feliks-audio-envy-performance-zebrano-headamp-300b-cho-danh-cho-headphone-hi-end.4177559/",
+        "collected_at": "2026-11-02T11:02:37.346069+00:00",
+        "http_status": 200,
+        "response_sha256": "8973df685c7485daa028b357ba4022155d4dc8783c1f8330449da9bd5158c6bc",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/8973df685c7485daa028b357ba4022155d4dc8783c1f8330449da9bd5158c6bc.html",
+        "article_id": "article_f1edaf48f0e6cc46ae4172eb"
+      },
+      {
+        "url": "https://tinhte.vn/thread/ly-do-task-manager-cua-anh-em-bi-treo-khi-cpu-tai-nang.4188954/",
+        "collected_at": "2026-11-02T11:02:38.126319+00:00",
+        "http_status": 200,
+        "response_sha256": "35de19b5a31019ea2fc6b30d9c12485734f6dc1917f00a10e307f0c240e978aa",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/35de19b5a31019ea2fc6b30d9c12485734f6dc1917f00a10e307f0c240e978aa.html",
+        "article_id": "article_d5daeb6f77f1f369a37073c4"
+      },
+      {
+        "url": "https://tinhte.vn/thread/john-ternus-apple-khong-muon-ship-ai-cho-co.4189046/",
+        "collected_at": "2026-11-02T11:02:38.940524+00:00",
+        "http_status": 200,
+        "response_sha256": "02ebe6116b5514e0c83077dba83fb02fd413f63f00c005bc189215aa95b9e760",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/02ebe6116b5514e0c83077dba83fb02fd413f63f00c005bc189215aa95b9e760.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/tren-tay-man-hinh-2k-msi-mag-273qp-qd-oled-x24-27-inch-wqhd-240hz-hdr.4104624/",
+        "collected_at": "2026-11-02T11:02:41.402608+00:00",
+        "http_status": 200,
+        "response_sha256": "909c1a3b8199eb359eac8703fbcf7b6f74ffdb43fe54ae37230ff440be61ff1e",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/909c1a3b8199eb359eac8703fbcf7b6f74ffdb43fe54ae37230ff440be61ff1e.html",
+        "article_id": "article_844bcd7295132c5647f37dd5"
+      },
+      {
+        "url": "https://tinhte.vn/thread/hien-pham-tren-facebook-huawei-pura-x-view-mot-san-pham-gia-hoi-de-bi-bo-qua-vi-dinh-kien-cu.4189033/",
+        "collected_at": "2026-11-02T11:02:42.325227+00:00",
+        "http_status": 200,
+        "response_sha256": "e36f26846d9be61fba425ed67cbf5b2c6535f6da940a5af8a410fffffac5d975",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/e36f26846d9be61fba425ed67cbf5b2c6535f6da940a5af8a410fffffac5d975.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/dinh-vi-thuong-hieu-xe-hoi.4189027/",
+        "collected_at": "2026-11-02T11:02:43.281300+00:00",
+        "http_status": 200,
+        "response_sha256": "ad80903bfa024dcbe1952b8678e26900ac7dcd804160ceb0476b5fd9300b3962",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/ad80903bfa024dcbe1952b8678e26900ac7dcd804160ceb0476b5fd9300b3962.html",
+        "error": "ValueError"
+      },
+      {
+        "url": "https://tinhte.vn/thread/learjet-60-dam-xuong-khu-nha-di-dong-florida-1-11-9-nguoi-chet-atc-va-ads-b-noi-len-dieu-gi.4189052/",
+        "collected_at": "2026-11-02T11:02:44.238856+00:00",
+        "http_status": 200,
+        "response_sha256": "26676a0831164ff630b5267791bef7f07e1955e2d87f537119a4ae3e934662ee",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/26676a0831164ff630b5267791bef7f07e1955e2d87f537119a4ae3e934662ee.html",
+        "article_id": "article_545954d57dac86d9648ce0c6"
+      },
+      {
+        "url": "https://tinhte.vn/thread/iphone-18-pro-ban-chay-o-trung-quoc-nhung-giam-o-my-va-nhat-co-dang-nang-cap-nam-nay.4188998/",
+        "collected_at": "2026-11-02T11:02:45.356166+00:00",
+        "http_status": 200,
+        "response_sha256": "295f1834d5d1402cdd3154ab020454ee78a05eec9627e62d924f281413c19b2f",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/295f1834d5d1402cdd3154ab020454ee78a05eec9627e62d924f281413c19b2f.html",
+        "article_id": "article_7233ccb4cd485cf075944e6b"
+      },
+      {
+        "url": "https://tinhte.vn/thread/voi-macbook-pro-oled-cam-ung-moi-macos-se-toi-uu-nhu-the-nao.4188944/",
+        "collected_at": "2026-11-02T11:02:46.457304+00:00",
+        "http_status": 200,
+        "response_sha256": "cc84446072a8a3b6469601da32a494b0f0d4727528b9d3f0d0f4ea57d05a8743",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/cc84446072a8a3b6469601da32a494b0f0d4727528b9d3f0d0f4ea57d05a8743.html",
+        "article_id": "article_f35eacc9787ff26f604ccf7d"
+      },
+      {
+        "url": "https://tinhte.vn/thread/review-apple-watch-4-40.3483206/",
+        "collected_at": "2026-11-02T11:02:47.979892+00:00",
+        "http_status": 200,
+        "response_sha256": "8207b327eed78bbdaf2cef12d7511fe07d73a71e42be6ce0c0cfc8cf34dd21ce",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/8207b327eed78bbdaf2cef12d7511fe07d73a71e42be6ce0c0cfc8cf34dd21ce.html",
+        "article_id": "article_d09b8f04becac2ed5dcffb0b"
+      },
+      {
+        "url": "https://tinhte.vn/thread/chay-bo-101-thiet-lap-vung-nhip-tim-nhu-the-nao-cho-phu-hop-do-tuoi-muc-tieu-tap-luyen.4187053/",
+        "collected_at": "2026-11-02T11:02:50.384703+00:00",
+        "http_status": 200,
+        "response_sha256": "2e6fecb8144081d24e842600350fc4371ab82eafc545e439d203b7a5d8145172",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/2e6fecb8144081d24e842600350fc4371ab82eafc545e439d203b7a5d8145172.html",
+        "article_id": "article_916f99e8e695ddf3eb5f4198"
+      },
+      {
+        "url": "https://tinhte.vn/thread/skill-cho-ai-han-che-la-gi-agent-co-can-skill-khong.4186468/",
+        "collected_at": "2026-11-02T11:02:51.624073+00:00",
+        "http_status": 200,
+        "response_sha256": "fe98ca3e3f097cb13368be1a357d90af309cd61ae043234bd31c3d54762c6e04",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/fe98ca3e3f097cb13368be1a357d90af309cd61ae043234bd31c3d54762c6e04.html",
+        "article_id": "article_6c7e78e17255aa880908859c"
+      },
+      {
+        "url": "https://tinhte.vn/thread/skill-cho-ai-muon-ai-hieu-ban-thi-ban-phai-huong-dan.4186018/",
+        "collected_at": "2026-11-02T11:02:52.534439+00:00",
+        "http_status": 200,
+        "response_sha256": "9e3e3a5788110feff1c95ef7f699d7e80572e034001370940677604eb8d83053",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/9e3e3a5788110feff1c95ef7f699d7e80572e034001370940677604eb8d83053.html",
+        "article_id": "article_53d0eb9705a58e731d6b9c66"
+      },
+      {
+        "url": "https://tinhte.vn/thread/da-co-ban-mod-dua-dlss-multi-frame-generation-len-rtx-40-rtx-30-va-ca-rtx-20-co-huong-dan.4176882/",
+        "collected_at": "2026-11-02T11:02:53.773843+00:00",
+        "http_status": 200,
+        "response_sha256": "7e18dc3adfbfa666ac6d3b18b2607dcb2b94d3f694ec397aa5f267f7cf6cce46",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/7e18dc3adfbfa666ac6d3b18b2607dcb2b94d3f694ec397aa5f267f7cf6cce46.html",
+        "article_id": "article_eed8c2642d62bba105a36364"
+      },
+      {
+        "url": "https://tinhte.vn/thread/phim-copilot-tren-pc-vo-dung-la-vay-nhung-dang-sau-do-la-quyen-luc-rat-lon-cua-microsoft.4176744/",
+        "collected_at": "2026-11-02T11:02:54.673377+00:00",
+        "http_status": 200,
+        "response_sha256": "8844c0f4fbac19f926d3af19c10bb1e9cdec15bec1275ae3fe9eecd47b434678",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/8844c0f4fbac19f926d3af19c10bb1e9cdec15bec1275ae3fe9eecd47b434678.html",
+        "article_id": "article_4fdc15b85e2f6f8d0255b356"
+      },
+      {
+        "url": "https://tinhte.vn/thread/back-to-school-mfinder-cong-cu-bo-sung-suc-manh-cho-finder-cua-macos-tu-anh-em-maclife.4168479/",
+        "collected_at": "2026-11-02T11:02:56.012979+00:00",
+        "http_status": 200,
+        "response_sha256": "1f5d09461bb093cd9b21e5b00ccc3c4ec63ed4435759ba6bd7f3cad2a1ed4627",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/1f5d09461bb093cd9b21e5b00ccc3c4ec63ed4435759ba6bd7f3cad2a1ed4627.html",
+        "article_id": "article_0fd62ca76d56c9a6806b31ed"
+      },
+      {
+        "url": "https://tinhte.vn/thread/back-to-school-mua-laptop-de-hoc-o-nam-2026-va-mot-so-dieu-anh-em-can-luu-y.4168327/",
+        "collected_at": "2026-11-02T11:02:56.993356+00:00",
+        "http_status": 200,
+        "response_sha256": "f2b77a7f79e89a8d8ac698b9e74bc93a87d70149be917db8bdc9ae05d75fe6c7",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/f2b77a7f79e89a8d8ac698b9e74bc93a87d70149be917db8bdc9ae05d75fe6c7.html",
+        "article_id": "article_b3ac0e558228be640f1e7b20"
+      },
+      {
+        "url": "https://tinhte.vn/thread/vai-thu-thuat-toi-uu-cho-dien-thoai-gap-cua-samsung-anh-em-co-the-can-chinh-dpi-an-thanh-nav-bar.4165795/",
+        "collected_at": "2026-11-02T11:02:57.894706+00:00",
+        "http_status": 200,
+        "response_sha256": "8e2093af082e7b81bc0e75a5c51923ec4851c6441624e4834c180312ed716e46",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/8e2093af082e7b81bc0e75a5c51923ec4851c6441624e4834c180312ed716e46.html",
+        "article_id": "article_fc9a872af901bd0f3631fbe5"
+      },
+      {
+        "url": "https://tinhte.vn/thread/anh-em-dung-laptop-lenovo-thi-nen-dung-app-nay-lenovo-smart-connect.4159587/",
+        "collected_at": "2026-11-02T11:02:58.802145+00:00",
+        "http_status": 200,
+        "response_sha256": "6768ccaf5f47e1ecda86b8ff73a65048b6d68787dd0d697d7dc2f8f16211d813",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/6768ccaf5f47e1ecda86b8ff73a65048b6d68787dd0d697d7dc2f8f16211d813.html",
+        "article_id": "article_61f1d388325238b38a27a4ad"
+      },
+      {
+        "url": "https://tinhte.vn/thread/huong-dan-tao-usb-cai-dat-macos-golden-gate.4156421/",
+        "collected_at": "2026-11-02T11:02:59.662362+00:00",
+        "http_status": 200,
+        "response_sha256": "5402c06bc5d4ce81a8f6549374bc127cbd8c1b724ddb33f514b99786a20bb80d",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/5402c06bc5d4ce81a8f6549374bc127cbd8c1b724ddb33f514b99786a20bb80d.html",
+        "article_id": "article_f76f11b7c13da69e134c1006"
+      },
+      {
+        "url": "https://tinhte.vn/thread/xiaomi-hoan-ban-suv-dien-yu7-sau-tai-nan-chet-nguoi-voi-mau-su7-hoi-thang-3.4012787/",
+        "collected_at": "2026-11-02T11:03:00.531723+00:00",
+        "http_status": 200,
+        "response_sha256": "088c57b44260ee81cb658d0f201944f3ef668efc5d4c92c08f5effda78f16d5d",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/088c57b44260ee81cb658d0f201944f3ef668efc5d4c92c08f5effda78f16d5d.html",
+        "article_id": "article_3d8553eb79b5ea163a20497f"
+      },
+      {
+        "url": "https://tinhte.vn/thread/thong-tin-ve-viec-chiec-xiaomi-su7-moi-ra-mat-gap-tai-nan-chet-nguoi-o-o-an-huy-trung-quoc.3979726/",
+        "collected_at": "2026-11-02T11:03:01.506555+00:00",
+        "http_status": 200,
+        "response_sha256": "69ed9fcaf4c0543095ccaa3ccba3fc3c0917c44ee94ab79f68009fc0399a7bbb",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/69ed9fcaf4c0543095ccaa3ccba3fc3c0917c44ee94ab79f68009fc0399a7bbb.html",
+        "article_id": "article_2764fcf7382940d146ffd67a"
+      },
+      {
+        "url": "https://tinhte.vn/thread/xiaomi-da-giao-duoc-100-000-chiec-su7-dat-muc-tieu-130-000-xe-het-nam-2024.3888029/",
+        "collected_at": "2026-11-02T11:03:04.116120+00:00",
+        "http_status": 200,
+        "response_sha256": "aae9f5ea0a612e140f2a5ba2d13002eb3df76d14b64c6a01442daf82fcf2c7ca",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/aae9f5ea0a612e140f2a5ba2d13002eb3df76d14b64c6a01442daf82fcf2c7ca.html",
+        "article_id": "article_01840e50009ce7beb2d724bf"
+      },
+      {
+        "url": "https://tinhte.vn/thread/xiaomi-xep-thu-8-hang-ev-ban-chay-nam-2024-o-tq-nho-mau-su7.3787438/",
+        "collected_at": "2026-11-02T11:03:05.090840+00:00",
+        "http_status": 200,
+        "response_sha256": "e5546397d8d637c792f8e477538d6443e470477645b98917552397ea3ac68582",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/e5546397d8d637c792f8e477538d6443e470477645b98917552397ea3ac68582.html",
+        "article_id": "article_302ad7f8ca759154915aa879"
+      },
+      {
+        "url": "https://tinhte.vn/thread/day-la-bo-do-du-hanh-mat-trang-do-prada-axiom-space-che-tao.4152690/",
+        "collected_at": "2026-11-02T11:03:05.977323+00:00",
+        "http_status": 200,
+        "response_sha256": "7082715458d81a6ae6b4475a414d9e229f363de73b5f305478656d98010ee59c",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/7082715458d81a6ae6b4475a414d9e229f363de73b5f305478656d98010ee59c.html",
+        "article_id": "article_16c3b5ee44ae7fa181dfdc4b"
+      },
+      {
+        "url": "https://tinhte.vn/thread/ten-lua-new-glenn-cua-jeff-bezos-phat-no-ngay-tren-be-phong.4146212/",
+        "collected_at": "2026-11-02T11:03:06.804118+00:00",
+        "http_status": 200,
+        "response_sha256": "65365f090e891db6fbd1cbc946f020f31e69c76ada8f0430e6cef9b608343fec",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/65365f090e891db6fbd1cbc946f020f31e69c76ada8f0430e6cef9b608343fec.html",
+        "article_id": "article_18dd6d59737647a4316ccee1"
+      },
+      {
+        "url": "https://tinhte.vn/thread/can-nhung-gi-de-xay-dung-mot-trung-tam-du-lieu-ngoai-trai-dat.4142499/",
+        "collected_at": "2026-11-02T11:03:07.693910+00:00",
+        "http_status": 200,
+        "response_sha256": "fe501d6fb37b2bf784f2b9561a9216fa4ed04f1b2fa541bd70547dc1abda4c48",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/fe501d6fb37b2bf784f2b9561a9216fa4ed04f1b2fa541bd70547dc1abda4c48.html",
+        "article_id": "article_48433d6a35c1d8e5cb1b27d8"
+      },
+      {
+        "url": "https://tinhte.vn/thread/vi-sao-thiet-ke-mot-cai-toilet-hoat-dong-trong-khong-gian-lai-kho-den-vay.4128933/",
+        "collected_at": "2026-11-02T11:03:08.647539+00:00",
+        "http_status": 200,
+        "response_sha256": "d937e0b2953f214bae580b2f9d9925a8182dbf6eb4a2f38b2989d9c174e63ee5",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/d937e0b2953f214bae580b2f9d9925a8182dbf6eb4a2f38b2989d9c174e63ee5.html",
+        "article_id": "article_7c57409a28277e868ba3ab2c"
+      },
+      {
+        "url": "https://tinhte.vn/thread/4189173",
+        "collected_at": "2026-11-02T11:03:09.493826+00:00",
+        "http_status": 200,
+        "response_sha256": "f13fcc8f7b678d106a1c52e9797326681f18d68dd3a045a100f000d8dd64f12a",
+        "evidence_file": "/mnt/DATA/TaiLieuHocTap/big data/.runtime/source-evidence/919c8217-e923-4e63-8319-dc1c0d5399c8/f13fcc8f7b678d106a1c52e9797326681f18d68dd3a045a100f000d8dd64f12a.html",
+        "article_id": "article_1dd462552d3a6e1d8ffeb0e0"
+      }
+    ]
+  },
+  "mode": "integration",
+  "passed": true,
+  "pipeline": {
+    "run_id": "919c8217-e923-4e63-8319-dc1c0d5399c8",
+    "silver_path": "silver/article_snapshots/a711ff5dfea4db04ea19a44a8759826aad4fccaedfc68a469057c33d200ab612/articles.parquet",
+    "gold_path": "gold/article_snapshots/a711ff5dfea4db04ea19a44a8759826aad4fccaedfc68a469057c33d200ab612/article_daily_stats.parquet",
+    "quarantine_path": "quarantine/articles/a711ff5dfea4db04ea19a44a8759826aad4fccaedfc68a469057c33d200ab612/records.json",
+    "bronze_paths": [
+      "bronze/raw.articles.a711ff5dfea4db04ea19/year=2026/month=11/day=02/hour=11/batch_1793617390777_edd3de.json"
+    ],
+    "quality": {
+      "records_received": 50,
+      "records_valid": 50,
+      "records_duplicate": 0,
+      "records_superseded": 0,
+      "records_quarantined": 0,
+      "records_missing_publication_time": 0,
+      "dq_score": 100.0,
+      "required_score": 90.0
+    },
+    "engine": "pandas",
+    "status": "complete",
+    "topic": "raw.articles.a711ff5dfea4db04ea19",
+    "records_delivered": 50,
+    "records_consumed": 50,
+    "transport": "kafka"
+  }
+}

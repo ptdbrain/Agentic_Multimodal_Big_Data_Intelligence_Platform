@@ -1,0 +1,129 @@
+{
+  "completed": false,
+  "executed_at": "2026-11-03T16:41:27.384501+00:00",
+  "boundary": "New live HTTP collection using current adapters; no replay/synthetic fallback",
+  "runs": [
+    {
+      "source": "tiki",
+      "iteration": 1,
+      "collection_run_id": "f9d4ab08dbf24559ba6a8017f3fb9461",
+      "query": "iphone",
+      "datasets": {
+        "products": {
+          "records": 20,
+          "schema_valid": 20,
+          "metadata_coverage": {
+            "source_group": 20,
+            "source_name": 20,
+            "source_record_id": 20,
+            "source_url": 20,
+            "acquisition_method": 20,
+            "collected_at": 20,
+            "evidence_sha256": 20,
+            "evidence_ref": 20,
+            "parser_version": 20,
+            "schema_version": 20,
+            "collection_run_id": 20
+          }
+        },
+        "reviews": {
+          "records": 0,
+          "schema_valid": 0,
+          "metadata_coverage": {
+            "source_group": 0,
+            "source_name": 0,
+            "source_record_id": 0,
+            "source_url": 0,
+            "acquisition_method": 0,
+            "collected_at": 0,
+            "evidence_sha256": 0,
+            "evidence_ref": 0,
+            "parser_version": 0,
+            "schema_version": 0,
+            "collection_run_id": 0
+          }
+        },
+        "prices": {
+          "records": 20,
+          "schema_valid": 20,
+          "metadata_coverage": {
+            "source_group": 20,
+            "source_name": 20,
+            "source_record_id": 20,
+            "source_url": 20,
+            "acquisition_method": 20,
+            "collected_at": 20,
+            "evidence_sha256": 20,
+            "evidence_ref": 20,
+            "parser_version": 20,
+            "schema_version": 20,
+            "collection_run_id": 20
+          }
+        }
+      },
+      "capture_sha256": "3fa04938483643316a53c3029577502b6c83469590ded47c562204aae2859a9c",
+      "accepted": false
+    },
+    {
+      "source": "tiki",
+      "iteration": 2,
+      "collection_run_id": "dee4912aa3e045b59416f45573d58178",
+      "query": "iphone",
+      "datasets": {
+        "products": {
+          "records": 20,
+          "schema_valid": 20,
+          "metadata_coverage": {
+            "source_group": 20,
+            "source_name": 20,
+            "source_record_id": 20,
+            "source_url": 20,
+            "acquisition_method": 20,
+            "collected_at": 20,
+            "evidence_sha256": 20,
+            "evidence_ref": 20,
+            "parser_version": 20,
+            "schema_version": 20,
+            "collection_run_id": 20
+          }
+        },
+        "reviews": {
+          "records": 0,
+          "schema_valid": 0,
+          "metadata_coverage": {
+            "source_group": 0,
+            "source_name": 0,
+            "source_record_id": 0,
+            "source_url": 0,
+            "acquisition_method": 0,
+            "collected_at": 0,
+            "evidence_sha256": 0,
+            "evidence_ref": 0,
+            "parser_version": 0,
+            "schema_version": 0,
+            "collection_run_id": 0
+          }
+        },
+        "prices": {
+          "records": 20,
+          "schema_valid": 20,
+          "metadata_coverage": {
+            "source_group": 20,
+            "source_name": 20,
+            "source_record_id": 20,
+            "source_url": 20,
+            "acquisition_method": 20,
+            "collected_at": 20,
+            "evidence_sha256": 20,
+            "evidence_ref": 20,
+            "parser_version": 20,
+            "schema_version": 20,
+            "collection_run_id": 20
+          }
+        }
+      },
+      "capture_sha256": "56c638e9681f32d7e659c2b3d719c0b69f805237b89d208aae0338d85ad42a1a",
+      "accepted": false
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+         2280206 function calls (2240198 primitive calls) in 1.534 seconds
+
+   Ordered by: cumulative time
+   List reduced from 165 to 18 due to restriction <18>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.026    0.026    1.534    1.534 /mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:275(upsert_dataframe)
+    10001    0.701    0.000    0.709    0.000 {method 'execute' of 'psycopg2.extensions.cursor' objects}
+    10001    0.019    0.000    0.488    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/frame.py:1514(iterrows)
+    10000    0.059    0.000    0.436    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/series.py:392(__init__)
+    60000    0.022    0.000    0.305    0.000 /mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:378(<genexpr>)
+    50000    0.046    0.000    0.170    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/series.py:1107(__getitem__)
+    10000    0.034    0.000    0.161    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/construction.py:517(sanitize_array)
+    50000    0.034    0.000    0.113    0.000 /mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:17(_database_value)
+    10000    0.052    0.000    0.087    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/dtypes/cast.py:1166(maybe_infer_to_datetimelike)
+    50000    0.032    0.000    0.082    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/series.py:1232(_get_value)
+    10000    0.016    0.000    0.057    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/internals/managers.py:1882(from_array)
+   690024    0.043    0.000    0.054    0.000 {built-in method builtins.isinstance}
+    10000    0.012    0.000    0.050    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/generic.py:6323(__setattr__)
+    10000    0.013    0.000    0.048    0.000 /mnt/DATA/TaiLieuHocTap/big data/.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/json/__init__.py:183(dumps)
+    10000    0.006    0.000    0.035    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/_config/config.py:145(_get_option)
+    10000    0.010    0.000    0.033    0.000 /mnt/DATA/TaiLieuHocTap/big data/.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/json/encoder.py:183(encode)
+    10000    0.020    0.000    0.032    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/numpy/core/numeric.py:274(full)
+    50000    0.020    0.000    0.029    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/indexing.py:2801(check_dict_or_set_indexers)
+
+

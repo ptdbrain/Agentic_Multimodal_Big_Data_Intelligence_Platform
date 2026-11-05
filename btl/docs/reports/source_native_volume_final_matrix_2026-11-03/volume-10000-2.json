@@ -1,0 +1,120 @@
+{
+  "completed": true,
+  "status": "passed",
+  "executed_at": "2026-11-03T17:03:36.572993+00:00",
+  "review_inputs": 10000,
+  "source": "labelled deterministic synthetic workload",
+  "source_fingerprint": {
+    "sha256": "f19cfa1472f39d8f9d59bb081c023eb795a1629988d5bd583beaf0da150d9d77",
+    "files": 346,
+    "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+  },
+  "times_sec": {
+    "source_load_pii": 0.0747,
+    "kafka_bronze": 5.3102,
+    "bronze_verify": 0.0563,
+    "spark_silver_dq": 12.7808,
+    "spark_gold_anomalies": 17.3788,
+    "postgres_dashboard": 0.9829
+  },
+  "inputs": {
+    "expected_reviews": {
+      "input": 10000,
+      "silver": 9200,
+      "quarantine": 500,
+      "duplicates": 300
+    },
+    "products": {
+      "records": 100,
+      "sha256": "683f26f6dd7966769334462afc2d59c76c25e750f66da12632f0ee7010ad62e7"
+    },
+    "reviews": {
+      "records": 10000,
+      "sha256": "3beb08d4cbd1e15144f1b8c7aeff06982385ffa08da7ec13a95a2ebbbd84226e"
+    },
+    "prices": {
+      "records": 1000,
+      "sha256": "64df49de793f81953a0cab320a592f53a2f5f0e7f21591e1012d991240e3d7e0"
+    }
+  },
+  "workspace": "/tmp/sentinel-fullpath-u0q3va1h",
+  "namespace": {
+    "database": "source_load_f0dad471876a",
+    "bucket": "source-load-f0dad471876a",
+    "topics": {
+      "products": "source-load-f0dad471876a-products",
+      "reviews": "source-load-f0dad471876a-reviews",
+      "prices": "source-load-f0dad471876a-prices"
+    }
+  },
+  "run_id": "3caf1463-025c-40a8-b4cd-1d362e52bd03",
+  "review_accounting": {
+    "input_count": 10000,
+    "valid_input_count": 9500,
+    "quarantine_count": 500,
+    "intra_batch_duplicate_count": 300,
+    "cross_batch_duplicate_count": 0,
+    "silver_written_count": 9200,
+    "reconciled": true
+  },
+  "transport": {
+    "records_consumed": 11100,
+    "records_valid": 11100,
+    "records_dlq": 0,
+    "source_contracts": {
+      "products": {
+        "records_received": 100,
+        "records_accepted": 100,
+        "records_rejected": 0,
+        "dq_score": 100.0,
+        "content_verified": true,
+        "payload_multiset_sha256": "3e86bf260a0b439449109b8f10d5589be84fa9755757c0edd785450f879781b9"
+      },
+      "reviews": {
+        "records_received": 10000,
+        "records_accepted": 10000,
+        "records_rejected": 0,
+        "dq_score": 100.0,
+        "content_verified": true,
+        "payload_multiset_sha256": "fd979867226df04c2828e7d07718b5e43c3dced9ec9a27d6a63c33d516367049"
+      },
+      "prices": {
+        "records_received": 1000,
+        "records_accepted": 1000,
+        "records_rejected": 0,
+        "dq_score": 100.0,
+        "content_verified": true,
+        "payload_multiset_sha256": "22be35c0c3e069a32a889a51d768858edf718e1f203d8b2790b63b8d03481e0a"
+      }
+    }
+  },
+  "mart_rows": {
+    "product_daily_stats": 200,
+    "brand_daily_stats": 10,
+    "category_daily_stats": 8,
+    "price_daily_stats": 100
+  },
+  "anomaly_events": 0,
+  "serving_review_count": 9200,
+  "wall_sec": 36.6429,
+  "resources": {
+    "wall_sec": 36.6741,
+    "cpu_percent": 288.9,
+    "python_cpu_percent": 35.7,
+    "peak_ram_mb": 2250.08,
+    "peak_tree_ram_mb": 2250.08,
+    "peak_python_ram_mb": 308.33,
+    "peak_children_ram_mb": 1953.2,
+    "sample_count": 503
+  },
+  "boundary": "JSONL load/PII -> actual Kafka -> MinIO Bronze -> Spark Silver/DQ/quarantine/dedup -> Gold/anomalies -> PostgreSQL -> scoped DashboardDB",
+  "excluded": [
+    "input generation",
+    "namespace setup",
+    "JVM startup/warmup",
+    "browser rendering",
+    "separately running service daemon resources"
+  ],
+  "resource_boundary": "Python driver and local child process tree; no cluster-wide resource claim",
+  "real_source_serving_modified": false
+}

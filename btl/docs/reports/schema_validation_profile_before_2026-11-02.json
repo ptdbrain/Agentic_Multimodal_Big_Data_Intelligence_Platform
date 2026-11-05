@@ -1,0 +1,122 @@
+{
+  "scope": "CPU-only JSON schema validation microbenchmark; synthetic fixtures, not ingestion throughput or live-source evidence",
+  "records_per_iteration": 300,
+  "iterations": 3,
+  "valid_per_iteration": 180,
+  "invalid_per_iteration": 120,
+  "cpu_sec": [
+    0.110300001,
+    0.103072356,
+    0.10375701999999998
+  ],
+  "median_cpu_sec": 0.10375701999999998,
+  "wall_sec": [
+    0.11106726999969396,
+    0.1035584649998782,
+    0.10430717800045386
+  ],
+  "result_sha256": [
+    "b953711dba562fde926e03abcafd548ed4602cc89c8ab7cfbcabd2106e0dab4b",
+    "b953711dba562fde926e03abcafd548ed4602cc89c8ab7cfbcabd2106e0dab4b",
+    "b953711dba562fde926e03abcafd548ed4602cc89c8ab7cfbcabd2106e0dab4b"
+  ],
+  "validator_source_sha256": "c0595883f4d110bb8181b9670c27a608d7d3ddb329253af55294e242262542c5",
+  "profile_top": [
+    {
+      "file": "validator.py",
+      "line": 28,
+      "function": "validate_record",
+      "calls": 300,
+      "self_cpu_sec": 0.001258533,
+      "cumulative_cpu_sec": 1.9205838810000002
+    },
+    {
+      "file": "validators.py",
+      "line": 1265,
+      "function": "validate",
+      "calls": 270,
+      "self_cpu_sec": 0.0016119840000000001,
+      "cumulative_cpu_sec": 1.9188560680000002
+    },
+    {
+      "file": "validators.py",
+      "line": 349,
+      "function": "iter_errors",
+      "calls": 630,
+      "self_cpu_sec": 0.0022930840000000004,
+      "cumulative_cpu_sec": 1.8711676250000002
+    },
+    {
+      "file": "_keywords.py",
+      "line": 290,
+      "function": "properties",
+      "calls": 3870,
+      "self_cpu_sec": 0.025733884000000002,
+      "cumulative_cpu_sec": 1.858713649
+    },
+    {
+      "file": "validators.py",
+      "line": 396,
+      "function": "descend",
+      "calls": 27900,
+      "self_cpu_sec": 0.16758832,
+      "cumulative_cpu_sec": 1.8497735240000002
+    },
+    {
+      "file": "validators.py",
+      "line": 306,
+      "function": "check_schema",
+      "calls": 270,
+      "self_cpu_sec": 0.001130284,
+      "cumulative_cpu_sec": 1.764240577
+    },
+    {
+      "file": "_keywords.py",
+      "line": 274,
+      "function": "ref",
+      "calls": 8640,
+      "self_cpu_sec": 0.021241251000000003,
+      "cumulative_cpu_sec": 1.5399558180000001
+    },
+    {
+      "file": "_keywords.py",
+      "line": 36,
+      "function": "additionalProperties",
+      "calls": 270,
+      "self_cpu_sec": 0.006875941,
+      "cumulative_cpu_sec": 1.4795094590000002
+    },
+    {
+      "file": "validators.py",
+      "line": 339,
+      "function": "evolve",
+      "calls": 27270,
+      "self_cpu_sec": 0.15601511,
+      "cumulative_cpu_sec": 0.5961863000000001
+    },
+    {
+      "file": "_keywords.py",
+      "line": 337,
+      "function": "anyOf",
+      "calls": 3510,
+      "self_cpu_sec": 0.007346574000000001,
+      "cumulative_cpu_sec": 0.563740165
+    },
+    {
+      "file": "validators.py",
+      "line": 459,
+      "function": "_validate_reference",
+      "calls": 8640,
+      "self_cpu_sec": 0.014606011,
+      "cumulative_cpu_sec": 0.452422294
+    },
+    {
+      "file": "_core.py",
+      "line": 653,
+      "function": "lookup",
+      "calls": 8640,
+      "self_cpu_sec": 0.042054129,
+      "cumulative_cpu_sec": 0.43781628300000003
+    }
+  ]
+}

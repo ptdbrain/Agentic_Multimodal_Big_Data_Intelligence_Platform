@@ -1,0 +1,118 @@
+{
+  "completed": true,
+  "runs_passed": 9,
+  "duration_sec": 120,
+  "workload": "Labelled synthetic; uniformly interleaved 4% schema failures",
+  "runtime": "Actual native Kafka and MinIO, local host shared with functional probes",
+  "boundary": "Producer ACK -> Kafka -> validation/DLQ and durable MinIO Bronze, no Spark/SQL/UI",
+  "latency_note": "Consumer batching includes collection window; these ~120s tail latencies are not per-record streaming service SLA",
+  "capacity_note": "Actual dispatch is below requested targets; no 500msg/s SLA or distributed capacity claim",
+  "historical_baseline": "Original source_native_velocity_matrix_2026-11-03 retained; dirty records at tail caused truncation bias, excluded from uniform cohort",
+  "rows": [
+    {
+      "target_rate_mps": 50,
+      "runs_passed": 3,
+      "actual_rates_mps": [
+        49.8,
+        49.8,
+        49.6
+      ],
+      "median_actual_rate_mps": 49.8,
+      "messages_sent": [
+        5972,
+        5971,
+        5958
+      ],
+      "dlq": [
+        238,
+        238,
+        238
+      ],
+      "lag_at_end": [
+        0,
+        0,
+        0
+      ],
+      "validation_latency_p95_ms": [
+        119551.53,
+        119568.82,
+        119405.54
+      ],
+      "reports": [
+        "docs/reports/source_native_velocity_interleaved_matrix_2026-11-03/velocity-50-1.json",
+        "docs/reports/source_native_velocity_interleaved_matrix_2026-11-03/velocity-50-2.json",
+        "docs/reports/source_native_velocity_interleaved_matrix_2026-11-03/velocity-50-3.json"
+      ]
+    },
+    {
+      "target_rate_mps": 200,
+      "runs_passed": 3,
+      "actual_rates_mps": [
+        197.2,
+        197.0,
+        197.3
+      ],
+      "median_actual_rate_mps": 197.2,
+      "messages_sent": [
+        23662,
+        23643,
+        23681
+      ],
+      "dlq": [
+        946,
+        945,
+        947
+      ],
+      "lag_at_end": [
+        0,
+        0,
+        0
+      ],
+      "validation_latency_p95_ms": [
+        119919.14,
+        119945.43,
+        120025.06
+      ],
+      "reports": [
+        "docs/reports/source_native_velocity_interleaved_matrix_2026-11-03/velocity-200-1.json",
+        "docs/reports/source_native_velocity_interleaved_matrix_2026-11-03/velocity-200-2.json",
+        "docs/reports/source_native_velocity_interleaved_matrix_2026-11-03/velocity-200-3.json"
+      ]
+    },
+    {
+      "target_rate_mps": 500,
+      "runs_passed": 3,
+      "actual_rates_mps": [
+        479.2,
+        479.5,
+        479.4
+      ],
+      "median_actual_rate_mps": 479.4,
+      "messages_sent": [
+        57499,
+        57545,
+        57534
+      ],
+      "dlq": [
+        2299,
+        2301,
+        2301
+      ],
+      "lag_at_end": [
+        0,
+        0,
+        0
+      ],
+      "validation_latency_p95_ms": [
+        120962.26,
+        120937.43,
+        120897.33
+      ],
+      "reports": [
+        "docs/reports/source_native_velocity_interleaved_matrix_2026-11-03/velocity-500-1.json",
+        "docs/reports/source_native_velocity_interleaved_matrix_2026-11-03/velocity-500-2.json",
+        "docs/reports/source_native_velocity_interleaved_matrix_2026-11-03/velocity-500-3.json"
+      ]
+    }
+  ]
+}

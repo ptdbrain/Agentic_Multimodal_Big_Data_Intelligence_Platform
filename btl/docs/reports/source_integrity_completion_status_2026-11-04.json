@@ -1,0 +1,74 @@
+{
+  "completed": true,
+  "executed_at": "2026-11-03T17:59:25.488524+00:00",
+  "source_fingerprint": {
+    "sha256": "f19cfa1472f39d8f9d59bb081c023eb795a1629988d5bd583beaf0da150d9d77",
+    "files": 346,
+    "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+  },
+  "tests": {
+    "local": {
+      "passed": 630,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": "source_final_certified_local_2026-11-03.xml"
+    },
+    "native": {
+      "passed": 60,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": "source_final_certified_native_2026-11-03.xml"
+    },
+    "live": {
+      "passed": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": "source_final_certified_live_2026-11-03.xml"
+    },
+    "airflow": {
+      "passed": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report": "source_final_certified_airflow_2026-11-03.xml",
+      "properties": {
+        "executor": "LocalExecutor",
+        "fresh_tasks_executed": "7",
+        "dagrun_started": "2026-11-03T17:00:43.901422+00:00",
+        "dagrun_ended": "2026-11-03T17:01:23.274841+00:00"
+      }
+    }
+  },
+  "total_disjoint_tests_passed": 692,
+  "review": {
+    "fresh_reviewers": 1,
+    "critical": 0,
+    "important_found": 7,
+    "important_fixed": 7,
+    "deferred_minor": 0,
+    "report": "source_final_review_2026-11-04.md"
+  },
+  "additional_actual_failures_fixed": [
+    "Tiki API20-row pagination",
+    "Airflow no-op false-positive gate"
+  ],
+  "source_route": "source_native_after_review_source_routes_2026-11-03.json",
+  "tiki_capture": "tiki_current_http_v5_completed_capture_2026-11-03.json",
+  "dashboard": "source_native_dashboard_after_review_2026-11-03.json",
+  "browser": "source_dashboard_user_verification_2026-11-03.json",
+  "monitoring": "source_monitoring_endpoints_2026-11-04.json",
+  "volume": "source_native_volume_final_summary_2026-11-04.json",
+  "velocity": "source_native_velocity_summary_2026-11-03.json",
+  "constraints": [
+    "Current Lazada challenge; historical genuine captures replayed explicitly",
+    "No original raw HTTP/parser proof invented for old Lazada captures",
+    "Single local[2] host, labelled synthetic load; no production/distributed/500mps SLA",
+    "Prometheus/Grafana deployment and full9page visual screenshots not claimed",
+    "One monetary unit per commerce namespace; no FX",
+    "Fresh checkpoint namespace required for v3/Spark source_group state",
+    "No AGENTS.md edit, commit or push"
+  ]
+}

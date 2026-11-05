@@ -1,0 +1,49 @@
+{
+  "completed": false,
+  "status": "postgres_dashboard",
+  "executed_at": "2026-11-03T02:03:34.483099+00:00",
+  "review_inputs": 1000000,
+  "source": "labelled deterministic synthetic workload",
+  "source_fingerprint": {
+    "sha256": "9faac23703443096fe8c56e310997ecc392b6abfaf8d970a81999376fd212049",
+    "files": 328,
+    "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+  },
+  "times_sec": {
+    "source_load_pii": 6.9469,
+    "kafka_bronze": 312.8845,
+    "bronze_verify": 7.5596,
+    "spark_silver_dq": 100.7714,
+    "spark_gold_anomalies": 418.054
+  },
+  "inputs": {
+    "expected_reviews": {
+      "input": 1000000,
+      "silver": 920000,
+      "quarantine": 50000,
+      "duplicates": 30000
+    },
+    "products": {
+      "records": 100,
+      "sha256": "35e1941ac38efe86dc9477aa1aead38200060d79733474664110fda2513796c0"
+    },
+    "reviews": {
+      "records": 1000000,
+      "sha256": "95e6f7d4779a8160d748989105d7452cb0ca7d17a7767e36f5417fe8e9028c85"
+    },
+    "prices": {
+      "records": 100000,
+      "sha256": "1aa419d2f59f9ddcb4a9fc4bf0d451bf6a4856709439ccc5e08ce0304bae8693"
+    }
+  },
+  "workspace": "/tmp/sentinel-fullpath-mqnrntvv",
+  "namespace": {
+    "database": "source_load_c8b1cbaa1a2a",
+    "bucket": "source-load-c8b1cbaa1a2a",
+    "topics": {
+      "products": "source-load-c8b1cbaa1a2a-products",
+      "reviews": "source-load-c8b1cbaa1a2a-reviews",
+      "prices": "source-load-c8b1cbaa1a2a-prices"
+    }
+  }
+}

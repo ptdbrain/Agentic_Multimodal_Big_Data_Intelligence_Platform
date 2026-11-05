@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.925" timestamp="2026-11-03T14:17:21.579923+07:00" hostname="ptdbrain"><testcase classname="tests.integration.test_service_metrics_route" name="test_actual_service_gauges_are_served_over_http" time="0.506"><failure message="assert 'sentinel_dependency_up{service=&quot;kafka&quot;} 1' in '# HELP sentinel_dependency_up Successful real protocol probe (1) or failed probe (0)\n# TYPE sentinel_dependency_up g...1 green=2, unknown on failure\n# TYPE sentinel_elasticsearch_health_code gauge\nsentinel_elasticsearch_health_code 2\n'&#10; +  where '# HELP sentinel_dependency_up Successful real protocol probe (1) or failed probe (0)\n# TYPE sentinel_dependency_up g...1 green=2, unknown on failure\n# TYPE sentinel_elasticsearch_health_code gauge\nsentinel_elasticsearch_health_code 2\n' = &lt;Response [200]&gt;.text">def test_actual_service_gauges_are_served_over_http():
+        server = create_metrics_server(port=0,metrics_provider=ServiceMetricsExporter.generate_prometheus_metrics)
+        thread = threading.Thread(target=server.serve_forever,daemon=True)
+        thread.start()
+        try:
+            response = requests.get(f'http://127.0.0.1:{server.server_port}/metrics',timeout=15)
+            assert response.status_code == 200
+            for service in ['kafka','minio','postgres','elasticsearch']:
+&gt;               assert f'sentinel_dependency_up{{service="{service}"}} 1' in response.text
+E               assert 'sentinel_dependency_up{service="kafka"} 1' in '# HELP sentinel_dependency_up Successful real protocol probe (1) or failed probe (0)\n# TYPE sentinel_dependency_up g...1 green=2, unknown on failure\n# TYPE sentinel_elasticsearch_health_code gauge\nsentinel_elasticsearch_health_code 2\n'
+E                +  where '# HELP sentinel_dependency_up Successful real protocol probe (1) or failed probe (0)\n# TYPE sentinel_dependency_up g...1 green=2, unknown on failure\n# TYPE sentinel_elasticsearch_health_code gauge\nsentinel_elasticsearch_health_code 2\n' = &lt;Response [200]&gt;.text
+
+tests/integration/test_service_metrics_route.py:19: AssertionError</failure></testcase></testsuite></testsuites>

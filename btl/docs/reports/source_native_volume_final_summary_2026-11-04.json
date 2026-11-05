@@ -1,0 +1,103 @@
+{
+  "completed": true,
+  "executed_at": "2026-11-03T17:59:24.797777+00:00",
+  "runs_passed": 9,
+  "workload": "Deterministic labelled simulation, not real marketplace volume; repetitions are not distinct observations",
+  "runtime": "Actual native Kafka3.7, MinIO source build, Spark3.5 local[2], PostgreSQL16.15, scoped DashboardDB",
+  "boundary": "Source JSONL/PII -> Kafka -> MinIO Bronze -> Spark Silver/DQ/dedup/quarantine -> Gold/anomalies -> PostgreSQL -> DashboardDB",
+  "excluded": [
+    "input generation",
+    "JVM startup/warmup",
+    "service daemon resources",
+    "browser rendering",
+    "distributed scaling"
+  ],
+  "comparison_note": "Final cohort after all integrity fixes; source fingerprints must match across all9 runs. Previous post-bulk cohort is historical; no causal full-pipeline speedup is inferred.",
+  "rows": [
+    {
+      "review_inputs": 10000,
+      "iterations": 3,
+      "total_transport_messages_per_run": 11100,
+      "serving_reviews_per_run": 9200,
+      "quarantine_per_run": 500,
+      "duplicate_inputs_per_run": 300,
+      "median_wall_sec": 36.6184,
+      "min_wall_sec": 36.2176,
+      "max_wall_sec": 36.6429,
+      "max_process_tree_ram_mib": 2250.08,
+      "median_stage_sec": {
+        "source_load_pii": 0.0747,
+        "kafka_bronze": 5.2298,
+        "bronze_verify": 0.053,
+        "spark_silver_dq": 12.9131,
+        "spark_gold_anomalies": 17.1157,
+        "postgres_dashboard": 1.0284
+      },
+      "reports": [
+        "docs/reports/source_native_volume_final_matrix_2026-11-03/volume-10000-1.json",
+        "docs/reports/source_native_volume_final_matrix_2026-11-03/volume-10000-2.json",
+        "docs/reports/source_native_volume_final_matrix_2026-11-03/volume-10000-3.json"
+      ],
+      "source_fingerprints": [
+        "f19cfa1472f39d8f9d59bb081c023eb795a1629988d5bd583beaf0da150d9d77"
+      ]
+    },
+    {
+      "review_inputs": 100000,
+      "iterations": 3,
+      "total_transport_messages_per_run": 110100,
+      "serving_reviews_per_run": 92000,
+      "quarantine_per_run": 5000,
+      "duplicate_inputs_per_run": 3000,
+      "median_wall_sec": 115.3,
+      "min_wall_sec": 114.4644,
+      "max_wall_sec": 115.7372,
+      "max_process_tree_ram_mib": 3017.21,
+      "median_stage_sec": {
+        "source_load_pii": 0.711,
+        "kafka_bronze": 32.3465,
+        "bronze_verify": 0.6762,
+        "spark_silver_dq": 21.6464,
+        "spark_gold_anomalies": 51.5949,
+        "postgres_dashboard": 8.175
+      },
+      "reports": [
+        "docs/reports/source_native_volume_final_matrix_2026-11-03/volume-100000-1.json",
+        "docs/reports/source_native_volume_final_matrix_2026-11-03/volume-100000-2.json",
+        "docs/reports/source_native_volume_final_matrix_2026-11-03/volume-100000-3.json"
+      ],
+      "source_fingerprints": [
+        "f19cfa1472f39d8f9d59bb081c023eb795a1629988d5bd583beaf0da150d9d77"
+      ]
+    },
+    {
+      "review_inputs": 1000000,
+      "iterations": 3,
+      "total_transport_messages_per_run": 1100100,
+      "serving_reviews_per_run": 920000,
+      "quarantine_per_run": 50000,
+      "duplicate_inputs_per_run": 30000,
+      "median_wall_sec": 921.7107,
+      "min_wall_sec": 913.3852,
+      "max_wall_sec": 938.5726,
+      "max_process_tree_ram_mib": 8283.47,
+      "median_stage_sec": {
+        "source_load_pii": 6.963,
+        "kafka_bronze": 309.724,
+        "bronze_verify": 7.888,
+        "spark_silver_dq": 99.9839,
+        "spark_gold_anomalies": 416.5522,
+        "postgres_dashboard": 80.3113
+      },
+      "reports": [
+        "docs/reports/source_native_volume_final_matrix_2026-11-03/volume-1000000-1.json",
+        "docs/reports/source_native_volume_final_matrix_2026-11-03/volume-1000000-2.json",
+        "docs/reports/source_native_volume_final_matrix_2026-11-03/volume-1000000-3.json"
+      ],
+      "source_fingerprints": [
+        "f19cfa1472f39d8f9d59bb081c023eb795a1629988d5bd583beaf0da150d9d77"
+      ]
+    }
+  ],
+  "historical_interrupted_run": "source_native_volume_matrix_2026-11-03/volume-1000000-1.json was interrupted before serving commit; not included"
+}

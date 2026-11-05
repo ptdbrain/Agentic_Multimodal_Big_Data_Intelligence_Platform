@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="16" time="10.911" timestamp="2026-11-02T17:45:28.537110+07:00" hostname="ptdbrain"><testcase classname="tests.integration.test_kafka_streaming" name="test_actual_kafka_source_quarantine_and_checkpoint" time="2.227"><failure message="pyspark.errors.exceptions.captured.AnalysisException: Failed to find data source: kafka. Please deploy the application as per the deployment section of Structured Streaming + Kafka Integration Guide.">tmp_path = PosixPath('/tmp/pytest-of-ptdbrain/pytest-39/test_actual_kafka_source_quara0')
+spark_session = &lt;pyspark.sql.session.SparkSession object at 0x7f0dd16fd4d0&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f0dcb836ed0&gt;
+
+    def test_actual_kafka_source_quarantine_and_checkpoint(tmp_path,spark_session,monkeypatch):
+        topic='sentinel-stream-test-'+uuid.uuid4().hex
+        monkeypatch.setattr(settings.kafka,'topic_reviews',topic)
+        producer=StreamProducer()
+        try:
+            for review_id,rating in [('r1',5),('r2',1),('bad',99)]:
+                producer.send_message(topic,'p1',{'review_id':review_id,'product_id':'p1','rating':rating,
+                    'review_text':'actual Kafka transport','review_date':'2026-10-01T10:00:00Z'},event_type='NEW_REVIEW')
+        finally:producer.close()
+        output=str(tmp_path/'metrics');quarantine=str(tmp_path/'quarantine')
+        job=SparkStreamingJob(spark_session=spark_session,checkpoint_dir=str(tmp_path/'checkpoint'),
+                               output_path=output,quarantine_path=quarantine)
+        try:
+&gt;           job.start_review_stream(topics=topic,trigger_available_now=True)
+
+tests/integration/test_kafka_streaming.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+spark/streaming/spark_streaming_job.py:467: in start_review_stream
+    else self.create_kafka_stream(topics=topics or settings.kafka.topic_reviews)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spark/streaming/spark_streaming_job.py:128: in create_kafka_stream
+    .load()
+     ^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pyspark/sql/streaming/readwriter.py:304: in load
+    return self._df(self._jreader.load())
+                    ^^^^^^^^^^^^^^^^^^^^
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/py4j/java_gateway.py:1322: in __call__
+    return_value = get_return_value(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+a = ('xro90', &lt;py4j.clientserver.JavaClient object at 0x7f0dd129c890&gt;, 'o89', 'load')
+kw = {}
+
+    def deco(*a: Any, **kw: Any) -&gt; Any:
+        try:
+            return f(*a, **kw)
+        except Py4JJavaError as e:
+            converted = convert_exception(e.java_exception)
+            if not isinstance(converted, UnknownException):
+                # Hide where the exception came from that shows a non-Pythonic
+                # JVM exception message.
+&gt;               raise converted from None
+E               pyspark.errors.exceptions.captured.AnalysisException: Failed to find data source: kafka. Please deploy the application as per the deployment section of Structured Streaming + Kafka Integration Guide.
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pyspark/errors/exceptions/captured.py:185: AnalysisException</failure></testcase><testcase classname="tests.integration.test_lakehouse_concurrency" name="test_two_remote_writers_commit_only_one_snapshot" time="0.170" /><testcase classname="tests.integration.test_processing_contracts" name="test_gold_acceptance_verifier_does_not_seed_unverified_sample_data" time="0.079" /><testcase classname="tests.integration.test_processing_contracts" name="test_pipeline_drains_partial_real_kafka_batches_before_verifying_delivery" time="2.068" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_additive_migrations_preserve_legacy_rows_and_unknowns" time="0.251" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_initialized_schema_does_not_block_an_active_read_snapshot" time="0.317" /><testcase classname="tests.integration.test_processing_contracts" name="test_minio_parquet_metadata_arrays_survive_postgres_export_replay" time="0.318" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_real_constraint_failure_rolls_back_all_mart_writes" time="0.308" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_reader_retains_one_snapshot_across_real_export_commit" time="0.312" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_empty_snapshot_clears_daily_rows_and_keeps_incident_history" time="0.295" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_anomaly_baseline_and_dq_categories_round_trip" time="0.325" /><testcase classname="tests.integration.test_s3a_recovery" name="test_s3a_failed_promotion_preserves_original_rows" time="0.417"><failure message="RuntimeError: Failed to write staged Parquet at 's3a://sentinel-processing-docker/recovery/2a9dffdd8412404a876a07ff44011d87/table__staging_642836ab' (Py4JJavaError: An error occurred while calling o112.parquet.&#10;: java.lang.RuntimeException: java.lang.ClassNotFoundException: Class org.apache.hadoop.fs.s3a.S3AFileSystem not found&#10;&#09;at org.apache.hadoop.conf.Configuration.getClass(Configuration.java:2688)&#10;&#09;at org.apache.hadoop.fs.FileSystem.getFileSystemClass(FileSystem.java:3431)&#10;&#09;at org.apache.hadoop.fs.FileSystem.createFileSystem(FileSystem.java:3466)&#10;&#09;at org.apache.hadoop.fs.FileSystem.access$300(FileSystem.java:174)&#10;&#09;at org.apache.hadoop.fs.FileSystem$Cache.getInternal(FileSystem.java:3574)&#10;&#09;at org.apache.hadoop.fs.FileSystem$Cache.get(FileSystem.java:3521)&#10;&#09;at org.apache.hadoop.fs.FileSystem.get(FileSystem.java:540)&#10;&#09;at org.apache.hadoop.fs.Path.getFileSystem(Path.java:365)&#10;&#09;at org.apache.spark.sql.execution.datasources.DataSource.planForWritingFileFormat(DataSource.scala:454)&#10;&#09;at org.apache.spark.sql.execution.datasources.DataSource.planForWriting(DataSource.scala:530)&#10;&#09;at org.apache.spark.sql.DataFrameWriter.saveToV1Source(DataFrameWriter.scala:388)&#10;&#09;at org.apache.spark.sql.DataFrameWriter.saveInternal(DataFrameWriter.scala:361)&#10;&#09;at org.apache.spark.sql.DataFrameWriter.save(DataFrameWriter.scala:240)&#10;&#09;at org.apache.spark.sql.DataFrameWriter.parquet(DataFrameWriter.scala:792)&#10;&#09;at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)&#10;&#09;at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)&#10;&#09;at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)&#10;&#09;at java.base/java.lang.reflect.Method.invoke(Unknown Source)&#10;&#09;at py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)&#10;&#09;at py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)&#10;&#09;at py4j.Gateway.invoke(Gateway.java:282)&#10;&#09;at py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)&#10;&#09;at py4j.commands.CallCommand.execute(CallCommand.java:79)&#10;&#09;at py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:182)&#10;&#09;at py4j.ClientServerConnection.run(ClientServerConnection.java:106)&#10;&#09;at java.base/java.lang.Thread.run(Unknown Source)&#10;Caused by: java.lang.ClassNotFoundException: Class org.apache.hadoop.fs.s3a.S3AFileSystem not found&#10;&#09;at org.apache.hadoop.conf.Configuration.getClassByName(Configuration.java:2592)&#10;&#09;at org.apache.hadoop.conf.Configuration.getClass(Configuration.java:2686)&#10;&#09;... 25 more&#10;). Target path 's3a://sentinel-processing-docker/recovery/2a9dffdd8412404a876a07ff44011d87/table' was not modified.">cls = &lt;class 'spark.storage_safe.SafeParquetIO'&gt;
+spark = &lt;pyspark.sql.session.SparkSession object at 0x7f0dd16fd4d0&gt;
+df = DataFrame[id: bigint, value: string]
+target_path = 's3a://sentinel-processing-docker/recovery/2a9dffdd8412404a876a07ff44011d87/table'
+partition_cols = None, expected_count = 2
+
+    @classmethod
+    @synchronized_path("target_path")
+    def publish_parquet_atomic(
+        cls,
+        spark: Any,
+        df: Any,
+        target_path: str,
+        partition_cols: Optional[List[str]] = None,
+        expected_count: Optional[int] = None,
+    ) -&gt; None:
+        """Writes DataFrame to a staging directory, verifies staged record count,
+        and publishes it with verified rollback capability.
+        Requires a single writer; concurrent readers may observe a rename gap.
+        """
+        uid = uuid.uuid4().hex[:8]
+        clean_target = str(target_path).rstrip("/").rstrip("\\")
+        stage_path = f"{clean_target}__staging_{uid}"
+        backup_path = f"{clean_target}__backup_{uid}"
+    
+        # 1. Write to Staging Path
+        try:
+            writer = df.write.mode("overwrite")
+            if partition_cols:
+                writer = writer.partitionBy(*partition_cols)
+&gt;           writer.parquet(stage_path)
+
+spark/storage_safe.py:241: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pyspark/sql/readwriter.py:1721: in parquet
+    self._jwrite.parquet(path)
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/py4j/java_gateway.py:1322: in __call__
+    return_value = get_return_value(
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pyspark/errors/exceptions/captured.py:179: in deco
+    return f(*a, **kw)
+           ^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+answer = 'xro113'
+gateway_client = &lt;py4j.clientserver.JavaClient object at 0x7f0dd129c890&gt;
+target_id = 'o112', name = 'parquet'
+
+    def get_return_value(answer, gateway_client, target_id=None, name=None):
+        """Converts an answer received from the Java gateway into a Python object.
+    
+        For example, string representation of integers are converted to Python
+        integer, string representation of objects are converted to JavaObject
+        instances, etc.
+    
+        :param answer: the string returned by the Java gateway
+        :param gateway_client: the gateway client used to communicate with the Java
+            Gateway. Only necessary if the answer is a reference (e.g., object,
+            list, map)
+        :param target_id: the name of the object from which the answer comes from
+            (e.g., *object1* in `object1.hello()`). Optional.
+        :param name: the name of the member from which the answer comes from
+            (e.g., *hello* in `object1.hello()`). Optional.
+        """
+        if is_error(answer)[0]:
+            if len(answer) &gt; 1:
+                type = answer[1]
+                value = OUTPUT_CONVERTER[type](answer[2:], gateway_client)
+                if answer[1] == REFERENCE_TYPE:
+&gt;                   raise Py4JJavaError(
+                        "An error occurred while calling {0}{1}{2}.\n".
+                        format(target_id, ".", name), value)
+E                   py4j.protocol.Py4JJavaError: An error occurred while calling o112.parquet.
+E                   : java.lang.RuntimeException: java.lang.ClassNotFoundException: Class org.apache.hadoop.fs.s3a.S3AFileSystem not found
+E                   	at org.apache.hadoop.conf.Configuration.getClass(Configuration.java:2688)
+E                   	at org.apache.hadoop.fs.FileSystem.getFileSystemClass(FileSystem.java:3431)
+E                   	at org.apache.hadoop.fs.FileSystem.createFileSystem(FileSystem.java:3466)
+E                   	at org.apache.hadoop.fs.FileSystem.access$300(FileSystem.java:174)
+E                   	at org.apache.hadoop.fs.FileSystem$Cache.getInternal(FileSystem.java:3574)
+E                   	at org.apache.hadoop.fs.FileSystem$Cache.get(FileSystem.java:3521)
+E                   	at org.apache.hadoop.fs.FileSystem.get(FileSystem.java:540)
+E                   	at org.apache.hadoop.fs.Path.getFileSystem(Path.java:365)
+E                   	at org.apache.spark.sql.execution.datasources.DataSource.planForWritingFileFormat(DataSource.scala:454)
+E                   	at org.apache.spark.sql.execution.datasources.DataSource.planForWriting(DataSource.scala:530)
+E                   	at org.apache.spark.sql.DataFrameWriter.saveToV1Source(DataFrameWriter.scala:388)
+E                   	at org.apache.spark.sql.DataFrameWriter.saveInternal(DataFrameWriter.scala:361)
+E                   	at org.apache.spark.sql.DataFrameWriter.save(DataFrameWriter.scala:240)
+E                   	at org.apache.spark.sql.DataFrameWriter.parquet(DataFrameWriter.scala:792)
+E                   	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+E                   	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+E                   	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+E                   	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+E                   	at py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)
+E                   	at py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)
+E                   	at py4j.Gateway.invoke(Gateway.java:282)
+E                   	at py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)
+E                   	at py4j.commands.CallCommand.execute(CallCommand.java:79)
+E                   	at py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:182)
+E                   	at py4j.ClientServerConnection.run(ClientServerConnection.java:106)
+E                   	at java.base/java.lang.Thread.run(Unknown Source)
+E                   Caused by: java.lang.ClassNotFoundException: Class org.apache.hadoop.fs.s3a.S3AFileSystem not found
+E                   	at org.apache.hadoop.conf.Configuration.getClassByName(Configuration.java:2592)
+E                   	at org.apache.hadoop.conf.Configuration.getClass(Configuration.java:2686)
+E                   	... 25 more
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/py4j/protocol.py:326: Py4JJavaError
+
+The above exception was the direct cause of the following exception:
+
+spark_session = &lt;pyspark.sql.session.SparkSession object at 0x7f0dd16fd4d0&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f0df8b08e90&gt;
+
+    def test_s3a_failed_promotion_preserves_original_rows(spark_session,monkeypatch):
+        s=spark_session
+        target=f's3a://{settings.storage.data_lake_bucket}/recovery/{uuid.uuid4().hex}/table'
+        old=s.createDataFrame([(1,'one'),(2,'two')],['id','value'])
+&gt;       SafeParquetIO.publish_parquet_atomic(s,old,target,expected_count=2)
+
+tests/integration/test_s3a_recovery.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+storage/write_lock.py:68: in wrapped
+    with write_lock(path): return function(*args,**kwargs)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = &lt;class 'spark.storage_safe.SafeParquetIO'&gt;
+spark = &lt;pyspark.sql.session.SparkSession object at 0x7f0dd16fd4d0&gt;
+df = DataFrame[id: bigint, value: string]
+target_path = 's3a://sentinel-processing-docker/recovery/2a9dffdd8412404a876a07ff44011d87/table'
+partition_cols = None, expected_count = 2
+
+    @classmethod
+    @synchronized_path("target_path")
+    def publish_parquet_atomic(
+        cls,
+        spark: Any,
+        df: Any,
+        target_path: str,
+        partition_cols: Optional[List[str]] = None,
+        expected_count: Optional[int] = None,
+    ) -&gt; None:
+        """Writes DataFrame to a staging directory, verifies staged record count,
+        and publishes it with verified rollback capability.
+        Requires a single writer; concurrent readers may observe a rename gap.
+        """
+        uid = uuid.uuid4().hex[:8]
+        clean_target = str(target_path).rstrip("/").rstrip("\\")
+        stage_path = f"{clean_target}__staging_{uid}"
+        backup_path = f"{clean_target}__backup_{uid}"
+    
+        # 1. Write to Staging Path
+        try:
+            writer = df.write.mode("overwrite")
+            if partition_cols:
+                writer = writer.partitionBy(*partition_cols)
+            writer.parquet(stage_path)
+        except Exception as write_err:
+            cls._delete_storage_path(spark, stage_path)
+&gt;           raise RuntimeError(
+                f"Failed to write staged Parquet at '{stage_path}' ({type(write_err).__name__}: {write_err}). "
+                f"Target path '{target_path}' was not modified."
+            ) from write_err
+E           RuntimeError: Failed to write staged Parquet at 's3a://sentinel-processing-docker/recovery/2a9dffdd8412404a876a07ff44011d87/table__staging_642836ab' (Py4JJavaError: An error occurred while calling o112.parquet.
+E           : java.lang.RuntimeException: java.lang.ClassNotFoundException: Class org.apache.hadoop.fs.s3a.S3AFileSystem not found
+E           	at org.apache.hadoop.conf.Configuration.getClass(Configuration.java:2688)
+E           	at org.apache.hadoop.fs.FileSystem.getFileSystemClass(FileSystem.java:3431)
+E           	at org.apache.hadoop.fs.FileSystem.createFileSystem(FileSystem.java:3466)
+E           	at org.apache.hadoop.fs.FileSystem.access$300(FileSystem.java:174)
+E           	at org.apache.hadoop.fs.FileSystem$Cache.getInternal(FileSystem.java:3574)
+E           	at org.apache.hadoop.fs.FileSystem$Cache.get(FileSystem.java:3521)
+E           	at org.apache.hadoop.fs.FileSystem.get(FileSystem.java:540)
+E           	at org.apache.hadoop.fs.Path.getFileSystem(Path.java:365)
+E           	at org.apache.spark.sql.execution.datasources.DataSource.planForWritingFileFormat(DataSource.scala:454)
+E           	at org.apache.spark.sql.execution.datasources.DataSource.planForWriting(DataSource.scala:530)
+E           	at org.apache.spark.sql.DataFrameWriter.saveToV1Source(DataFrameWriter.scala:388)
+E           	at org.apache.spark.sql.DataFrameWriter.saveInternal(DataFrameWriter.scala:361)
+E           	at org.apache.spark.sql.DataFrameWriter.save(DataFrameWriter.scala:240)
+E           	at org.apache.spark.sql.DataFrameWriter.parquet(DataFrameWriter.scala:792)
+E           	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+E           	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(Unknown Source)
+E           	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(Unknown Source)
+E           	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+E           	at py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)
+E           	at py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)
+E           	at py4j.Gateway.invoke(Gateway.java:282)
+E           	at py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)
+E           	at py4j.commands.CallCommand.execute(CallCommand.java:79)
+E           	at py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:182)
+E           	at py4j.ClientServerConnection.run(ClientServerConnection.java:106)
+E           	at java.base/java.lang.Thread.run(Unknown Source)
+E           Caused by: java.lang.ClassNotFoundException: Class org.apache.hadoop.fs.s3a.S3AFileSystem not found
+E           	at org.apache.hadoop.conf.Configuration.getClassByName(Configuration.java:2592)
+E           	at org.apache.hadoop.conf.Configuration.getClass(Configuration.java:2686)
+E           	... 25 more
+E           ). Target path 's3a://sentinel-processing-docker/recovery/2a9dffdd8412404a876a07ff44011d87/table' was not modified.
+
+spark/storage_safe.py:244: RuntimeError</failure></testcase><testcase classname="tests.integration.test_services" name="test_minio_concurrent_bucket_bootstrap_is_idempotent" time="0.057" /><testcase classname="tests.integration.test_services" name="test_elasticsearch_persists_between_clients" time="2.241" /><testcase classname="tests.integration.test_services" name="test_postgres_minio_lakehouse_transaction" time="0.055" /><testcase classname="tests.test_api_live" name="test_live_http_pagination_with_real_local_server" time="0.832" /></testsuite></testsuites>

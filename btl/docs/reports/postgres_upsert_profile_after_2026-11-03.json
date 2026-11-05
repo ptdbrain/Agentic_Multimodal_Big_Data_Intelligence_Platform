@@ -1,0 +1,27 @@
+{
+  "boundary": "Actual native PostgreSQL16.15 upsert_dataframe, 10000 labelled synthetic rows x3, fresh empty table each iteration",
+  "iterations": [
+    {
+      "iteration": 1,
+      "rows": 10000,
+      "wall_sec": 0.3148546720003651,
+      "cpu_sec": 0.154400125,
+      "business_sha256": "df32ec98c4e7fafd9cec7a6026c07060649710955dcb2b7d91f65c7edee32ec6"
+    },
+    {
+      "iteration": 2,
+      "rows": 10000,
+      "wall_sec": 0.3616828259982867,
+      "cpu_sec": 0.17632540399999996,
+      "business_sha256": "df32ec98c4e7fafd9cec7a6026c07060649710955dcb2b7d91f65c7edee32ec6"
+    },
+    {
+      "iteration": 3,
+      "rows": 10000,
+      "wall_sec": 0.33056107599986717,
+      "cpu_sec": 0.1563476669999999,
+      "business_sha256": "df32ec98c4e7fafd9cec7a6026c07060649710955dcb2b7d91f65c7edee32ec6"
+    }
+  ],
+  "script_sha256": "e59ab05ad35d092ae38b604a808b1ea8b0afb13be92b5e8248146dde9fdb3e94"
+}

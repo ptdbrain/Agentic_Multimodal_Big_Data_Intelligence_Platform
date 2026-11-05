@@ -1,0 +1,85 @@
+{
+  "collected_at": "2026-11-02T10:39:04.577107+00:00",
+  "articles": 41,
+  "urls_discovered": 54,
+  "sha256": "e481ad7662bdd1040e09f06a43d09e094c6e88cf6632d1c0305917e92f281e86",
+  "failures": [
+    {
+      "url": "https://tinhte.vn/thread/chi-nen-de-2-3-long-giat-dung-de-full-kho-kho-va-nhan-lam.4189189/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/nguoi-dung-snapdragon-x2-elite-bao-cao-hieu-nang-ai-giam-87-sau-cap-nhat-driver.4189152/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/apple-se-ra-ipad-air-man-oled-ipad-pro-co-buong-hoi-tan-nhiet-va-ipad-12-trong-nua-dau-2027.4189055/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/lo-hong-sms-of-death-lam-sap-song-treo-may-android-chi-bang-tin-nhan-anh-em-cap-nhat-ban-va-ngay.4189054/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/whatsapp-gioi-thieu-bon-tinh-nang-quan-ly-nhom-chat-gom-bo-loc-nhac-ten-va-ghim-tin-nhan-vinh-vien.4189045/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/apple-intelligence-tai-trung-quoc-bat-dau-thu-nghiem-tu-4-11-dung-qwen-cua-alibaba-ban-chinh.4189044/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/nhin-lai-thu-minh-vua-lap-xong-va-tu-nhu-dung-la-minh-lam-ra-no-that.4188774/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/cai-gi-khong-co-ban-thi-minh-lam-ra-day-la-cai-rong-roc-mot-mon-do-nho-xiu-nhu-vay-ma-lam-thu.4188692/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/hom-nay-di-kham-mat-bac-si-soi-thay-giac-mac-minh-co-mot-vet-seo-nho-lai-la-do-lan-do-cat-sat.4186163/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/minh-phat-hien-mot-dieu-thu-vi-cai-luoi-cua-nay-minh-mua-trong-dong-do-bai-nhat-luoi-rat-ben.4185632/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/john-ternus-apple-khong-muon-ship-ai-cho-co.4189046/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/hien-pham-tren-facebook-huawei-pura-x-view-mot-san-pham-gia-hoi-de-bi-bo-qua-vi-dinh-kien-cu.4189033/",
+      "error": "ValueError"
+    },
+    {
+      "url": "https://tinhte.vn/thread/dinh-vi-thuong-hieu-xe-hoi.4189027/",
+      "error": "ValueError"
+    }
+  ],
+  "accepted_end_to_end": false,
+  "note": "Direct collection/parser evidence only; Kafka/Silver/Gold/serving article route remains pending.",
+  "samples": [
+    {
+      "article_id": "article_1ee8fd86948d258988140f31",
+      "source_url": "https://tinhte.vn/thread/xiaomi-giao-hon-50-000-xe-dien-trong-thang-10-cao-nhat-nam-2026.4189064/",
+      "published_at": "2026-11-02T01:01:38.000Z",
+      "collected_at": "2026-11-02T10:38:15.226257+00:00",
+      "content_sha256": "e688cadf8c15acbfa9bf7ef47efd7803f624fa13637f568f0ed470ff1b3bff94"
+    },
+    {
+      "article_id": "article_0c62072275740d0c6fe13eb9",
+      "source_url": "https://tinhte.vn/thread/nasa-ghep-xong-tang-loi-ten-lua-sls-cho-su-menh-artemis-iii.4189063/",
+      "published_at": "2026-11-02T01:00:33.000Z",
+      "collected_at": "2026-11-02T10:38:15.990640+00:00",
+      "content_sha256": "e717be8cdc37e604e8cc478faaaa8e2c9635dc894d38885d8abc62d2bc828bfa"
+    },
+    {
+      "article_id": "article_dc516eca6bae9ff2b2dbb144",
+      "source_url": "https://tinhte.vn/thread/dien-thoai-xiaomi-noi-dia-biet-nguoi-dung-cai-app-la-goi-screenshot-ve-may-chu-de-danh-gia.4189173/",
+      "published_at": "2026-11-02T06:36:21.000Z",
+      "collected_at": "2026-11-02T10:38:16.750302+00:00",
+      "content_sha256": "43d833984c3fc0f1219a7dc3fd0e2605e51feb23402e5bf8fbcadac17f09d4f5"
+    }
+  ]
+}

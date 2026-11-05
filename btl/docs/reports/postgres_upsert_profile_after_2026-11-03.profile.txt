@@ -1,0 +1,26 @@
+         445662 function calls (445495 primitive calls) in 0.304 seconds
+
+   Ordered by: cumulative time
+   List reduced from 425 to 18 due to restriction <18>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.315    0.315 /mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:275(upsert_dataframe)
+        1    0.001    0.001    0.306    0.306 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/psycopg2/extras.py:1194(execute_batch)
+       11    0.162    0.015    0.162    0.015 {method 'execute' of 'psycopg2.extensions.cursor' objects}
+       11    0.002    0.000    0.099    0.009 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/psycopg2/extras.py:1175(_paginate)
+    10001    0.002    0.000    0.096    0.000 {built-in method builtins.next}
+    60000    0.010    0.000    0.081    0.000 /mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:382(<genexpr>)
+    50000    0.025    0.000    0.070    0.000 /mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:17(_database_value)
+       10    0.001    0.000    0.047    0.005 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/psycopg2/extras.py:1215(<listcomp>)
+    10000    0.046    0.000    0.046    0.000 {method 'mogrify' of 'psycopg2.extensions.cursor' objects}
+    10000    0.007    0.000    0.025    0.000 /mnt/DATA/TaiLieuHocTap/big data/.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/json/__init__.py:183(dumps)
+    10000    0.006    0.000    0.017    0.000 /mnt/DATA/TaiLieuHocTap/big data/.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/json/encoder.py:183(encode)
+    40003    0.006    0.000    0.013    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/dtypes/missing.py:101(isna)
+    10000    0.009    0.000    0.009    0.000 /mnt/DATA/TaiLieuHocTap/big data/.runtime/python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/json/encoder.py:205(iterencode)
+   160572    0.008    0.000    0.009    0.000 {built-in method builtins.isinstance}
+    40003    0.007    0.000    0.007    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/dtypes/missing.py:184(_isna)
+    10001    0.003    0.000    0.003    0.000 /tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/arrays/datetimes.py:647(__iter__)
+      2/1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap>:1165(_find_and_load)
+      2/1    0.000    0.000    0.002    0.002 <frozen importlib._bootstrap>:1120(_find_and_load_unlocked)
+
+

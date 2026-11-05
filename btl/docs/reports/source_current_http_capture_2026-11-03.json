@@ -1,0 +1,128 @@
+{
+  "completed": false,
+  "executed_at": "2026-11-03T07:05:32.357589+00:00",
+  "boundary": "New live HTTP collection using current adapters; no replay/synthetic fallback",
+  "runs": [
+    {
+      "source": "tiki",
+      "iteration": 1,
+      "collection_run_id": "327797f75e474cc0bc98c476a1d4ecdb",
+      "datasets": {
+        "products": {
+          "records": 20,
+          "schema_valid": 20,
+          "metadata_coverage": {
+            "source_group": 20,
+            "source_name": 20,
+            "source_record_id": 20,
+            "source_url": 20,
+            "acquisition_method": 20,
+            "collected_at": 20,
+            "evidence_sha256": 20,
+            "evidence_ref": 20,
+            "parser_version": 20,
+            "schema_version": 20,
+            "collection_run_id": 20
+          }
+        },
+        "reviews": {
+          "records": 39,
+          "schema_valid": 39,
+          "metadata_coverage": {
+            "source_group": 39,
+            "source_name": 39,
+            "source_record_id": 39,
+            "source_url": 39,
+            "acquisition_method": 39,
+            "collected_at": 39,
+            "evidence_sha256": 39,
+            "evidence_ref": 39,
+            "parser_version": 39,
+            "schema_version": 39,
+            "collection_run_id": 39
+          }
+        },
+        "prices": {
+          "records": 20,
+          "schema_valid": 20,
+          "metadata_coverage": {
+            "source_group": 20,
+            "source_name": 20,
+            "source_record_id": 20,
+            "source_url": 20,
+            "acquisition_method": 20,
+            "collected_at": 20,
+            "evidence_sha256": 20,
+            "evidence_ref": 20,
+            "parser_version": 20,
+            "schema_version": 20,
+            "collection_run_id": 20
+          }
+        }
+      },
+      "capture_sha256": "9c32d9ffffdc1959cc82e3cfe9865b83f3a0158ff5c665cecb199c190953f9d9",
+      "accepted": false
+    },
+    {
+      "source": "tiki",
+      "iteration": 2,
+      "collection_run_id": "90704f21cb7c4150ba0a123ff76cc2d2",
+      "datasets": {
+        "products": {
+          "records": 20,
+          "schema_valid": 20,
+          "metadata_coverage": {
+            "source_group": 20,
+            "source_name": 20,
+            "source_record_id": 20,
+            "source_url": 20,
+            "acquisition_method": 20,
+            "collected_at": 20,
+            "evidence_sha256": 20,
+            "evidence_ref": 20,
+            "parser_version": 20,
+            "schema_version": 20,
+            "collection_run_id": 20
+          }
+        },
+        "reviews": {
+          "records": 39,
+          "schema_valid": 39,
+          "metadata_coverage": {
+            "source_group": 39,
+            "source_name": 39,
+            "source_record_id": 39,
+            "source_url": 39,
+            "acquisition_method": 39,
+            "collected_at": 39,
+            "evidence_sha256": 39,
+            "evidence_ref": 39,
+            "parser_version": 39,
+            "schema_version": 39,
+            "collection_run_id": 39
+          }
+        },
+        "prices": {
+          "records": 20,
+          "schema_valid": 20,
+          "metadata_coverage": {
+            "source_group": 20,
+            "source_name": 20,
+            "source_record_id": 20,
+            "source_url": 20,
+            "acquisition_method": 20,
+            "collected_at": 20,
+            "evidence_sha256": 20,
+            "evidence_ref": 20,
+            "parser_version": 20,
+            "schema_version": 20,
+            "collection_run_id": 20
+          }
+        }
+      },
+      "capture_sha256": "bcc96590299887b74dbeaae59716291da59fb3894ecf8e1fc553adc2c4d7719e",
+      "accepted": false
+    }
+  ],
+  "error_type": "JSONDecodeError"
+}

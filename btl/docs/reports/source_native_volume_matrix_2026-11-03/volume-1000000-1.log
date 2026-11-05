@@ -1,0 +1,249 @@
+:: loading settings :: file = ../.runtime/sentinel-ivy-settings.xml
+:: loading settings :: url = jar:file:/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pyspark/jars/ivy-2.5.1.jar!/org/apache/ivy/core/settings/ivysettings.xml
+Ivy Default Cache set to: /tmp/sentinel-ivy/cache
+The jars for the packages stored in: /tmp/sentinel-ivy/jars
+org.apache.spark#spark-sql-kafka-0-10_2.12 added as a dependency
+org.apache.hadoop#hadoop-aws added as a dependency
+:: resolving dependencies :: org.apache.spark#spark-submit-parent-e8c5c464-a414-4740-bd97-88823aaad0fc;1.0
+	confs: [default]
+	found org.apache.spark#spark-sql-kafka-0-10_2.12;3.5.0 in central
+	found org.apache.spark#spark-token-provider-kafka-0-10_2.12;3.5.0 in central
+	found org.apache.kafka#kafka-clients;3.4.1 in central
+	found org.lz4#lz4-java;1.8.0 in central
+	found org.xerial.snappy#snappy-java;1.1.10.3 in central
+	found org.slf4j#slf4j-api;2.0.7 in central
+	found org.apache.hadoop#hadoop-client-runtime;3.3.4 in central
+	found org.apache.hadoop#hadoop-client-api;3.3.4 in central
+	found commons-logging#commons-logging;1.1.3 in central
+	found com.google.code.findbugs#jsr305;3.0.0 in central
+	found org.apache.commons#commons-pool2;2.11.1 in central
+	found org.apache.hadoop#hadoop-aws;3.3.4 in central
+	found com.amazonaws#aws-java-sdk-bundle;1.12.262 in central
+	found org.wildfly.openssl#wildfly-openssl;1.0.7.Final in central
+:: resolution report :: resolve 286ms :: artifacts dl 8ms
+	---------------------------------------------------------------------
+	|                  |            modules            ||   artifacts   |
+	|       conf       | number| search|dwnlded|evicted|| number|dwnlded|
+	---------------------------------------------------------------------
+	|      default     |   14  |   0   |   0   |   0   ||   14  |   0   |
+	---------------------------------------------------------------------
+:: retrieving :: org.apache.spark#spark-submit-parent-e8c5c464-a414-4740-bd97-88823aaad0fc
+	confs: [default]
+	0 artifacts copied, 14 already retrieved (0kB/6ms)
+26/11/03 09:03:43 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+----------------------------------------------------------
+[Pre-Flight] Running Real Infrastructure Health Checks...
+----------------------------------------------------------
+Checking MinIO (127.0.0.1:29000, bucket='source-load-c8b1cbaa1a2a')...
+  [OK] MinIO is UP. Bucket 'source-load-c8b1cbaa1a2a' verified.
+Checking PostgreSQL (127.0.0.1:25432/source_load_c8b1cbaa1a2a)...
+  [OK] PostgreSQL is UP (SELECT 1 succeeded).
+  [OK] Spark action succeeded on local[2]
+[Pre-Flight] All required integration services are HEALTHY.
+
+
+[Stage 1/6] Source / Dataset / Crawler Ingestion (source_type=dataset)...
+[Stage 1 OK] Loaded, PII-sanitized, and verified 100 products, 1000000 reviews, 100000 prices from 'dataset'.
+Completed source_load_pii: 6.9469 sec
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.143s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259dc68cd0> ran for 0.244s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.319s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.261s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.136s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259db7b2d0> ran for 0.236s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.141s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.117s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.152s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.231s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.168s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f2593180c10> ran for 0.146s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.182s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259d9618d0> ran for 0.203s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.392s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258faaeb10> ran for 0.291s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259d9d6f90> ran for 0.254s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.111s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.345s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d8da410> ran for 0.140s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259d80be90> ran for 0.121s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.272s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258cb83590> ran for 0.239s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.109s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.186s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.153s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.122s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.172s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.460s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259d77f890> ran for 0.157s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.365s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.100s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.543s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.427s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f25769b40d0> ran for 0.130s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f25762d2110> ran for 0.128s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259d58dfd0> ran for 0.121s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.165s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.137s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f2574668a50> ran for 0.151s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.209s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.812s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259d456990> ran for 0.236s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259d475650> ran for 0.102s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.164s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.149s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.141s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.148s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259d4e76d0> ran for 0.143s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.186s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f259d336550> ran for 0.290s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.355s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.135s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.460s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.163s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.324s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.201s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.112s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.117s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.296s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.183s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.590s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+Task <kafka.net.selector.Task object at 0x7f258d4b7f50> ran for 0.138s (>0.100s threshold). It is blocking the event loop -- likely a tight sync loop inside a coroutine. Other pollers will time out.
+
+[Stage 2/6] Kafka Producer -> Kafka -> RawConsumer...
+[TopicManager] Created Kafka topics: ['source-load-c8b1cbaa1a2a-products', 'source-load-c8b1cbaa1a2a-reviews', 'source-load-c8b1cbaa1a2a-prices', 'source-load-c8b1cbaa1a2a-events']
+Produced 100 messages to 'source-load-c8b1cbaa1a2a-products' in 0.12s (833.8 msg/s)
+Produced 1000000 messages to 'source-load-c8b1cbaa1a2a-reviews' in 123.28s (8111.5 msg/s)
+Produced 100000 messages to 'source-load-c8b1cbaa1a2a-prices' in 11.22s (8915.7 msg/s)
+Published 100 product events, 1000000 review events, and 100000 price events to Kafka.
+Bronze Ingestion: Saved 31200 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671580431_705a00.json (MinIOBackend)
+Bronze Ingestion: Saved 23920 raw records to bronze/source-load-c8b1cbaa1a2a-prices/year=2026/month=11/day=03/hour=02/batch_1793671581577_36ff14.json (MinIOBackend)
+Bronze Ingestion: Saved 100 raw records to bronze/source-load-c8b1cbaa1a2a-products/year=2026/month=11/day=03/hour=02/batch_1793671581875_0a0d34.json (MinIOBackend)
+Bronze Ingestion: Saved 31200 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671587454_3346dd.json (MinIOBackend)
+Bronze Ingestion: Saved 23920 raw records to bronze/source-load-c8b1cbaa1a2a-prices/year=2026/month=11/day=03/hour=02/batch_1793671588629_c85e03.json (MinIOBackend)
+Bronze Ingestion: Saved 31200 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671594574_00949f.json (MinIOBackend)
+Bronze Ingestion: Saved 23920 raw records to bronze/source-load-c8b1cbaa1a2a-prices/year=2026/month=11/day=03/hour=02/batch_1793671595764_22cb1d.json (MinIOBackend)
+Bronze Ingestion: Saved 30840 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671601506_d9c843.json (MinIOBackend)
+Bronze Ingestion: Saved 22080 raw records to bronze/source-load-c8b1cbaa1a2a-prices/year=2026/month=11/day=03/hour=02/batch_1793671602683_47d786.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671609163_64007e.json (MinIOBackend)
+Bronze Ingestion: Saved 6160 raw records to bronze/source-load-c8b1cbaa1a2a-prices/year=2026/month=11/day=03/hour=02/batch_1793671609984_406fd7.json (MinIOBackend)
+Bronze Ingestion: Saved 49920 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671616632_385e58.json (MinIOBackend)
+Bronze Ingestion: Saved 49920 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671623877_b9581c.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671630619_5a8fe5.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671637369_0f0322.json (MinIOBackend)
+Bronze Ingestion: Saved 49920 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671644475_cf9606.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671651466_6d302c.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671658198_a6546d.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671664983_2db943.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671671643_9f96c8.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671678384_e6bdb5.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671685157_891277.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671691815_82179f.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671698653_b9bc41.json (MinIOBackend)
+Bronze Ingestion: Saved 46080 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671705517_d19cd8.json (MinIOBackend)
+Bronze Ingestion: Saved 46180 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671712347_75db5d.json (MinIOBackend)
+Bronze Ingestion: Saved 50626 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671719445_4c62fb.json (MinIOBackend)
+Bronze Ingestion: Saved 48291 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671726408_14e863.json (MinIOBackend)
+Bronze Ingestion: Saved 27743 raw records to bronze/source-load-c8b1cbaa1a2a-reviews/year=2026/month=11/day=03/hour=02/batch_1793671732354_ed40a3.json (MinIOBackend)
+[Stage 2 OK] Consumed 1100100 messages (1100100 valid to Bronze, 0 to DLQ). Committed partitions: 7
+Completed kafka_bronze: 312.8845 sec
+
+[Stage 3/6] Verifying MinIO Bronze Layer...
+[Stage 3 OK] Verified 29 Bronze batch files on MinIOBackend (s3a://source-load-c8b1cbaa1a2a) (1100100 valid envelope records: {'source-load-c8b1cbaa1a2a-reviews': 1000000, 'source-load-c8b1cbaa1a2a-prices': 100000, 'source-load-c8b1cbaa1a2a-products': 100}).
+Completed bronze_verify: 7.5596 sec
+26/11/03 09:09:15 WARN MetricsConfig: Cannot locate configuration: tried hadoop-metrics2-s3a-file-system.properties,hadoop-metrics2.properties
+[Stage 65:===================>                                      (2 + 2) / 6][Stage 65:======================================>                   (4 + 2) / 6][Stage 65:================================================>         (5 + 1) / 6]                                                                                [Stage 66:=====================>                                    (3 + 2) / 8][Stage 66:====================================>                     (5 + 2) / 8][Stage 66:==================================================>       (7 + 1) / 8]                                                                                [Stage 69:=======>                                                  (1 + 2) / 8][Stage 69:==============>                                           (2 + 2) / 8][Stage 69:=====================>                                    (3 + 2) / 8][Stage 69:=============================>                            (4 + 2) / 8][Stage 69:====================================>                     (5 + 2) / 8][Stage 69:===========================================>              (6 + 2) / 8]                                                                                [Stage 72:>                                                         (0 + 2) / 8][Stage 72:=======>                                                  (1 + 2) / 8][Stage 72:==============>                                           (2 + 2) / 8][Stage 72:=====================>                                    (3 + 2) / 8][Stage 72:=============================>                            (4 + 2) / 8][Stage 72:====================================>                     (5 + 2) / 8][Stage 72:===========================================>              (6 + 2) / 8][Stage 72:==================================================>       (7 + 1) / 8]                                                                                [Stage 75:>                                                         (0 + 2) / 8][Stage 75:=======>                                                  (1 + 2) / 8][Stage 75:==============>                                           (2 + 2) / 8][Stage 75:=====================>                                    (3 + 2) / 8][Stage 75:=============================>                            (4 + 2) / 8][Stage 75:====================================>                     (5 + 2) / 8][Stage 75:===========================================>              (6 + 2) / 8][Stage 75:==================================================>       (7 + 1) / 8]                                                                                [Stage 78:>                                                         (0 + 2) / 8][Stage 78:=======>                                                  (1 + 2) / 8][Stage 78:==============>                                           (2 + 2) / 8][Stage 78:=====================>                                    (3 + 2) / 8][Stage 78:=============================>                            (4 + 2) / 8][Stage 78:====================================>                     (5 + 2) / 8][Stage 78:===========================================>              (6 + 2) / 8][Stage 78:==================================================>       (7 + 1) / 8]                                                                                [Stage 81:>                                                         (0 + 2) / 8][Stage 81:=======>                                                  (1 + 2) / 8][Stage 81:==============>                                           (2 + 2) / 8][Stage 81:=====================>                                    (3 + 2) / 8][Stage 81:=============================>                            (4 + 2) / 8][Stage 81:====================================>                     (5 + 2) / 8][Stage 81:===========================================>              (6 + 2) / 8]                                                                                [Stage 84:>                                                         (0 + 2) / 8][Stage 84:=======>                                                  (1 + 2) / 8][Stage 84:==============>                                           (2 + 2) / 8][Stage 84:=====================>                                    (3 + 2) / 8][Stage 84:=============================>                            (4 + 2) / 8][Stage 84:====================================>                     (5 + 2) / 8][Stage 84:===========================================>              (6 + 2) / 8][Stage 84:==================================================>       (7 + 1) / 8]                                                                                [Stage 87:>                                                         (0 + 2) / 8][Stage 87:=======>                                                  (1 + 2) / 8][Stage 87:==============>                                           (2 + 2) / 8][Stage 87:=====================>                                    (3 + 2) / 8][Stage 87:=============================>                            (4 + 2) / 8][Stage 87:====================================>                     (5 + 2) / 8][Stage 87:===========================================>              (6 + 2) / 8][Stage 87:==================================================>       (7 + 1) / 8]                                                                                [Stage 90:>                                                         (0 + 2) / 8][Stage 90:=======>                                                  (1 + 2) / 8][Stage 90:==============>                                           (2 + 2) / 8][Stage 90:=====================>                                    (3 + 2) / 8][Stage 90:=============================>                            (4 + 2) / 8][Stage 90:====================================>                     (5 + 2) / 8][Stage 90:===========================================>              (6 + 2) / 8][Stage 90:==================================================>       (7 + 1) / 8]                                                                                [Stage 93:>                                                         (0 + 2) / 8][Stage 93:=======>                                                  (1 + 2) / 8][Stage 93:==============>                                           (2 + 2) / 8][Stage 93:=====================>                                    (3 + 2) / 8][Stage 93:=============================>                            (4 + 2) / 8][Stage 93:====================================>                     (5 + 2) / 8][Stage 93:===========================================>              (6 + 2) / 8][Stage 93:==================================================>       (7 + 1) / 8]                                                                                [Stage 94:>                                                         (0 + 2) / 8][Stage 94:=======>                                                  (1 + 2) / 8][Stage 94:==============>                                           (2 + 2) / 8][Stage 94:=====================>                                    (3 + 2) / 8][Stage 94:=============================>                            (4 + 2) / 8][Stage 94:====================================>                     (5 + 2) / 8][Stage 94:===========================================>              (6 + 2) / 8][Stage 94:==================================================>       (7 + 1) / 8]                                                                                [Stage 100:>                                                        (0 + 2) / 8][Stage 100:=======>                                                 (1 + 2) / 8][Stage 100:==============>                                          (2 + 2) / 8][Stage 100:=====================>                                   (3 + 2) / 8][Stage 100:============================>                            (4 + 2) / 8][Stage 100:===================================>                     (5 + 2) / 8][Stage 100:==========================================>              (6 + 2) / 8][Stage 100:=================================================>       (7 + 1) / 8]                                                                                [Stage 106:>                                                        (0 + 2) / 8][Stage 106:=======>                                                 (1 + 2) / 8][Stage 106:==============>                                          (2 + 2) / 8][Stage 106:=====================>                                   (3 + 2) / 8][Stage 106:============================>                            (4 + 2) / 8][Stage 106:===================================>                     (5 + 2) / 8][Stage 106:==========================================>              (6 + 2) / 8][Stage 106:=================================================>       (7 + 1) / 8]                                                                                [Stage 112:>                                                        (0 + 2) / 8][Stage 112:=======>                                                 (1 + 2) / 8][Stage 112:==============>                                          (2 + 2) / 8][Stage 112:=====================>                                   (3 + 2) / 8][Stage 112:============================>                            (4 + 2) / 8][Stage 112:===================================>                     (5 + 2) / 8][Stage 112:==========================================>              (6 + 2) / 8][Stage 112:=================================================>       (7 + 1) / 8][Stage 114:>                                                        (0 + 2) / 3][Stage 114:===================>                                     (1 + 2) / 3]                                                                                [Stage 123:>                                                        (0 + 2) / 8][Stage 123:=======>                                                 (1 + 2) / 8][Stage 123:==============>                                          (2 + 2) / 8][Stage 123:=====================>                                   (3 + 2) / 8][Stage 123:============================>                            (4 + 2) / 8][Stage 123:===================================>                     (5 + 2) / 8][Stage 123:==========================================>              (6 + 2) / 8][Stage 123:=================================================>       (7 + 1) / 8]                                                                                [Stage 146:============================>                            (1 + 1) / 2]                                                                                [Stage 149:>                                                        (0 + 2) / 2]                                                                                [Stage 152:>                                                        (0 + 2) / 2][Stage 153:>                                                        (0 + 2) / 2]                                                                                [Stage 165:>                                                        (0 + 2) / 2]                                                                                [Stage 171:>                                                        (0 + 2) / 2][Stage 171:============================>                            (1 + 1) / 2]                                                                                [Stage 182:============================>                            (1 + 1) / 2]                                                                                
+[Stage 4/6] Executing Spark Batch ETL (Bronze -> Silver / Quarantine / DQ)...
+>>> Starting SentinelAI Real Spark Batch ETL (Bronze -> Silver)
+[Spark ETL] Silver path does not exist yet (s3a://source-load-c8b1cbaa1a2a/silver/products); initializing new Silver table.
+[Spark ETL] Written 100 records to Silver Parquet: s3a://source-load-c8b1cbaa1a2a/silver/products
+[Spark ETL] Routed 50000 bad records to quarantine: s3a://source-load-c8b1cbaa1a2a/silver/quarantine/reviews
+[Spark ETL] Silver path does not exist yet (s3a://source-load-c8b1cbaa1a2a/silver/reviews); initializing new Silver table.
+[Spark ETL] Written 920000 records to Silver Parquet: s3a://source-load-c8b1cbaa1a2a/silver/reviews
+[Spark ETL] Silver path does not exist yet (s3a://source-load-c8b1cbaa1a2a/silver/prices); initializing new Silver table.
+[Spark ETL] Written 100000 records to Silver Parquet: s3a://source-load-c8b1cbaa1a2a/silver/prices
+Storage: Written 3 rows to Gold Mart (data_quality_metrics)
+[Stage 4 OK] Silver Parquet verified: 100 unique products, 920000 unique reviews, 100000 unique prices. DQ Scores -> Products: 100.0%, Reviews: 92.0%
+Completed spark_silver_dq: 100.7714 sec
+[Stage 276:>                                                        (0 + 2) / 2]                                                                                [Stage 308:============================>                            (1 + 1) / 2]                                                                                [Stage 394:============================>                            (1 + 1) / 2]                                                                                [Stage 435:>                                                        (0 + 2) / 2]                                                                                [Stage 451:>                                                        (0 + 2) / 2]                                                                                [Stage 480:>                                                        (0 + 2) / 2]                                                                                [Stage 513:>                                                        (0 + 2) / 2]                                                                                [Stage 542:>                                                        (0 + 2) / 2]                                                                                [Stage 612:============================>                            (1 + 1) / 2]                                                                                26/11/03 09:11:29 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:29 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:29 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:29 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:29 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:30 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:30 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+[Stage 647:>                                                        (0 + 2) / 2]26/11/03 09:11:30 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:30 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+                                                                                26/11/03 09:11:30 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:30 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:30 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:30 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:31 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:31 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:31 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:31 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:31 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:31 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:31 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+[Stage 673:>                                                        (0 + 2) / 2]26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+                                                                                26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:32 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:33 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:33 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:33 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:33 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:33 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+[Stage 706:>                                                        (0 + 2) / 2]26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+                                                                                26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:34 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:35 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:35 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:35 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:35 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:35 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:35 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+26/11/03 09:11:35 WARN WindowExec: No Partition Defined for Window operation! Moving all data to a single partition, this can cause serious performance degradation.
+
+[Stage 5/6] Building Spark Gold Analytical Marts & Anomaly Events...
+>>> Aggregating Gold Analytical Marts via SparkGoldBuilder (Distributed Spark)
+[Spark Gold] Validated publication completed for 'product_daily_stats'
+[Spark Gold] Validated publication completed for 'brand_daily_stats'
+[Spark Gold] Validated publication completed for 'category_daily_stats'
+[Spark Gold] Validated publication completed for 'price_daily_stats'
+[Spark Gold] Successfully built and persisted 4 Gold Marts to Gold Layer.
+Storage: Written 0 rows to Gold Mart (anomaly_events)
+[Stage 5 OK] Verified Gold Marts ({'product_daily_stats': 19200, 'brand_daily_stats': 960, 'category_daily_stats': 768, 'price_daily_stats': 4200}) with 0 grain duplicates.
+Completed spark_gold_anomalies: 418.054 sec
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:414: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:414: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:414: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:414: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:414: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:414: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)
+/mnt/DATA/TaiLieuHocTap/big data/btl/database/warehouse.py:414: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  return pd.read_sql_query(sql, self._conn)

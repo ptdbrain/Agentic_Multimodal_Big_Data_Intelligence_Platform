@@ -1,0 +1,44 @@
+{
+  "executed_at": "2026-11-02T11:21:15.839389+00:00",
+  "boundary": "Streamlit AppTest with actual Docker PostgreSQL; no browser rendering/load claim",
+  "expected_articles": 50,
+  "pages": [
+    {
+      "page": "dashboard/app.py",
+      "passed": true
+    },
+    {
+      "page": "dashboard/pages/1_Overview.py",
+      "passed": true
+    },
+    {
+      "page": "dashboard/pages/2_Pipeline.py",
+      "passed": true
+    },
+    {
+      "page": "dashboard/pages/3_Products.py",
+      "passed": true
+    },
+    {
+      "page": "dashboard/pages/4_Reviews.py",
+      "passed": true
+    },
+    {
+      "page": "dashboard/pages/5_Trends.py",
+      "passed": true
+    },
+    {
+      "page": "dashboard/pages/6_Anomalies.py",
+      "passed": true
+    },
+    {
+      "page": "dashboard/pages/7_Data_Quality.py",
+      "passed": true
+    },
+    {
+      "page": "dashboard/pages/8_Web_Content.py",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

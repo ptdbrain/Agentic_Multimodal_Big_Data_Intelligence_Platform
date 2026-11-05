@@ -1,0 +1,158 @@
+{
+  "passed": true,
+  "executed_at": "2026-11-03T17:01:49.381509+00:00",
+  "boundary": "Replay of verified original HTTP/canonical captures, not new live collection. Actual native Kafka/MinIO/Spark local[2]/PostgreSQL.",
+  "current_limitation": "Lazada current HTTP returns anti-bot challenge; two Nov2 genuine canonical captures retained with explicitly unknown original parser/raw HTTP evidence.",
+  "commerce": [
+    {
+      "iteration": 1,
+      "passed": true,
+      "sources": [
+        {
+          "source": "tiki",
+          "capture_sha256": "2497a58d9c1ca2805722044177d4042c417e7d09b05656d6cfaae39cea09f9e7",
+          "products": 20,
+          "reviews": 65,
+          "prices": 20,
+          "verified_raw_http_records": 105,
+          "original_parser_known": true,
+          "evidence_kind": "raw_http"
+        },
+        {
+          "source": "lazada",
+          "capture_sha256": "e849cdbcac09260222d1ef9acce177eba62870c963c8c9f870d6ffa8a51b04f1",
+          "products": 20,
+          "reviews": 0,
+          "prices": 20,
+          "verified_raw_http_records": 0,
+          "original_parser_known": false,
+          "evidence_kind": "canonical_capture"
+        }
+      ],
+      "served_products": 40,
+      "served_reviews": 65,
+      "marts": {
+        "product_daily_stats": 56,
+        "brand_daily_stats": 54,
+        "category_daily_stats": 54,
+        "price_daily_stats": 40
+      }
+    },
+    {
+      "iteration": 2,
+      "passed": true,
+      "sources": [
+        {
+          "source": "tiki",
+          "capture_sha256": "bd36586bea0231718fe60ba2d2f99f1a0849d92ea112aa89b5f19d922eeb9936",
+          "products": 20,
+          "reviews": 65,
+          "prices": 20,
+          "verified_raw_http_records": 105,
+          "original_parser_known": true,
+          "evidence_kind": "raw_http"
+        },
+        {
+          "source": "lazada",
+          "capture_sha256": "b55203fcbfe568e54de8ea450bf870f78257b166f9420c99d4660f7ed226401c",
+          "products": 20,
+          "reviews": 0,
+          "prices": 20,
+          "verified_raw_http_records": 0,
+          "original_parser_known": false,
+          "evidence_kind": "canonical_capture"
+        }
+      ],
+      "served_products": 40,
+      "served_reviews": 65,
+      "marts": {
+        "product_daily_stats": 56,
+        "brand_daily_stats": 54,
+        "category_daily_stats": 54,
+        "price_daily_stats": 40
+      }
+    }
+  ],
+  "articles": [
+    {
+      "passed": true,
+      "original_manifest": "article_live_route_2026-11-02.json",
+      "input_articles": 50,
+      "verified_raw_http_records": 50,
+      "transport": "kafka",
+      "engine": "pandas",
+      "manifest": {
+        "lake": {
+          "backend": "MinIOBackend",
+          "bucket": "source-real-f3862f94de",
+          "endpoint": "127.0.0.1:29000",
+          "secure": false
+        },
+        "run_id": "c8ab5e5ac5d543949254ea18c51916c5",
+        "silver_path": "silver/article_snapshots/833cb3d08c1e87850fd21dd30c92baddec1a87c46d784ac52ae94ab0304c107a/articles.parquet",
+        "gold_path": "gold/article_snapshots/833cb3d08c1e87850fd21dd30c92baddec1a87c46d784ac52ae94ab0304c107a/article_daily_stats.parquet",
+        "quarantine_path": "quarantine/articles/833cb3d08c1e87850fd21dd30c92baddec1a87c46d784ac52ae94ab0304c107a/records.json",
+        "bronze_paths": [
+          "bronze/source-real-f3862f94de-articles.833cb3d08c1e87850fd2/year=2026/month=11/day=03/hour=17/batch_1793725366983_46a7f2.json"
+        ],
+        "quality": {
+          "records_received": 50,
+          "records_valid": 50,
+          "records_duplicate": 0,
+          "records_superseded": 0,
+          "records_quarantined": 0,
+          "records_missing_publication_time": 0,
+          "dq_score": 100.0,
+          "required_score": 90.0
+        },
+        "engine": "pandas",
+        "status": "complete",
+        "topic": "source-real-f3862f94de-articles.833cb3d08c1e87850fd2",
+        "records_delivered": 50,
+        "records_consumed": 50,
+        "transport": "kafka"
+      }
+    },
+    {
+      "passed": true,
+      "original_manifest": "article_live_route_repeat_2026-11-02.json",
+      "input_articles": 50,
+      "verified_raw_http_records": 50,
+      "transport": "kafka",
+      "engine": "pandas",
+      "manifest": {
+        "lake": {
+          "backend": "MinIOBackend",
+          "bucket": "source-real-f3862f94de",
+          "endpoint": "127.0.0.1:29000",
+          "secure": false
+        },
+        "run_id": "2d46fee1168748f0b3ba5941f7474686",
+        "silver_path": "silver/article_snapshots/6bf387938e29116c5f914a4d40d94a50e1fd05b98964d8b0d9854af59f6b132d/articles.parquet",
+        "gold_path": "gold/article_snapshots/6bf387938e29116c5f914a4d40d94a50e1fd05b98964d8b0d9854af59f6b132d/article_daily_stats.parquet",
+        "quarantine_path": "quarantine/articles/6bf387938e29116c5f914a4d40d94a50e1fd05b98964d8b0d9854af59f6b132d/records.json",
+        "bronze_paths": [
+          "bronze/source-real-f3862f94de-articles.6bf387938e29116c5f91/year=2026/month=11/day=03/hour=17/batch_1793725369748_b7b29c.json"
+        ],
+        "quality": {
+          "records_received": 50,
+          "records_valid": 50,
+          "records_duplicate": 0,
+          "records_superseded": 0,
+          "records_quarantined": 0,
+          "records_missing_publication_time": 0,
+          "dq_score": 100.0,
+          "required_score": 90.0
+        },
+        "engine": "pandas",
+        "status": "complete",
+        "topic": "source-real-f3862f94de-articles.6bf387938e29116c5f91",
+        "records_delivered": 50,
+        "records_consumed": 50,
+        "transport": "kafka"
+      }
+    }
+  ],
+  "database": "source_real_f3862f94de",
+  "bucket": "source-real-f3862f94de"
+}

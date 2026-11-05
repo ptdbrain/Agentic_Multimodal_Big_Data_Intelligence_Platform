@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="55" time="135.055" timestamp="2026-11-03T18:56:22.433706+07:00" hostname="ptdbrain"><testcase classname="tests.integration.test_article_route" name="test_article_two_distinct_batches_use_actual_transport_and_replace_serving" time="0.980" /><testcase classname="tests.integration.test_article_route" name="test_article_source_offset_survives_actual_postgres_serving" time="0.493" /><testcase classname="tests.integration.test_dlq_replay_route" name="test_repaired_lake_dlq_records_are_actually_delivered_and_routed" time="0.518" /><testcase classname="tests.integration.test_kafka_streaming" name="test_actual_kafka_source_quarantine_and_checkpoint" time="9.568" /><testcase classname="tests.integration.test_lakehouse_concurrency" name="test_two_remote_writers_commit_only_one_snapshot" time="0.196" /><testcase classname="tests.integration.test_local_stream_checkpoint_route" name="test_local_processor_checkpoint_uses_the_actual_named_minio_bucket" time="0.015" /><testcase classname="tests.integration.test_processing_contracts" name="test_gold_acceptance_verifier_does_not_seed_unverified_sample_data" time="0.018" /><testcase classname="tests.integration.test_processing_contracts" name="test_pipeline_drains_partial_real_kafka_batches_before_verifying_delivery" time="1.030" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_additive_migrations_preserve_legacy_rows_and_unknowns" time="0.114" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_initialized_schema_does_not_block_an_active_read_snapshot" time="0.147" /><testcase classname="tests.integration.test_processing_contracts" name="test_minio_parquet_metadata_arrays_survive_postgres_export_replay" time="0.179" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_real_constraint_failure_rolls_back_all_mart_writes" time="0.167" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_reader_retains_one_snapshot_across_real_export_commit" time="0.179" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_empty_snapshot_clears_daily_rows_and_keeps_incident_history" time="0.169" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_anomaly_baseline_and_dq_categories_round_trip" time="0.197" /><testcase classname="tests.integration.test_s3a_recovery" name="test_s3a_failed_promotion_preserves_original_rows" time="2.182" /><testcase classname="tests.integration.test_service_metrics_route" name="test_actual_service_gauges_are_served_over_http" time="0.504" /><testcase classname="tests.integration.test_services" name="test_minio_concurrent_bucket_bootstrap_is_idempotent" time="0.043" /><testcase classname="tests.integration.test_services" name="test_elasticsearch_persists_between_clients" time="2.247" /><testcase classname="tests.integration.test_services" name="test_postgres_minio_lakehouse_transaction" time="0.032" /><testcase classname="tests.integration.test_warehouse_bulk" name="test_large_numeric_identity_is_not_rounded_by_pandas_row_coercion" time="0.020" /><testcase classname="tests.integration.test_warehouse_bulk" name="test_thousand_rows_use_bounded_database_round_trips" time="0.036" /><testcase classname="tests.integration.test_warehouse_bulk" name="test_duplicate_keys_keep_input_order_and_nullable_nested_values" time="0.029" /><testcase classname="tests.integration.test_warehouse_bulk" name="test_later_failed_batch_rolls_back_earlier_batches" time="0.039" /><testcase classname="tests.test_api_live" name="test_live_http_pagination_with_real_local_server" time="0.503" /><testcase classname="tests.test_e2e" name="test_default_mode_is_strict_integration" time="0.002" /><testcase classname="tests.test_e2e" name="test_integration_minio_fails_loudly_without_local_fallback" time="0.006" /><testcase classname="tests.test_e2e" name="test_integration_postgres_fails_loudly_without_sqlite_fallback" time="0.002" /><testcase classname="tests.test_e2e" name="test_integration_pipeline_fails_loudly_when_services_stopped" time="0.439" /><testcase classname="tests.test_e2e" name="test_full_e2e_pipeline" time="18.361" /><testcase classname="tests.test_e2e" name="test_kafka_producer_envelope_structure" time="0.011" /><testcase classname="tests.test_e2e" name="test_kafka_producer_fail_loudly_when_offline" time="1.004" /><testcase classname="tests.test_e2e" name="test_raw_consumer_bronze_partitioning" time="0.002" /><testcase classname="tests.test_e2e" name="test_schema_validator_and_quarantine" time="0.002" /><testcase classname="tests.test_e2e" name="test_dead_letter_queue_handling" time="0.108" /><testcase classname="tests.test_e2e" name="test_warehouse_manager_upsert_idempotency" time="0.012" /><testcase classname="tests.test_e2e" name="test_price_pipeline_execution" time="0.002" /><testcase classname="tests.test_e2e" name="test_dashboard_db_connector" time="0.002" /><testcase classname="tests.test_e2e" name="test_spark_data_quality_evaluator" time="0.003" /><testcase classname="tests.test_e2e" name="test_prometheus_metrics_exporter" time="0.002" /><testcase classname="tests.test_e2e" name="test_airflow_dag_standalone_execution" time="15.528" /><testcase classname="tests.test_e2e" name="test_lakehouse_table_time_travel_and_upsert" time="0.013" /><testcase classname="tests.test_e2e" name="test_kafka_bronze_acceptance_3_valid_1_invalid" time="0.003" /><testcase classname="tests.test_e2e" name="test_raw_consumer_consume_batch_once_empty_poll" time="0.001" /><testcase classname="tests.test_e2e" name="test_topic_manager_provisioning" time="0.001" /><testcase classname="tests.test_e2e" name="test_e2e_stage_verification_fails_fast_on_invalid_stage" time="0.001" /><testcase classname="tests.test_e2e" name="test_e2e_idempotency_no_logical_duplicates_on_rerun" time="33.116" /><testcase classname="tests.test_e2e" name="test_unified_entrypoints_share_canonical_pipeline" time="0.002" /><testcase classname="tests.test_e2e" name="test_dq_field_nulls_vs_row_invalid_and_parse_cast" time="0.003" /><testcase classname="tests.test_e2e" name="test_dq_gate_blocks_gold_when_below_threshold" time="0.004" /><testcase classname="tests.test_e2e" name="test_streaming_late_data_malformed_types_dedup_and_restart" time="4.633" /><testcase classname="tests.test_e2e" name="test_pii_anonymization_and_user_id_hashing_at_ingest" time="0.003" /><testcase classname="tests.test_e2e" name="test_e2e_pipeline_with_crawler_and_public_dataset" time="14.603"><failure message="ValueError: mixed source groups require separate analytical generations">def test_e2e_pipeline_with_crawler_and_public_dataset():
+        """Verify canonical 6-stage E2E pipeline runs end-to-end with both Crawler and Public Dataset sources."""
+        from ingestion.privacy import is_anonymized_user_id
+    
+        assert run_end_to_end(
+            mode="local",
+            source_type="public_dataset",
+        ) is True
+        df_revs_pub = storage.read_silver_parquet("reviews")
+        assert not df_revs_pub.empty
+        assert all(is_anonymized_user_id(uid) for uid in df_revs_pub["user_id"].dropna())
+    
+&gt;       assert run_end_to_end(
+            mode="local",
+            source_type="crawler",
+            crawler_platform="mock",
+            crawler_query="iphone 15",
+            crawler_max_products=3,
+            crawler_reviews_per_product=5,
+        ) is True
+
+tests/test_e2e.py:670: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+orchestration/run_manifest.py:102: in wrapped
+    return function(*args,**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/run_e2e_pipeline.py:841: in run_end_to_end
+    s4 = stage_4_spark_batch_silver_dq(
+scripts/run_e2e_pipeline.py:476: in stage_4_spark_batch_silver_dq
+    etl_res = etl_job.run_pipeline(
+spark/batch/spark_etl_job.py:726: in run_pipeline
+    prod_res = self.process_dataset("products", effective_products_source)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+spark/batch/spark_etl_job.py:550: in process_dataset
+    final_silver_df, cross_metrics = self._cross_batch_dedup_and_write(
+storage/write_lock.py:68: in wrapped
+    with write_lock(path): return function(*args,**kwargs)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+spark/batch/spark_etl_job.py:648: in _cross_batch_dedup_and_write
+    classify_source_group(existing_df, new_batch_df)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+datasets = (DataFrame[event_id: string, event_type: string, ingested_at: timestamp, brand: string, category: string, created_at: ...tion_time_available: boolean, currency_raw: string, normalization_errors: array&lt;string&gt;, normalization_status: string])
+
+    def classify_source_group(*datasets):
+        """Return one source class; reject heterogeneous or contradictory inputs.
+    
+        A legacy source string such as web_crawler is not evidence of an observed
+        marketplace source. Missing classifications remain unverified.
+        """
+        groups = set()
+        for data in datasets:
+            for raw_group, raw_method in _pairs(data):
+                group = _nullable(raw_group) or 'unverified'
+                method = _nullable(raw_method)
+                if group not in ('marketplace', 'simulation', 'unverified'):
+                    raise ValueError(f'Unsupported commerce source group: {group}')
+                if group == 'marketplace' and method not in ('live', 'snapshot_replay'):
+                    raise ValueError('Source acquisition does not match marketplace group')
+                if group == 'simulation' and method != 'generated':
+                    raise ValueError('Source acquisition does not match simulation group')
+                groups.add(group)
+        if len(groups) &gt; 1:
+&gt;           raise ValueError('mixed source groups require separate analytical generations')
+E           ValueError: mixed source groups require separate analytical generations
+
+ingestion/provenance.py:51: ValueError</failure></testcase><testcase classname="tests.test_e2e" name="test_real_benchmark_execution_and_report_consistency" time="25.860" /><testcase classname="tests.test_e2e" name="test_github_actions_ci_workflow_valid" time="0.862" /></testsuite></testsuites>

@@ -1,0 +1,20 @@
+[
+  {
+    "run": 1,
+    "collected_at": "2026-11-02T10:37:12.513425+00:00",
+    "products": 20,
+    "prices": 20,
+    "reviews": 1,
+    "sha256": "efc2d2df172f7abff77f4d41d70e28d303f7b23f8820788f385c0742505a6f50",
+    "note": "Live collection only; downstream integration and source-field audit not yet accepted."
+  },
+  {
+    "run": 2,
+    "collected_at": "2026-11-02T10:37:52.134167+00:00",
+    "products": 20,
+    "prices": 20,
+    "reviews": 1,
+    "sha256": "1dc516646e066f7caed085d8c7bb1ac36c9a861fdf791ff1c5e93dda16870174",
+    "note": "Live collection only; downstream integration and source-field audit not yet accepted."
+  }
+]

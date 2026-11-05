@@ -1,0 +1,16 @@
+{
+  "passed": false,
+  "stage": "Spark Silver price DQ gate",
+  "transport_consumed": 145,
+  "transport_valid": 145,
+  "transport_dlq": 0,
+  "products_silver": 40,
+  "reviews_silver": 65,
+  "prices_silver": 20,
+  "prices_quarantine": 20,
+  "prices_dq_score": 50,
+  "root_cause": "Mixed sources supply price_raw only on some rows. Dataset-level raw-column presence caused valid prices on other rows to become null.",
+  "fix": "Per-row coalescing of missing raw evidence with the actual input value; retain non-null earlier evidence.",
+  "regressions": "test_partial_raw_evidence.py:3RED then3GREEN across products/prices/reviews",
+  "note": "Quality gate correctly blocked Gold. No serving acceptance from this failed run."
+}

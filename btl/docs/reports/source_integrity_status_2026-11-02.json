@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-11-02T10:42:53.445331+00:00",
+  "plan_complete": false,
+  "branch": "fix/source-integrity-3v",
+  "local_gate": {
+    "tests": "451",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "164.843"
+  },
+  "warnings": 526,
+  "deselected": 48,
+  "source_fingerprint": "1320343ad2e0d6fe3ebff4f5ec633d37819bfcd0404c9e37600ed499b0cebf83",
+  "fingerprint_scope": "sorted btl py/json/sql/yaml/yml/toml files excluding caches,reports,storage/datalake; path+NUL+bytes+NUL",
+  "selected_files": 302,
+  "docker_gate": "not run: socket permission denied",
+  "live_sources": {
+    "lazada": "2runs;20products/20prices per run;reviews unsupported",
+    "tiki": "2runs;20products/20prices/1review per run",
+    "tinhte": "45articles;end-to-end article route pending"
+  },
+  "remaining": [
+    "remaining-module audit and defect repair",
+    "source-field provenance across all engines",
+    ">=50 real reviews and>=50articles",
+    "article Kafka/Silver/Gold/warehouse/dashboard route",
+    "simulation isolation validation",
+    "profiling and full3Vbenchmark matrix",
+    "Docker integration and browser acceptance",
+    "final whole-change review"
+  ]
+}

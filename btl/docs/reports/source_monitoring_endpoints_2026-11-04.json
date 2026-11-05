@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "executed_at": "2026-11-03T17:14:17.491040+00:00",
+  "boundary": "Actual persistent loopback HTTP exporters and real protocol probes, not a deployed Prometheus/Grafana instance",
+  "endpoints": [
+    {
+      "module": "monitoring.metrics_exporter",
+      "url": "http://127.0.0.1:8000/metrics",
+      "status": 200,
+      "pid": 320092,
+      "create_time": 1793726057.43,
+      "metrics_lines": 25
+    },
+    {
+      "module": "monitoring.services_exporter",
+      "url": "http://127.0.0.1:8001/metrics",
+      "status": 200,
+      "pid": 320112,
+      "create_time": 1793726057.91,
+      "metrics_lines": 18
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "collected_at": "2026-11-02T10:40:19.290105+00:00",
+  "articles": 45,
+  "additional_candidates": 4,
+  "additional_failures": [],
+  "sha256": "7f72d0462a8c5de0153403e8ada28544be8fab262f9da87fb4463891d3d3ba4e",
+  "accepted_end_to_end": false,
+  "note": "Live capture only, article route through Kafka/Silver/Gold/serving still pending."
+}

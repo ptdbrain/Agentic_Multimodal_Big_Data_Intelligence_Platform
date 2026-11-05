@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="56" time="144.990" timestamp="2026-11-03T19:00:28.470085+07:00" hostname="ptdbrain"><testcase classname="tests.integration.test_article_route" name="test_article_two_distinct_batches_use_actual_transport_and_replace_serving" time="1.097" /><testcase classname="tests.integration.test_article_route" name="test_article_source_offset_survives_actual_postgres_serving" time="0.581" /><testcase classname="tests.integration.test_dlq_replay_route" name="test_repaired_lake_dlq_records_are_actually_delivered_and_routed" time="0.518" /><testcase classname="tests.integration.test_kafka_streaming" name="test_actual_kafka_source_quarantine_and_checkpoint" time="9.848" /><testcase classname="tests.integration.test_lakehouse_concurrency" name="test_two_remote_writers_commit_only_one_snapshot" time="0.136" /><testcase classname="tests.integration.test_local_stream_checkpoint_route" name="test_local_processor_checkpoint_uses_the_actual_named_minio_bucket" time="0.017" /><testcase classname="tests.integration.test_processing_contracts" name="test_gold_acceptance_verifier_does_not_seed_unverified_sample_data" time="0.020" /><testcase classname="tests.integration.test_processing_contracts" name="test_pipeline_drains_partial_real_kafka_batches_before_verifying_delivery" time="0.502" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_additive_migrations_preserve_legacy_rows_and_unknowns" time="0.113" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_initialized_schema_does_not_block_an_active_read_snapshot" time="0.150" /><testcase classname="tests.integration.test_processing_contracts" name="test_minio_parquet_metadata_arrays_survive_postgres_export_replay" time="0.188" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_real_constraint_failure_rolls_back_all_mart_writes" time="0.169" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_reader_retains_one_snapshot_across_real_export_commit" time="0.184" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_empty_snapshot_clears_daily_rows_and_keeps_incident_history" time="0.164" /><testcase classname="tests.integration.test_processing_contracts" name="test_postgres_anomaly_baseline_and_dq_categories_round_trip" time="0.189" /><testcase classname="tests.integration.test_s3a_recovery" name="test_s3a_failed_promotion_preserves_original_rows" time="2.016" /><testcase classname="tests.integration.test_service_metrics_route" name="test_actual_service_gauges_are_served_over_http" time="0.505" /><testcase classname="tests.integration.test_services" name="test_minio_concurrent_bucket_bootstrap_is_idempotent" time="0.023" /><testcase classname="tests.integration.test_services" name="test_elasticsearch_persists_between_clients" time="2.099" /><testcase classname="tests.integration.test_services" name="test_postgres_minio_lakehouse_transaction" time="0.034" /><testcase classname="tests.integration.test_warehouse_bulk" name="test_large_numeric_identity_is_not_rounded_by_pandas_row_coercion" time="0.020" /><testcase classname="tests.integration.test_warehouse_bulk" name="test_thousand_rows_use_bounded_database_round_trips" time="0.036" /><testcase classname="tests.integration.test_warehouse_bulk" name="test_duplicate_keys_keep_input_order_and_nullable_nested_values" time="0.022" /><testcase classname="tests.integration.test_warehouse_bulk" name="test_later_failed_batch_rolls_back_earlier_batches" time="0.040" /><testcase classname="tests.test_api_live" name="test_live_http_pagination_with_real_local_server" time="0.504" /><testcase classname="tests.test_e2e" name="test_default_mode_is_strict_integration" time="0.002" /><testcase classname="tests.test_e2e" name="test_integration_minio_fails_loudly_without_local_fallback" time="0.005" /><testcase classname="tests.test_e2e" name="test_integration_postgres_fails_loudly_without_sqlite_fallback" time="0.002" /><testcase classname="tests.test_e2e" name="test_integration_pipeline_fails_loudly_when_services_stopped" time="0.467" /><testcase classname="tests.test_e2e" name="test_full_e2e_pipeline" time="18.172" /><testcase classname="tests.test_e2e" name="test_kafka_producer_envelope_structure" time="0.012" /><testcase classname="tests.test_e2e" name="test_kafka_producer_fail_loudly_when_offline" time="1.004" /><testcase classname="tests.test_e2e" name="test_raw_consumer_bronze_partitioning" time="0.002" /><testcase classname="tests.test_e2e" name="test_schema_validator_and_quarantine" time="0.002" /><testcase classname="tests.test_e2e" name="test_dead_letter_queue_handling" time="0.113" /><testcase classname="tests.test_e2e" name="test_warehouse_manager_upsert_idempotency" time="0.013" /><testcase classname="tests.test_e2e" name="test_price_pipeline_execution" time="0.003" /><testcase classname="tests.test_e2e" name="test_dashboard_db_connector" time="0.002" /><testcase classname="tests.test_e2e" name="test_spark_data_quality_evaluator" time="0.003" /><testcase classname="tests.test_e2e" name="test_prometheus_metrics_exporter" time="0.002" /><testcase classname="tests.test_e2e" name="test_airflow_dag_standalone_execution" time="15.541" /><testcase classname="tests.test_e2e" name="test_lakehouse_table_time_travel_and_upsert" time="0.013" /><testcase classname="tests.test_e2e" name="test_kafka_bronze_acceptance_3_valid_1_invalid" time="0.002" /><testcase classname="tests.test_e2e" name="test_raw_consumer_consume_batch_once_empty_poll" time="0.001" /><testcase classname="tests.test_e2e" name="test_topic_manager_provisioning" time="0.001" /><testcase classname="tests.test_e2e" name="test_e2e_stage_verification_fails_fast_on_invalid_stage" time="0.001" /><testcase classname="tests.test_e2e" name="test_e2e_idempotency_no_logical_duplicates_on_rerun" time="33.010" /><testcase classname="tests.test_e2e" name="test_unified_entrypoints_share_canonical_pipeline" time="0.002" /><testcase classname="tests.test_e2e" name="test_dq_field_nulls_vs_row_invalid_and_parse_cast" time="0.004" /><testcase classname="tests.test_e2e" name="test_dq_gate_blocks_gold_when_below_threshold" time="0.005" /><testcase classname="tests.test_e2e" name="test_streaming_late_data_malformed_types_dedup_and_restart" time="4.775" /><testcase classname="tests.test_e2e" name="test_pii_anonymization_and_user_id_hashing_at_ingest" time="0.003" /><testcase classname="tests.test_e2e" name="test_e2e_pipeline_with_crawler_and_public_dataset[public_dataset-options0-unverified-4-80]" time="12.720"><failure message="KeyError: 'source_group'">self = Index(['event_id', 'event_type', 'ingested_at', 'brand', 'category',
+       'created_at', 'currency', 'image_url', 'pr...ngestion_time_available', 'currency_raw', 'normalization_errors',
+       'normalization_status'],
+      dtype='object')
+key = 'source_group'
+
+    def get_loc(self, key):
+        """
+        Get integer location, slice or boolean mask for requested label.
+    
+        Parameters
+        ----------
+        key : label
+    
+        Returns
+        -------
+        int if unique index, slice if monotonic index, else mask
+    
+        Examples
+        --------
+        &gt;&gt;&gt; unique_index = pd.Index(list('abc'))
+        &gt;&gt;&gt; unique_index.get_loc('b')
+        1
+    
+        &gt;&gt;&gt; monotonic_index = pd.Index(list('abbc'))
+        &gt;&gt;&gt; monotonic_index.get_loc('b')
+        slice(1, 3, None)
+    
+        &gt;&gt;&gt; non_monotonic_index = pd.Index(list('abcb'))
+        &gt;&gt;&gt; non_monotonic_index.get_loc('b')
+        array([False,  True, False,  True])
+        """
+        casted_key = self._maybe_cast_indexer(key)
+        try:
+&gt;           return self._engine.get_loc(casted_key)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/indexes/base.py:3812: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pandas/_libs/index.pyx:167: in pandas._libs.index.IndexEngine.get_loc
+    ???
+pandas/_libs/index.pyx:196: in pandas._libs.index.IndexEngine.get_loc
+    ???
+pandas/_libs/hashtable_class_helper.pxi:7088: in pandas._libs.hashtable.PyObjectHashTable.get_item
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+&gt;   ???
+E   KeyError: 'source_group'
+
+pandas/_libs/hashtable_class_helper.pxi:7096: KeyError
+
+The above exception was the direct cause of the following exception:
+
+source_type = 'public_dataset', options = {}, expected_group = 'unverified'
+product_count = 4, review_count = 80
+
+    @pytest.mark.parametrize("source_type,options,expected_group,product_count,review_count", [
+        ("public_dataset", {}, "unverified", 4, 80),
+        ("crawler", {"crawler_platform":"mock", "crawler_query":"iphone 15",
+                     "crawler_max_products":3, "crawler_reviews_per_product":5}, "simulation", 3, 15),
+    ])
+    def test_e2e_pipeline_with_crawler_and_public_dataset(
+        source_type, options, expected_group, product_count, review_count
+    ):
+        """Local six-stage compatibility, each source class in its own fixture namespace.
+    
+        This is not live-crawl or real-service acceptance. Deliberately reusing one
+        Silver namespace for public/unknown and generated data must be rejected.
+        """
+        from ingestion.privacy import is_anonymized_user_id
+    
+        assert run_end_to_end(mode="local", source_type=source_type, **options) is True
+        products = storage.read_silver_parquet("products")
+        reviews = storage.read_silver_parquet("reviews")
+        assert len(products) == product_count
+        assert len(reviews) == review_count
+&gt;       assert set(products["source_group"]) == {expected_group}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_e2e.py:678: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/frame.py:4113: in __getitem__
+    indexer = self.columns.get_loc(key)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Index(['event_id', 'event_type', 'ingested_at', 'brand', 'category',
+       'created_at', 'currency', 'image_url', 'pr...ngestion_time_available', 'currency_raw', 'normalization_errors',
+       'normalization_status'],
+      dtype='object')
+key = 'source_group'
+
+    def get_loc(self, key):
+        """
+        Get integer location, slice or boolean mask for requested label.
+    
+        Parameters
+        ----------
+        key : label
+    
+        Returns
+        -------
+        int if unique index, slice if monotonic index, else mask
+    
+        Examples
+        --------
+        &gt;&gt;&gt; unique_index = pd.Index(list('abc'))
+        &gt;&gt;&gt; unique_index.get_loc('b')
+        1
+    
+        &gt;&gt;&gt; monotonic_index = pd.Index(list('abbc'))
+        &gt;&gt;&gt; monotonic_index.get_loc('b')
+        slice(1, 3, None)
+    
+        &gt;&gt;&gt; non_monotonic_index = pd.Index(list('abcb'))
+        &gt;&gt;&gt; non_monotonic_index.get_loc('b')
+        array([False,  True, False,  True])
+        """
+        casted_key = self._maybe_cast_indexer(key)
+        try:
+            return self._engine.get_loc(casted_key)
+        except KeyError as err:
+            if isinstance(casted_key, slice) or (
+                isinstance(casted_key, abc.Iterable)
+                and any(isinstance(x, slice) for x in casted_key)
+            ):
+                raise InvalidIndexError(key)
+&gt;           raise KeyError(key) from err
+E           KeyError: 'source_group'
+
+/tmp/sentinel-remediation-venv/lib/python3.11/site-packages/pandas/core/indexes/base.py:3819: KeyError</failure></testcase><testcase classname="tests.test_e2e" name="test_e2e_pipeline_with_crawler_and_public_dataset[crawler-options1-simulation-3-15]" time="13.235" /><testcase classname="tests.test_e2e" name="test_real_benchmark_execution_and_report_consistency" time="25.312" /><testcase classname="tests.test_e2e" name="test_github_actions_ci_workflow_valid" time="0.332" /></testsuite></testsuites>

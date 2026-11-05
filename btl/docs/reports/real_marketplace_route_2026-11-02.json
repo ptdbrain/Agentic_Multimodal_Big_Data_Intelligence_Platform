@@ -1,0 +1,64 @@
+{
+  "passed": true,
+  "executed_at": "2026-11-02T11:39:10.145661+00:00",
+  "boundary": "Replay of actual HTTP-collected canonical captures, not new live requests; actual Docker Kafka/MinIO/PostgreSQL and host Spark local[2]",
+  "bucket": "real-marketplace-36f1646837",
+  "runs": [
+    {
+      "iteration": 1,
+      "sources": [
+        {
+          "source": "tiki",
+          "capture_sha256": "e9356d93c46be2ba5b003e21e43a20c44e206687bbc4a7f8eb6a6f85e9bebe33",
+          "products": 20,
+          "reviews": 65,
+          "prices": 20
+        },
+        {
+          "source": "lazada",
+          "capture_sha256": "e849cdbcac09260222d1ef9acce177eba62870c963c8c9f870d6ffa8a51b04f1",
+          "products": 20,
+          "reviews": 0,
+          "prices": 20
+        }
+      ],
+      "passed": true,
+      "served_products": 40,
+      "served_reviews": 65,
+      "marts": {
+        "product_daily_stats": 58,
+        "brand_daily_stats": 57,
+        "category_daily_stats": 57,
+        "price_daily_stats": 40
+      }
+    },
+    {
+      "iteration": 2,
+      "sources": [
+        {
+          "source": "tiki",
+          "capture_sha256": "8abaea9465f4bf0ffaff844a0e101c1475dd7b5c09ae898d5982119f92e7e0eb",
+          "products": 20,
+          "reviews": 65,
+          "prices": 20
+        },
+        {
+          "source": "lazada",
+          "capture_sha256": "b55203fcbfe568e54de8ea450bf870f78257b166f9420c99d4660f7ed226401c",
+          "products": 20,
+          "reviews": 0,
+          "prices": 20
+        }
+      ],
+      "passed": true,
+      "served_products": 40,
+      "served_reviews": 65,
+      "marts": {
+        "product_daily_stats": 58,
+        "brand_daily_stats": 57,
+        "category_daily_stats": 57,
+        "price_daily_stats": 40
+      }
+    }
+  ]
+}

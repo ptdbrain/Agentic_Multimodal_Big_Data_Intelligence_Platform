@@ -1,0 +1,65 @@
+[
+  {
+    "name": "lazada_search",
+    "url": "https://www.lazada.vn/catalog/?q=iphone",
+    "status": 200,
+    "title": "iphone - Mua iphone ? giá t?t nh?t Vietnam | www.lazada.vn",
+    "jsonld_count": 0,
+    "robots_text": null,
+    "accepted": false
+  },
+  {
+    "name": "shopee_search",
+    "url": "https://shopee.vn/api/v4/search/search_items?by=relevancy&keyword=iphone&limit=2&newest=0&order=desc&page_type=search&scenario=PAGE_GLOBAL_SEARCH&version=2",
+    "status": 403,
+    "title": null,
+    "jsonld_count": 0,
+    "robots_text": null,
+    "accepted": false
+  },
+  {
+    "name": "amazon_search",
+    "url": "https://www.amazon.com/s?k=smartphone",
+    "status": 503,
+    "title": "Sorry! Something went wrong!",
+    "jsonld_count": 0,
+    "robots_text": null,
+    "accepted": false
+  },
+  {
+    "name": "tinhte_robots",
+    "url": "https://tinhte.vn/robots.txt",
+    "status": 200,
+    "title": null,
+    "jsonld_count": 0,
+    "robots_text": "User-agent: *\nDisallow: /account/\nDisallow: /attachments/\nDisallow: /goto/\nDisallow: /go-to/\nDisallow: /login/\nDisallow: /lost-password/\nDisallow: /media/\nDisallow: /members/\nDisallow: /misc/style/\nDisallow: /misc/quick-navigation-menu\nDisallow: /online/\nDisallow: /points/\nDisallow: /register/\nDisallow: /topic-center/\nDisallow: /admin.php\nDisallow: /editorv2/\nDisallow: /nhap-nhap-nhap.215/\nDisallow: /khong-tinh-te.97/\nDisallow: /resources/\nDisallow: /proxy.php\nAllow: /\nUser-agent: Bytespider\nDisallow: /\nUser-agent: ClaudeBot\nDisallow: /\n",
+    "accepted": false
+  },
+  {
+    "name": "voz_robots",
+    "url": "https://voz.vn/robots.txt",
+    "status": 200,
+    "title": null,
+    "jsonld_count": 0,
+    "robots_text": "# As a condition of accessing this website, you agree to abide by the following\n# content signals:\n\n# (a)  If a Content-Signal = yes, you may collect content for the corresponding\n#      use.\n# (b)  If a Content-Signal = no, you may not collect content for the\n#      corresponding use.\n# (c)  If the website operator does not include a Content-Signal for a\n#      corresponding use, the website operator neither grants nor restricts\n#      permission via Content-Signal with respect to the corresponding use.\n\n# The content signals and their meanings are:\n\n# search:   building a search index and providing search results (e.g., returning\n#           hyperlinks and short excerpts from your website's contents). Search does not\n#           include providing AI-generated search summaries.\n# ai-input: inputting content into one or more AI models (e.g., retrieval\n#           augmented generation, grounding, or other real-time taking of content for\n#           generative AI search answers).\n# ai-train: training or fine-tuning AI models.\n# use:      how AI systems may consume the content (immediate, reference, or full).\n\n# ANY RESTRICTIONS EXPRESSED VIA CONTENT SIGNALS ARE EXPRESS RESERVATIONS OF\n# RIGHTS UNDER ARTICLE 4 OF THE EUROPEAN UNION DIRECTIVE 2019/790 ON COPYRIGHT\n# AND RELATED RIGHTS IN THE DIGITAL SINGLE MARKET.\n\n# BEGIN Cloudflare Managed content\n\n\nUser-agent: *\nContent-Signal: search=yes,ai-train=no,use=reference\nAllow: /\n\n# Training crawlers\nUser-agent: Amazonbot\nDisallow: /\n\nUser-agent: Applebot-Extended\nDisallow: /\n\nUser-agent: Bytespider\nDisallow: /\n\nUser-agent: CCBot\nDisallow: /\n\nUser-agent: ClaudeBot\nDisallow: /\n\nUser-agent: Diffbot\nDisallow: /\n\nUser-agent: Google-Extended\nDisallow: /\n\nUser-agent: GPTBot\nDisallow: /\n\nUser-agent: omgili\nDisallow: /\n\nUser-agent: anthropic-ai\nDisallow: /\n\nUser-agent: Claude-Web\nDisallow: /\n\nUser-agent: cohere-ai\nDisallow: /\n\nUser-agent: MistralAI-Training\nDisallow: /\n\nUser-agent: meta-externalagent\nDisallow: /\n\nUser-agent: GoogleOther\nDisallow: /\n\nUser-agent: Baiduspider\nDisallow: /\n\nUser-agent: PetalBot\nDisallow: /\n\nUser-agent: AwarioSmartBot\nUser-agent: AwarioRssBot\nDisallow: /\n\nUser-agent: Google-CloudVertexBot\nDisallow: /\n\nUser-agent: QualifiedBot\nDisallow: /\n\nUser-agent: Cotoyogi\nDisallow: /\n\nUser-agent: ICC-Crawler\nDisallow: /\n\nUser-agent: atlassian-bot\nDisallow: /\n\nUser-agent: FishBot\nDisallow: /\n\nUser-agent: BorderxBot\nDisallow: /\n\nUser-agent: NavuBot\nDisallow: /\n\nUser-agent: SemrushBot-SWA\nDisallow: /\n\nUser-agent: WARDBot\nDisallow: /\n\nUser-agent: magpie-crawler\nDisallow: /\n\nUser-agent: KimiBot\nDisallow: /\n\nUser-agent: CitibotSiteCrawler\nDisallow: /\n\n# END Cloudflare Managed Content\n\nUser-agent: *\nDisallow: /*reaction_id=\nDisallow: /account/\nDisallow: /ads/go\nDisallow: /attachments/\nAllow: /attachments/*-jpg.\nAllow: /attachments/*-jpeg.\nAllow: /attachments/*-png.\nAllow: /attachments/*-gif.\nAllow: /attachments/*-webp.\nDisallow: /admin.php\nDisallow: /goto/\nDisallow: /login/\nDisallow: /lost-password/\nDisallow: /misc/\nDisallow: /online/\nDisallow: /p/\nDisallow: /pinecone/\nDisallow: /profile-posts/\nDisallow: /register/\nDisallow: /search/\nDisallow: /t/*/latest\nDisallow: /t/*/post-\nDisallow: /t/*/reply\nDisallow: /t/*/tags\nDisallow: /t/*/unread\nDisallow: /u/\nDisallow: /whats-new/\nAllow: /\n\nSitemap: https://voz.vn/sitemap.xml\n",
+    "accepted": false
+  },
+  {
+    "name": "tiki_robots",
+    "url": "https://tiki.vn/robots.txt",
+    "status": 403,
+    "title": null,
+    "jsonld_count": 0,
+    "robots_text": "",
+    "accepted": false
+  },
+  {
+    "name": "lazada_robots",
+    "url": "https://www.lazada.vn/robots.txt",
+    "status": 200,
+    "title": null,
+    "jsonld_count": 0,
+    "robots_text": "User-agent: *\nDisallow: /wow/gcp/vn/member/login-signup\nDisallow: /undefined/\nDisallow: */undefined/$\nDisallow: */undefined$\nUser-agent: OAI-SearchBot\nAllow: /\nUser-agent: GPTBot\nAllow: /\nUser-agent: ChatGPT-User\nAllow: /",
+    "accepted": false
+  }
+]
