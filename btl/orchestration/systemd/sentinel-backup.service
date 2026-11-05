@@ -1,0 +1,9 @@
+[Unit]
+Description=Sentinel coordinated backup
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/sentinel/operations.env
+ExecStart=/usr/bin/env bash -c 'cd "$SENTINEL_PROJECT_DIR" && exec "$SENTINEL_PYTHON" scripts/backup_ops.py backup create --config "$SENTINEL_BACKUP_CONFIG"'
+TimeoutStartSec=45min
+UMask=0077
+NoNewPrivileges=true

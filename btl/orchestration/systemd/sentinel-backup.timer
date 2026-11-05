@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily Sentinel recovery bundle
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+AccuracySec=1min
+Unit=sentinel-backup.service
+[Install]
+WantedBy=timers.target
