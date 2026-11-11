@@ -12,3 +12,4 @@ storage/bronze/
 storage/minio_root/
 hadoop/jars/
 docs/reports/backup_*/
+storage/captures/

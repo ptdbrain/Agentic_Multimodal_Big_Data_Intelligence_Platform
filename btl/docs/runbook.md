@@ -133,6 +133,54 @@ Run streamlit run dashboard/app.py; it defaults to **real** data. Generated
 and unverified records require their explicit sidebar scopes. Article records
 are separate from reviews. Displaying a saved snapshot does not prove fresh crawling.
 
+## Daily Tiki watchlist capture
+
+`scripts/collect_tiki_daily.py` builds a real price and review history. The
+first successful run searches once (`--query iphone`, top `--max-products 20`)
+and freezes `watchlist.json`. Every later day observes the same product pages,
+so each product gets one price per day. It also takes the newest
+`--reviews-per-product 10` reviews (`sort=id|desc`). Requests respect
+robots.txt and are spaced by `--delay 8` seconds. HTTP 403/429 stops the run
+without generated fallback.
+
+Capture needs only the network. Loading into the pipeline is a separate step
+that requires the stack:
+
+    python scripts/collect_tiki_daily.py capture            # one attempt for today; a collected day is skipped
+    python scripts/collect_tiki_daily.py status             # collected / partial / failed days and where they were loaded
+    python scripts/collect_tiki_daily.py ingest-pending --mode integration --dry-run
+    python scripts/collect_tiki_daily.py ingest-pending --mode integration
+
+Captures live in `storage/captures/tiki` (git-ignored; override with `--root`
+or `TIKI_CAPTURE_DIR`). Each run writes its own `days/<date>/<run_id>/`
+directory. `capture.json` and `manifest.json` are created exclusively and are
+read-only. Raw HTTP bodies go under `evidence/<run_id>/`. A failed attempt
+keeps its manifest, and the next run retries the day in a new directory.
+`ingest-pending` checks each capture's SHA-256 and replays the day through
+`run_end_to_end`. It labels rows `acquisition_method=snapshot_replay` with
+`original_acquisition_method=live`, then writes `ingested-<mode>.json`. A
+failed replay leaves the day pending. Load into a real-commerce namespace only
+(see the section above). The guards reject mixing these rows with generated
+commerce.
+
+Scheduling uses a systemd user timer, like the backup timer.
+`orchestration/systemd/sentinel-tiki-capture.timer` fires daily at 09:00
+local time with a randomized delay of up to 10 minutes. `Persistent=true` runs
+a missed day after the machine starts again, and `Restart=on-failure` retries
+after 30 minutes (at most 4 starts in 6 hours). Install it as follows:
+
+    mkdir -p ~/.config/sentinel ~/.config/systemd/user
+    printf 'SENTINEL_PROJECT_DIR="%s"\nSENTINEL_PYTHON="%s"\n' "$PWD" "/path/to/python3.11" > ~/.config/sentinel/tiki-capture.env
+    cp orchestration/systemd/sentinel-tiki-capture.{service,timer} ~/.config/systemd/user/
+    systemctl --user daemon-reload && systemctl --user enable --now sentinel-tiki-capture.timer
+    journalctl --user -u sentinel-tiki-capture.service    # per-run summary line
+
+A user timer runs only while the user manager is alive. Without
+`loginctl enable-linger $USER`, nothing runs while the user is logged out, and
+`Persistent=true` catches up only the latest missed run. A scheduled capture
+proves collection for that day only; it is not evidence that the day was
+loaded, checked by DQ or shown on the dashboard.
+
 ## Streaming checkpoint migration
 
 The local micro-batch helper now writes validated **schema_version 3**

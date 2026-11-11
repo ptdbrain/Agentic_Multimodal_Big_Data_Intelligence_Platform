@@ -34,6 +34,10 @@ DEFAULT_SEEDS: Dict[str, str] = {
 }
 
 
+class TikiBlocked(RuntimeError):
+    """Tiki answered 403/429: the crawl must stop rather than retry around the refusal."""
+
+
 def utc_now() -> str:
     """Return ISO-8601 formatted UTC timestamp string."""
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
@@ -398,7 +402,7 @@ class PoliteTikiCrawler:
         response = self.session.get(url, timeout=self.timeout_seconds)
         self.last_request_at = time.monotonic()
         if response.status_code in (403, 429):
-            raise RuntimeError(f"Tiki returned HTTP {response.status_code} for {url}. Crawl stopped.")
+            raise TikiBlocked(f"Tiki returned HTTP {response.status_code} for {url}. Crawl stopped.")
         if response.status_code >= 500:
             raise RuntimeError(f"Tiki returned HTTP {response.status_code} for {url}.")
         response.raise_for_status()
@@ -453,7 +457,7 @@ class PoliteTikiCrawler:
         return records, unparsed
 
     def fetch_product_reviews(
-        self, product_id: str | int, limit: int = 5, page: int = 1
+        self, product_id: str | int, limit: int = 5, page: int = 1, sort: str = "score|desc"
     ) -> List[Dict[str, Any]]:
         """Politely query genuine customer reviews from Tiki's public review endpoint.
         Respects robots.txt and rate limits (delay >= 2.0s).
@@ -468,7 +472,7 @@ class PoliteTikiCrawler:
             "product_id": clean_id,
             "limit": limit,
             "page": page,
-            "sort": "score|desc",
+            "sort": sort,
         }
         full_url = f"{url}?{urlencode(params)}"
         self._check_robots(full_url)
@@ -529,9 +533,11 @@ class TikiCrawler(BaseEcommerceCrawler):
         self.use_polite_scraper = use_polite_scraper
         self.polite_crawler = PoliteTikiCrawler(delay_seconds=delay_seconds, evidence=self.evidence)
 
-    def search_products(self, query: str, limit: int = 20, page: int = 1) -> List[Dict[str, Any]]:
+    def search_products(self, query: str, limit: int = 20, page: int = 1,
+                        observe_offers: bool = True) -> List[Dict[str, Any]]:
         """Search products on Tiki by keyword or category.
         Uses live API endpoint if available, with polite HTML scraping fallback.
+        ``observe_offers=False`` returns the search rows without fetching each product page.
         In real crawl mode (allow_public_fallback=False), NEVER injects synthetic mock products.
         """
         # 1. Try public JSON API
@@ -544,7 +550,7 @@ class TikiCrawler(BaseEcommerceCrawler):
                 items = data.get("data", [])
                 if items:
                     observed = self.evidence.stamp(items,resp,url)
-                    if self.use_polite_scraper:
+                    if self.use_polite_scraper and observe_offers:
                         for index,item in enumerate(observed):
                             if observed_currency(item.get('currency'),item.get('price')) is not None:
                                 continue
@@ -556,11 +562,8 @@ class TikiCrawler(BaseEcommerceCrawler):
                             if parts.hostname != BASE_HOST or not PRODUCT_URL_RE.search(parts.path):
                                 continue
                             try:
-                                html = self.polite_crawler.fetch_html(product_url)
-                                offer = extract_page_fields(html,product_url,query)
+                                offer = self.observe_product_page(product_url,query)
                                 if offer.get('currency') and offer.get('price') is not None:
-                                    # Price and unit share the same HTML evidence.
-                                    offer['_source_provenance'] = self.polite_crawler._last_source_provenance.copy()
                                     observed[index] = offer
                             except Exception as error:
                                 logger.warning("Tiki offer evidence unavailable (%s)",type(error).__name__)
@@ -591,6 +594,13 @@ class TikiCrawler(BaseEcommerceCrawler):
         logger.info("[Tiki] No live products returned for %r", query)
         return []
 
+    def observe_product_page(self, product_url: str, category_seed: str = "Electronics") -> Dict[str, Any]:
+        """Fetch one product page politely; price and currency share that page's HTTP evidence."""
+        html = self.polite_crawler.fetch_html(product_url)
+        offer = extract_page_fields(html, product_url, category_seed)
+        offer['_source_provenance'] = self.polite_crawler._last_source_provenance.copy()
+        return offer
+
     def get_product_details(self, product_id: str) -> Optional[Dict[str, Any]]:
         """Fetch granular product specification and live seller pricing from Tiki."""
         clean_id = str(product_id).replace("tiki_", "")
@@ -604,8 +614,10 @@ class TikiCrawler(BaseEcommerceCrawler):
                 return None
         return None
 
-    def get_product_reviews(self, product_id: str, limit: int = 50, page: int = 1) -> List[Dict[str, Any]]:
-        """Collect up to limit observed rows using Tiki's maximum20-row pages."""
+    def get_product_reviews(self, product_id: str, limit: int = 50, page: int = 1,
+                            sort: str = "score|desc") -> List[Dict[str, Any]]:
+        """Collect up to limit observed rows using Tiki's maximum20-row pages.
+        ``sort="id|desc"`` asks Tiki for the newest reviews first."""
         clean_id = str(product_id).replace("tiki_", "")
         if isinstance(limit,bool) or not isinstance(limit,int) or limit < 1:
             raise ValueError("Review limit must be a positive integer")
@@ -614,11 +626,11 @@ class TikiCrawler(BaseEcommerceCrawler):
         page_size = min(limit,20)
         collected, seen = [], set()
         for current_page in range(page,page + math.ceil(limit / page_size)):
-            items = (self.polite_crawler.fetch_product_reviews(clean_id,limit=page_size,page=current_page)
+            items = (self.polite_crawler.fetch_product_reviews(clean_id,limit=page_size,page=current_page,sort=sort)
                      if self.use_polite_scraper else [])
             if not items:
                 url = f"{self.base_url}{self.reviews_endpoint}"
-                params = {"product_id":clean_id,"limit":page_size,"page":current_page,"sort":"score|desc"}
+                params = {"product_id":clean_id,"limit":page_size,"page":current_page,"sort":sort}
                 response = self._request_with_retry("GET",url,params=params)
                 if response is not None and response.status_code == 200:
                     try:

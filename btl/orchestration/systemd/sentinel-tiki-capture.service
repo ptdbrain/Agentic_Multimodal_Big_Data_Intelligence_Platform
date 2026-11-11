@@ -1,0 +1,15 @@
+[Unit]
+Description=Sentinel daily Tiki watchlist capture
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=6h
+StartLimitBurst=4
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/sentinel/tiki-capture.env
+ExecStart=/usr/bin/env bash -c 'cd "$SENTINEL_PROJECT_DIR" && exec "$SENTINEL_PYTHON" scripts/collect_tiki_daily.py capture'
+Restart=on-failure
+RestartSec=30min
+TimeoutStartSec=45min
+UMask=0077
+NoNewPrivileges=true

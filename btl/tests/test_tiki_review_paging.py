@@ -29,3 +29,44 @@ def test_requested_review_count_uses_bounded_pages_without_fabricating_missing_r
     assert all(call['limit']==20 for call in calls)
     assert [call['page'] for call in calls]==list(range(1,len(calls)+1))
     assert all(row['_source_provenance']['evidence_sha256'] for row in rows)
+
+
+def _json_response(url,data):
+    response=requests.Response();response.url=url;response.status_code=200
+    response._content=json.dumps(data).encode()
+    return response
+
+
+def test_requested_review_order_reaches_the_observed_api(tmp_path,monkeypatch):
+    crawler=TikiCrawler(use_polite_scraper=False,evidence_dir=tmp_path)
+    calls=[]
+    def server(method,url,**kwargs):
+        calls.append(dict(kwargs['params']))
+        return _json_response(url,{'data':[{'id':1,'content':'Explicit HTTP fixture'}]})
+    monkeypatch.setattr(crawler,'_request_with_retry',server)
+    crawler.get_product_reviews('tiki_123',limit=5,sort='id|desc')
+    assert [call['sort'] for call in calls]==['id|desc']
+
+
+def test_requested_review_order_reaches_the_polite_review_request(tmp_path,monkeypatch):
+    crawler=TikiCrawler(evidence_dir=tmp_path)
+    polite=crawler.polite_crawler
+    monkeypatch.setattr(polite,'_check_robots',lambda url:None)
+    monkeypatch.setattr(polite,'delay_seconds',0)
+    calls=[]
+    def get(url,**kwargs):
+        calls.append(dict(kwargs['params']))
+        return _json_response(url,{'data':[{'id':7,'content':'Explicit HTTP fixture'}]})
+    monkeypatch.setattr(polite.session,'get',get)
+    rows=crawler.get_product_reviews('tiki_123',limit=5,sort='id|desc')
+    assert [row['id'] for row in rows]==[7]
+    assert [call['sort'] for call in calls]==['id|desc']
+
+
+def test_review_order_defaults_to_the_existing_score_order(tmp_path,monkeypatch):
+    crawler=TikiCrawler(use_polite_scraper=False,evidence_dir=tmp_path)
+    calls=[]
+    monkeypatch.setattr(crawler,'_request_with_retry',
+                        lambda method,url,**kwargs:calls.append(kwargs['params']) or _json_response(url,{'data':[]}))
+    crawler.get_product_reviews('tiki_123',limit=5)
+    assert calls[0]['sort']=='score|desc'

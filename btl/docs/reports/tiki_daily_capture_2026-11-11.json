@@ -1,0 +1,60 @@
+{
+  "boundary": "First daily Tiki watchlist capture, started through the installed systemd user service (sentinel-tiki-capture.service, exit 0). New live HTTP collection; not loaded into the pipeline yet.",
+  "manifest": {
+    "capture_file": "capture.json",
+    "capture_sha256": "0e51097cfabcff8218543cca3a0dfdb3ecf4be60ccbfe08fde12d36c093ae07a",
+    "collection_run_id": "4762f9e1cfb1432eba6bfe559eeedd6e",
+    "counts": {
+      "prices": 20,
+      "products": 20,
+      "reviews": 67
+    },
+    "day": "2026-11-11",
+    "error": null,
+    "finished_at": "2026-11-11T14:49:20.195427+00:00",
+    "missing": [],
+    "policy": {
+      "delay_seconds": 8.0,
+      "max_products": 20,
+      "review_sort": "id|desc",
+      "reviews_per_product": 10,
+      "robots_txt": "enforced"
+    },
+    "query": "iphone",
+    "schema_valid": {
+      "prices": 20,
+      "products": 20,
+      "reviews": 67
+    },
+    "source": "tiki",
+    "started_at": "2026-11-11T14:43:57.229851+00:00",
+    "status": "complete"
+  },
+  "watchlist": {
+    "query": "iphone",
+    "created_at": "2026-11-11T14:43:58.138861+00:00",
+    "products": [
+      "tiki_278628812",
+      "tiki_278628866",
+      "tiki_279703094",
+      "tiki_279703811",
+      "tiki_28117876",
+      "tiki_81224454",
+      "tiki_277549572",
+      "tiki_279142338",
+      "tiki_275678601",
+      "tiki_278938086",
+      "tiki_135410778",
+      "tiki_276042045",
+      "tiki_275678806",
+      "tiki_54566592",
+      "tiki_20332872",
+      "tiki_176588567",
+      "tiki_273792733",
+      "tiki_278769836",
+      "tiki_72215833",
+      "tiki_54345390"
+    ]
+  },
+  "raw_capture_location": "storage/captures/tiki (git-ignored, private evidence)"
+}

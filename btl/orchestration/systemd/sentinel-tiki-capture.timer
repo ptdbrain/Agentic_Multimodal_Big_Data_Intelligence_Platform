@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Sentinel Tiki watchlist capture
+[Timer]
+OnCalendar=*-*-* 09:00:00
+Persistent=true
+RandomizedDelaySec=10min
+AccuracySec=1min
+Unit=sentinel-tiki-capture.service
+[Install]
+WantedBy=timers.target
