@@ -104,7 +104,7 @@ def _watchlist(root: Path, crawler, query: str, max_products: int) -> Dict[str, 
     return watchlist
 
 
-def _observe(crawler, watchlist, query, reviews_per_product, missing) -> Dict[str, List[Dict[str, Any]]]:
+def _observe(crawler, watchlist, query, reviews_per_product, missing, review_cursors=None, review_max_pages=10) -> Dict[str, List[Dict[str, Any]]]:
     captured = {'products': [], 'prices': [], 'reviews': []}
     for index, entry in enumerate(watchlist['products'], start=1):
         try:
@@ -118,7 +118,19 @@ def _observe(crawler, watchlist, query, reviews_per_product, missing) -> Dict[st
         captured['products'].append(product)
         captured['prices'].append(crawler.standardize_price(product, index=index))
         if reviews_per_product > 0:
-            for raw in crawler.get_product_reviews(entry['product_id'], limit=reviews_per_product, sort=REVIEW_SORT):
+            if review_cursors is not None:
+                from ingestion.review_cursor import collect_review_delta
+                try:
+                    delta=collect_review_delta(crawler,entry['product_id'],review_cursors.get(entry['product_id']),max_pages=review_max_pages)
+                except (TikiBlocked,PermissionError):raise
+                except (requests.RequestException,RuntimeError,ValueError) as error:
+                    missing.append({'product_id':entry['product_id'],'reason':'review_'+type(error).__name__})
+                    continue
+                raw_reviews=delta['rows']
+                review_cursors[entry['product_id']]=delta['cursor']
+                if not delta['complete']:missing.append({'product_id':entry['product_id'],'reason':delta['reason']})
+            else:raw_reviews=crawler.get_product_reviews(entry['product_id'], limit=reviews_per_product, sort=REVIEW_SORT)
+            for raw in raw_reviews:
                 review = crawler.standardize_review(raw, product_id=entry['product_id'])
                 captured['reviews'].append(sanitize_record_pii(review, remove_user_id=crawler.remove_user_id))
     if not captured['products']:
@@ -127,7 +139,7 @@ def _observe(crawler, watchlist, query, reviews_per_product, missing) -> Dict[st
 
 
 def capture_day(root, day: date, crawler_factory: Callable[[str, Path], Any], *, query: str = 'iphone',
-                max_products: int = 20, reviews_per_product: int = 10) -> Dict[str, Any]:
+                max_products: int = 20, reviews_per_product: int = 10, incremental_reviews: bool = False, review_max_pages: int = 10) -> Dict[str, Any]:
     """Observe the watchlist once for ``day``; a day already collected is skipped, not repeated.
 
     ``crawler_factory(run_id, evidence_dir)`` returns a TikiCrawler. Any error is recorded in a
@@ -136,13 +148,21 @@ def capture_day(root, day: date, crawler_factory: Callable[[str, Path], Any], *,
     root = Path(root)
     day_key = day.isoformat()
     with _locked(root):
+        retry_manifest=None
         for attempt_dir, manifest in _attempts(root):
-            if manifest['day'] == day_key and manifest['status'] in COLLECTED:
+            if manifest['day'] == day_key and (manifest['status']=='complete' or (manifest['status']=='partial' and not incremental_reviews)):
                 return {'status': 'skipped', 'day': day_key, 'existing_run_id': manifest['collection_run_id'],
                         'attempt_dir': attempt_dir}
+            if incremental_reviews and manifest['day']==day_key and manifest['status']=='partial':
+                raw=(attempt_dir/manifest['capture_file']).read_bytes()
+                if hashlib.sha256(raw).hexdigest()!=manifest['capture_sha256']:
+                    raise ValueError('Previous partial capture changed; refused retry')
+                retry_manifest=manifest
         run_id = uuid.uuid4().hex
         attempt_dir = root / 'days' / day_key / run_id
         attempt_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
+        cursor_path=root/'review-cursor.json'
+        review_cursors=(json.loads(cursor_path.read_text()) if cursor_path.exists() else {}) if incremental_reviews else None
         crawler = crawler_factory(run_id, root / 'evidence')
         manifest = {'source': 'tiki', 'day': day_key, 'collection_run_id': run_id, 'query': query,
                     'started_at': _now(), 'missing': [], 'error': None, 'counts': None,
@@ -151,7 +171,11 @@ def capture_day(root, day: date, crawler_factory: Callable[[str, Path], Any], *,
                                'review_sort': REVIEW_SORT}}
         try:
             watchlist = _watchlist(root, crawler, query, max_products)
-            captured = _observe(crawler, watchlist, query, reviews_per_product, manifest['missing'])
+            if retry_manifest:
+                missing_ids={row['product_id'] for row in retry_manifest['missing']}
+                watchlist=dict(watchlist,products=[row for row in watchlist['products'] if row['product_id'] in missing_ids])
+                manifest['retry_of']=retry_manifest['collection_run_id']
+            captured = _observe(crawler, watchlist, query, reviews_per_product, manifest['missing'],review_cursors,review_max_pages)
         except Exception as error:
             manifest.update(status='failed', error=type(error).__name__, error_message=str(error)[:500])
         else:
@@ -166,7 +190,12 @@ def capture_day(root, day: date, crawler_factory: Callable[[str, Path], Any], *,
             crawler.session.close()
             crawler.polite_crawler.session.close()
         manifest['finished_at'] = _now()
+        if review_cursors is not None and manifest['status'] in COLLECTED:
+            manifest['review_cursors']=review_cursors
         _write_new(attempt_dir / 'manifest.json', manifest, mode=0o400)
+        if review_cursors is not None and manifest['status'] in COLLECTED:
+            from orchestration.source_jobs import write_atomic
+            write_atomic(cursor_path,review_cursors)
         return dict(manifest, attempt_dir=attempt_dir)
 
 
@@ -221,7 +250,8 @@ def capture_status(root) -> List[Dict[str, Any]]:
     rows = []
     for day, attempts in sorted(by_day.items()):
         collected = [attempt for attempt in attempts if attempt[1]['status'] in COLLECTED]
-        attempt_dir, manifest = collected[0] if collected else attempts[-1]
+        complete=[attempt for attempt in collected if attempt[1]['status']=='complete']
+        attempt_dir, manifest = complete[-1] if complete else (collected[-1] if collected else attempts[-1])
         rows.append({'day': day, 'status': manifest['status'], 'collection_run_id': manifest['collection_run_id'],
                      'counts': manifest['counts'], 'missing': len(manifest['missing']), 'error': manifest['error'],
                      'attempts': len(attempts),

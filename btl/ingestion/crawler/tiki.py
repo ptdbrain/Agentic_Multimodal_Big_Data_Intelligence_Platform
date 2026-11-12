@@ -457,7 +457,7 @@ class PoliteTikiCrawler:
         return records, unparsed
 
     def fetch_product_reviews(
-        self, product_id: str | int, limit: int = 5, page: int = 1, sort: str = "score|desc"
+        self, product_id: str | int, limit: int = 5, page: int = 1, sort: str = "score|desc", strict: bool = False
     ) -> List[Dict[str, Any]]:
         """Politely query genuine customer reviews from Tiki's public review endpoint.
         Respects robots.txt and rate limits (delay >= 2.0s).
@@ -491,14 +491,20 @@ class PoliteTikiCrawler:
             self.last_request_at = time.monotonic()
             if resp.status_code == 200:
                 data = resp.json()
+                if strict and (not isinstance(data,dict) or 'data' not in data):
+                    raise ValueError('Review response must contain an observed data array')
                 items = data.get("data", [])
                 if isinstance(items, list):
                     return self.evidence.stamp(items,resp,full_url)
+                if strict:raise ValueError('Invalid review page data shape')
             elif resp.status_code in (403, 429):
+                if strict:raise TikiBlocked(f'Tiki review endpoint returned HTTP {resp.status_code}')
                 logger.warning(f"Tiki review endpoint returned HTTP {resp.status_code} for product {clean_id}")
             else:
+                if strict:raise RuntimeError(f'Tiki review endpoint returned HTTP {resp.status_code}')
                 logger.info(f"Tiki review query returned HTTP {resp.status_code} for product {clean_id}")
         except Exception as exc:
+            if strict:raise
             logger.warning(f"Error fetching genuine reviews for product {clean_id}: {exc}")
         return []
 
@@ -615,7 +621,7 @@ class TikiCrawler(BaseEcommerceCrawler):
         return None
 
     def get_product_reviews(self, product_id: str, limit: int = 50, page: int = 1,
-                            sort: str = "score|desc") -> List[Dict[str, Any]]:
+                            sort: str = "score|desc", strict: bool = False) -> List[Dict[str, Any]]:
         """Collect up to limit observed rows using Tiki's maximum20-row pages.
         ``sort="id|desc"`` asks Tiki for the newest reviews first."""
         clean_id = str(product_id).replace("tiki_", "")
@@ -626,9 +632,11 @@ class TikiCrawler(BaseEcommerceCrawler):
         page_size = min(limit,20)
         collected, seen = [], set()
         for current_page in range(page,page + math.ceil(limit / page_size)):
-            items = (self.polite_crawler.fetch_product_reviews(clean_id,limit=page_size,page=current_page,sort=sort)
+            if strict and not self.use_polite_scraper:raise ValueError('Strict review paging requires the robots-aware scraper')
+            options={'strict':True} if strict else {}
+            items = (self.polite_crawler.fetch_product_reviews(clean_id,limit=page_size,page=current_page,sort=sort,**options)
                      if self.use_polite_scraper else [])
-            if not items:
+            if not items and not strict:
                 url = f"{self.base_url}{self.reviews_endpoint}"
                 params = {"product_id":clean_id,"limit":page_size,"page":current_page,"sort":sort}
                 response = self._request_with_retry("GET",url,params=params)

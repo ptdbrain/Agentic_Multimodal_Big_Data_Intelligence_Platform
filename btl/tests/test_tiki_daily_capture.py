@@ -269,3 +269,31 @@ def test_timer_units_run_the_capture_daily_and_catch_up_after_downtime():
     assert 'Type=oneshot' in service and 'Restart=on-failure' in service
     assert 'OnCalendar=*-*-* 09:00:00' in timer and 'Persistent=true' in timer
     assert 'Unit=sentinel-tiki-capture.service' in timer
+
+
+def test_managed_partial_retry_observes_only_missing_products_and_preserves_attempt(tmp_path):
+    first=_capture(tmp_path,FakeTiki({101:'Phone 101',102:'Phone 102'},missing={102}),incremental_reviews=True)
+    assert first['status']=='partial'
+    before=(first['attempt_dir']/'manifest.json').read_bytes()
+    retry=FakeTiki({101:'Phone 101',102:'Phone 102'})
+    second=_capture(tmp_path,retry,incremental_reviews=True)
+    assert second['status']=='complete'
+    assert len(retry.product_page_calls())==1 and '-p102.html' in retry.product_page_calls()[0]
+    assert [row['product_id'] for row in _load(second)['products']]==['tiki_102']
+    assert (first['attempt_dir']/'manifest.json').read_bytes()==before
+    assert second['retry_of']==first['collection_run_id']
+    assert daily_capture.capture_status(tmp_path)[0]['status']=='complete'
+
+
+@pytest.mark.parametrize('status',[429,503])
+def test_managed_review_http_failure_never_looks_like_empty_completed_page(tmp_path,status):
+    fake=FakeTiki({101:'Phone 101'})
+    original=fake.handle
+    def unavailable(url,params=None):
+        if urlsplit(url).path=='/api/v2/reviews':return _response(url,status=status,body=b'not available')
+        return original(url,params)
+    fake.handle=unavailable
+    result=_capture(tmp_path,fake,incremental_reviews=True)
+    assert result['status']==('failed' if status==429 else 'partial')
+    if status==503:
+        assert result['missing'] and not result['review_cursors'].get('tiki_101',{}).get('ids')

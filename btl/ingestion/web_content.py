@@ -78,6 +78,7 @@ def collect_articles(seed_urls, limit=50, max_pages=150, evidence_dir=None, requ
             try:
                 if parts.netloc not in policies:
                     robots = session.get(urlunsplit((parts.scheme, parts.netloc, '/robots.txt', '', '')), timeout=20)
+                    info['http_status']=robots.status_code
                     robots.raise_for_status()
                     parser = RobotFileParser(); parser.parse(robots.text.splitlines())
                     policies[parts.netloc] = parser
@@ -118,4 +119,5 @@ def collect_articles(seed_urls, limit=50, max_pages=150, evidence_dir=None, requ
             finally:
                 evidence.append(info)
     return records, {'collection_run_id':collection_run_id,'acquisition_method': 'live', 'articles_collected': len(records), 'requested_articles': limit,
-                     'pages_attempted': len(seen), 'requests': evidence}
+                     'pages_attempted': len(seen), 'requests': evidence,
+                     'pending_urls': list(dict.fromkeys(url for url in queue if url not in seen))}
