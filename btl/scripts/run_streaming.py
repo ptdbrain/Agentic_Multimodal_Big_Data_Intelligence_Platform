@@ -27,11 +27,30 @@ def main():
     parser = argparse.ArgumentParser(description="SentinelAI Streaming Processor")
     parser.add_argument("--mode", choices=["spark", "simulator"], default="simulator",
                         help="Streaming execution engine")
-    parser.add_argument("--window", default="1 minute", help="Tumbling window duration")
-    parser.add_argument("--watermark", default="10 minutes", help="Event-time watermark delay")
+    parser.add_argument("--window", default=None, help="Tumbling window duration")
+    parser.add_argument("--watermark", default=None, help="Event-time watermark delay")
     parser.add_argument("--topic", default=None, help="Kafka input topic")
     parser.add_argument('--seed',type=int,default=None,help='Simulator generator seed (default 42)')
+    parser.add_argument('--serving-pointer', help='Opt in to a verified Kafka migration generation and resume its source/checkpoint')
     args = parser.parse_args()
+    resolved = None
+    if args.serving_pointer:
+        if args.mode != 'spark':
+            parser.error('--serving-pointer requires --mode spark')
+        try:
+            from operations.migration import resolve_stream_pointer
+            resolved = resolve_stream_pointer(args.serving_pointer, expected_topics=args.topic)
+            configuration = resolved['configuration']
+            for flag, supplied, key in [('--window', args.window, 'window_seconds'),
+                                        ('--watermark', args.watermark, 'watermark_seconds')]:
+                if supplied is not None and simulator_duration(supplied, allow_zero=True) != configuration[key]:
+                    raise ValueError(f'{flag} differs from promoted checkpoint configuration')
+            args.window = f"{configuration['window_seconds']} seconds"
+            args.watermark = f"{configuration['watermark_seconds']} seconds"
+        except (ValueError, KeyError, OSError) as error:
+            parser.error(str(error))
+    args.window = args.window or '1 minute'
+    args.watermark = args.watermark or '10 minutes'
     if args.mode == 'simulator':
         try:
             window_seconds = simulator_duration(args.window)
@@ -58,16 +77,43 @@ def main():
     if args.mode == "spark":
         try:
             from spark.streaming.spark_streaming_job import SparkStreamingJob
-            job = SparkStreamingJob()
+            runtime_args = {}
+            source_args = {}
+            if resolved:
+                runtime_args = {name: resolved[name] for name in ('checkpoint_dir', 'output_path', 'quarantine_path')}
+                runtime_args['output_mode'] = resolved['configuration']['output_mode']
+                source_args = {'kafka_source': resolved['kafka_source'], 'audit_path': resolved['audit_path']}
+                runtime_args['negative_threshold'] = resolved['configuration']['negative_threshold']
+            job = SparkStreamingJob(**runtime_args)
             print("[Spark Streaming] Initializing streaming query from Kafka...")
             query = job.start_review_stream(
                 window_duration=args.window,
                 watermark_delay=args.watermark,
                 topics=args.topic,
+                **source_args,
             )
             print("[Spark Streaming] Query active. Awaiting termination...")
-            query.awaitTermination()
+            try:
+                # Monitor every sink; a failed quarantine/audit must stop serving.
+                import time
+                while any(q is not None and q.isActive for q in job.queries):
+                    job.observe_progress()
+                    for active in job.queries:
+                        if active is not None and active.exception():
+                            raise RuntimeError(str(active.exception()))
+                    time.sleep(1)
+                job.observe_progress()
+                for active in job.queries:
+                    if active is not None and active.exception():
+                        raise RuntimeError(str(active.exception()))
+            finally:
+                job.stop()
         except Exception as e:
+            try:
+                from operations.status import OperationStatus
+                with OperationStatus(mode=settings.runtime_mode) as status:status.stream_error()
+            except Exception:
+                pass  # Preserve the original query failure if telemetry SQL is down.
             print(f"[Spark Streaming Error] Could not start streaming query: {e}")
             sys.exit(1)
     else:

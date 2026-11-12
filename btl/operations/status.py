@@ -17,6 +17,9 @@ GAUGES = frozenset(
         "under_replicated_partitions",
         "disk_free_ratio",
         "stream_progress_timestamp",
+        "stream_heartbeat_timestamp",
+        "stream_input_rows",
+        "stream_errors",
     }
 )
 
@@ -71,6 +74,10 @@ class OperationStatus:
                 name TEXT NOT NULL, pipeline TEXT NOT NULL, source TEXT NOT NULL,
                 value DOUBLE PRECISION NOT NULL, observed DOUBLE PRECISION NOT NULL,
                 PRIMARY KEY(name,pipeline,source))""")
+            cur.execute('''CREATE TABLE IF NOT EXISTS operations_stream_progress (
+                checkpoint_hash TEXT NOT NULL,sink TEXT NOT NULL,batch_id BIGINT NOT NULL,
+                input_rows BIGINT NOT NULL,observed DOUBLE PRECISION NOT NULL,
+                data_progress DOUBLE PRECISION,PRIMARY KEY(checkpoint_hash,sink))''')
 
             cur.execute(
                 "CREATE TABLE IF NOT EXISTS operations_expectations(pipeline TEXT NOT NULL,source TEXT NOT NULL,registered DOUBLE PRECISION NOT NULL,PRIMARY KEY(pipeline,source))"
@@ -168,6 +175,56 @@ class OperationStatus:
                 ON CONFLICT(name,pipeline,source) DO UPDATE SET value=excluded.value,observed=excluded.observed""",
                 (name, pipeline, source, value, now),
             )
+
+    @admitted
+    def stream_error(self,now=None):
+        """Count outstanding actual CLI query failures until committed recovery."""
+        now=_number(time.time() if now is None else now)
+        with self.conn:
+            self._execute('''INSERT INTO operations_gauges(name,pipeline,source,value,observed)
+                VALUES('stream_errors','streaming','system',1,?) ON CONFLICT(name,pipeline,source)
+                DO UPDATE SET value=operations_gauges.value+1,observed=excluded.observed''',(now,))
+
+    @admitted
+    def stream_progress(self,checkpoint,sink,progress,required_sinks=('window','quarantine')):
+        """Record Spark's committed query progress; idle batches prove liveness only.
+
+        Rows are Spark's reported input scans for the window query, not the sum
+        of all sinks or a claim of distinct business events. Idempotence survives
+        driver restarts and periodic polling without run IDs in metric labels.
+        """
+        from datetime import datetime
+        import hashlib
+        allowed={'window','quarantine','audit'}
+        required=set(required_sinks)
+        if not checkpoint or sink not in allowed or not required or not required.issubset(allowed):
+            raise ValueError('Explicit checkpoint and bounded sink set required')
+        batch=progress.get('batchId');rows=progress.get('numInputRows')
+        if type(batch) is not int or batch<0 or type(rows) is not int or rows<0:
+            raise ValueError('Invalid committed Spark progress')
+        instant=datetime.fromisoformat(progress['timestamp'].replace('Z','+00:00'))
+        if instant.tzinfo is None:raise ValueError('Spark progress must have an explicit timezone')
+        observed=_number(instant.timestamp())
+        key=hashlib.sha256(str(checkpoint).encode()).hexdigest()
+        with self.conn:
+            previous=self._execute('SELECT batch_id,data_progress FROM operations_stream_progress WHERE checkpoint_hash=? AND sink=?',(key,sink)).fetchone()
+            if previous and batch<=previous[0]:return
+            data_progress=observed if rows else (previous[1] if previous else None)
+            self._execute('''INSERT INTO operations_stream_progress VALUES(?,?,?,?,?,?)
+                ON CONFLICT(checkpoint_hash,sink) DO UPDATE SET batch_id=excluded.batch_id,
+                input_rows=excluded.input_rows,observed=excluded.observed,data_progress=excluded.data_progress''',
+                (key,sink,batch,rows,observed,data_progress))
+            measured={row[0]:row[1:] for row in self._execute(
+                'SELECT sink,observed,data_progress,input_rows FROM operations_stream_progress WHERE checkpoint_hash=?',(key,)).fetchall()}
+        if not required.issubset(measured):return
+        fault=self._execute("SELECT value,observed FROM operations_gauges WHERE name='stream_errors' AND pipeline='streaming' AND source='system'").fetchone()
+        if not fault or not fault[0] or min(measured[name][0] for name in required)>=fault[1]:
+            self.set_gauge('stream_errors',0,'streaming','system')
+        self.set_gauge('stream_heartbeat_timestamp',min(measured[name][0] for name in required),'streaming','system')
+        points=[measured[name][1] for name in required]
+        if all(point is not None for point in points):
+            self.set_gauge('stream_progress_timestamp',min(points),'streaming','system')
+        if 'window' in measured:self.set_gauge('stream_input_rows',measured['window'][2],'streaming','system')
 
     def metrics(self):
         lines = []

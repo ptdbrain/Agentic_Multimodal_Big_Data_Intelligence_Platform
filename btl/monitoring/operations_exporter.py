@@ -65,7 +65,22 @@ def collect(mode=None):
         if disk:
             stats = os.statvfs(disk)
             status.set_gauge("disk_free_ratio", stats.f_bavail / stats.f_blocks)
-        return status.metrics()
+        metrics = status.metrics()
+        source_config = os.environ.get("OPS_SOURCE_JOBS_CONFIG")
+        if source_config:
+            import yaml
+            from monitoring.source_metrics import source_metrics
+
+            path = Path(source_config)
+            metrics += source_metrics(yaml.safe_load(path.read_text()), registered_at=path.stat().st_mtime)
+        backup_pointer = os.environ.get("OPS_BACKUP_STATUS_FILE")
+        if backup_pointer:
+            from monitoring.source_metrics import backup_metrics
+
+            prefix = 'sentinel_ops_backup_last_complete_timestamp{pipeline="platform",source="system"}'
+            metrics = "\n".join(line for line in metrics.splitlines() if not line.startswith(prefix)) + "\n"
+            metrics += backup_metrics(backup_pointer)
+        return metrics
 
 
 def main():

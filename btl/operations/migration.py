@@ -92,6 +92,7 @@ def make_plan(
     old_quarantine=None,
     old_input_manifest=None,
     configuration=None,
+    kafka_source=None,
 ):
     old = _safe(old_checkpoint)
     new = _safe(destination)
@@ -122,8 +123,9 @@ def make_plan(
     for kind, path in [("output", old_output), ("quarantine", old_quarantine), ("input_manifest", old_input_manifest)]:
         if path:
             baseline[kind] = {"path": str(_safe(path)), "hashes": inventory(path)}
-    return {
+    plan = {
         "version": 1,
+        "source_kind": "kafka" if kafka_source else "file",
         "migration_id": uuid.uuid4().hex,
         "engine": engine,
         "mode": mode,
@@ -134,6 +136,20 @@ def make_plan(
         "configuration": config,
         "writer_pids": writer_pids,
     }
+    if kafka_source is not None:
+        if engine != 'spark':
+            raise ValueError('Kafka migration requires actual Spark engine')
+        plan['kafka_source'] = json.loads(_json(validate_kafka_source(kafka_source)))
+        observed = read_kafka_bounds(kafka_source)
+        validate_kafka_bounds(kafka_source, observed, frozen=True)
+        if not observed.get('cluster_id'):
+            raise ValueError('Kafka cluster identity could not be pinned')
+        plan['kafka_source']['cluster_id'] = observed['cluster_id']
+        from spark.streaming.spark_streaming_job import SparkStreamingJob
+        plan['kafka_schema_sha256'] = _hash(SparkStreamingJob.get_envelope_raw_schema().jsonValue())
+        plan['kafka_expected'] = _kafka_identities(_records(plan), kafka_source)
+        plan['kafka_input_sha256'] = _hash(plan['kafka_expected'])
+    return plan
 
 
 def _validate(plan):
@@ -145,6 +161,10 @@ def _validate(plan):
         raise ValueError("Old and new namespace must be isolated")
     if inventory(plan["old_checkpoint"]["path"]) != plan["old_checkpoint"]["files"]:
         raise ValueError("Old checkpoint hash changed; stop writer and create a new plan")
+    if plan.get('source_kind') == 'kafka':
+        from spark.streaming.spark_streaming_job import SparkStreamingJob
+        if _hash(SparkStreamingJob.get_envelope_raw_schema().jsonValue()) != plan.get('kafka_schema_sha256'):
+            raise ValueError('Kafka raw schema changed; create a new migration plan')
     for entry in [*plan["inputs"], *plan["baseline"].values()]:
         if inventory(entry["path"]) != entry["hashes"]:
             raise ValueError("Pinned input hash mismatch")
@@ -209,9 +229,21 @@ def replay(plan):
             from spark.streaming.spark_streaming_job import SparkStreamingJob
             from spark.spark_session import SparkSessionFactory
 
-            incoming = destination / "input"
-            incoming.mkdir()
-            (incoming / "events.json").write_text(_json(records))
+            kafka_source = plan.get('kafka_source')
+            if kafka_source:
+                validate_kafka_bounds(kafka_source, read_kafka_bounds(kafka_source), frozen=True)
+                if _hash(_kafka_identities(records, kafka_source)) != plan['kafka_input_sha256']:
+                    raise ValueError('Pinned Kafka raw input identities changed')
+                _write(destination / 'stream-source.json', {
+                    'source_kind': 'kafka', 'kafka_source': kafka_source,
+                    'configuration': plan['configuration'], 'plan_sha256': _hash(plan),
+                    'kafka_schema_sha256': plan['kafka_schema_sha256']})
+                source_args = {'kafka_source': kafka_source, 'audit_path': str(destination / 'audit')}
+            else:
+                incoming = destination / "input"
+                incoming.mkdir()
+                (incoming / "events.json").write_text(_json(records))
+                source_args = {'source_path': str(incoming)}
             spark = SparkSessionFactory.get_spark_session(master="local[2]")
             if spark is None:
                 raise RuntimeError("Actual Spark engine unavailable")
@@ -220,26 +252,37 @@ def replay(plan):
                 checkpoint_dir=str(destination / "checkpoint"),
                 output_path=str(destination / "metrics"),
                 quarantine_path=str(destination / "quarantine"),
+                output_mode=plan['configuration']['output_mode'],
+                negative_threshold=plan['configuration']['negative_threshold'],
             )
             try:
                 query = job.start_review_stream(
-                    source_path=str(incoming),
+                    **source_args,
                     trigger_available_now=True,
                     window_duration=f"{plan['configuration']['window_seconds']} seconds",
                     watermark_delay=f"{plan['configuration']['watermark_seconds']} seconds",
                 )
                 job.await_termination(180)
-                if query.isActive or (job._quarantine_query and job._quarantine_query.isActive):
+                if any(q is not None and q.isActive for q in job.queries):
                     raise RuntimeError("Spark replay timed out")
-                if query.exception() or (job._quarantine_query and job._quarantine_query.exception()):
+                if any(q is not None and q.exception() for q in job.queries):
                     raise RuntimeError("Spark replay query failed")
             finally:
                 job.stop()
             business = {"output": _parquet(destination / "metrics"), "quarantine": _parquet(destination / "quarantine")}
+            if kafka_source:
+                validate_kafka_bounds(kafka_source, read_kafka_bounds(kafka_source), frozen=True)
+                _check_kafka_checkpoints(destination, kafka_source)
+                identities = _audit_identities(destination / 'audit')
+                if identities != plan['kafka_expected']:
+                    raise ValueError('Kafka replay differs from pinned Bronze event IDs/raw payloads')
+        _validate(plan)
         result = {
             "version": 1,
             "plan_sha256": _hash(plan),
             "engine": plan["engine"],
+            "source_kind": plan.get("source_kind", "file"),
+            "kafka_input_sha256": plan.get("kafka_input_sha256"),
             "input_sha256": _hash(records),
             "business": business,
             "artifacts": inventory(destination),
@@ -289,6 +332,14 @@ def verify(plan, baseline=None):
     old_input = json.loads(Path(plan["baseline"]["input_manifest"]["path"]).read_text())
     if old_input.get("input_sha256") != result["input_sha256"]:
         raise ValueError("Old/new input identity reconciliation failed")
+    if plan.get('source_kind') == 'kafka':
+        source = plan['kafka_source']
+        validate_kafka_bounds(source, read_kafka_bounds(source), frozen=True)
+        _check_kafka_checkpoints(destination, source)
+        if (_audit_identities(destination / 'audit') != plan['kafka_expected']
+                or result.get('kafka_input_sha256') != plan['kafka_input_sha256']
+                or old_input.get('kafka_input_sha256') != plan['kafka_input_sha256']):
+            raise ValueError('Kafka Bronze event IDs/raw payload reconciliation failed')
     if plan["engine"] == "simulator":
         old_path = Path(plan["old_checkpoint"]["path"]) / "checkpoint_state.json"
         old = json.loads(old_path.read_text())
@@ -362,6 +413,9 @@ def promote(plan, pointer):
         raise ValueError("Serving pointer must be outside checkpoints, outputs and pinned evidence")
     with _guard(plan):
         _validate(plan)
+        if plan.get('source_kind') == 'kafka':
+            validate_kafka_bounds(plan['kafka_source'], read_kafka_bounds(plan['kafka_source']), frozen=True)
+            _check_kafka_checkpoints(destination, plan['kafka_source'])
         previous = json.loads(pointer.read_text()) if pointer.exists() else None
         change = {
             "version": 1,
@@ -370,6 +424,9 @@ def promote(plan, pointer):
             "previous": previous,
             "plan_sha256": _hash(plan),
         }
+        binding = destination / 'stream-source.json'
+        if plan.get('source_kind') == 'kafka':
+            change['source_binding_sha256'] = _hash(json.loads(binding.read_text()))
         if previous and previous.get("migration_id") == plan["migration_id"]:
             if previous.get("plan_sha256") != _hash(plan):
                 raise ValueError("Serving pointer plan mismatch")
@@ -391,3 +448,177 @@ def rollback(plan, pointer):
             raise ValueError("No previous generation; rollback cannot invent one")
         _write(pointer, old)
     return old
+
+
+def validate_kafka_source(source):
+    """Require a complete immutable partition range, never symbolic latest/earliest."""
+    if not isinstance(source, dict) or source.get('version') != 1:
+        raise ValueError('Explicit version 1 Kafka source manifest required')
+    if not isinstance(source.get('bootstrap_servers'), str) or not source['bootstrap_servers'].strip():
+        raise ValueError('Explicit Kafka bootstrap_servers required')
+    if source.get('schema_version') != '1.0':
+        raise ValueError('Unsupported Kafka envelope/business schema version')
+    for key in ('starting_offsets', 'ending_offsets'):
+        offsets = source.get(key)
+        if not isinstance(offsets, dict) or not offsets:
+            raise ValueError('Kafka offsets must be explicit topic/partition maps')
+        for topic, parts in offsets.items():
+            if not isinstance(topic, str) or not topic or not isinstance(parts, dict) or not parts:
+                raise ValueError('Explicit Kafka topic/partition map required')
+            for partition, offset in parts.items():
+                if (not isinstance(partition, str) or not partition.isdigit() or str(int(partition)) != partition
+                        or type(offset) is not int or offset < 0):
+                    raise ValueError('Kafka partition and offsets must be explicit nonnegative integers')
+    start, end = source['starting_offsets'], source['ending_offsets']
+    if {t: set(p) for t, p in start.items()} != {t: set(p) for t, p in end.items()}:
+        raise ValueError('Kafka start/end partition sets differ')
+    if any(end[t][p] < value for t, parts in start.items() for p, value in parts.items()):
+        raise ValueError('Kafka ending offset precedes starting offset')
+    return source
+
+
+def read_kafka_bounds(source):
+    """Ask the broker for every partition; missing brokers/topics fail closed."""
+    from kafka import KafkaConsumer
+    from kafka.structs import TopicPartition
+
+    validate_kafka_source(source)
+    consumer = KafkaConsumer(bootstrap_servers=source['bootstrap_servers'], enable_auto_commit=False,
+                             request_timeout_ms=60000)
+    try:
+        partitions = []
+        for topic, expected in source['starting_offsets'].items():
+            observed = consumer.partitions_for_topic(topic)
+            if observed is None or {str(p) for p in observed} != set(expected):
+                raise ValueError('Kafka partition topology changed; create a new migration plan')
+            partitions.extend(TopicPartition(topic, int(p)) for p in expected)
+        def convert(offsets):
+            result = {}
+            for part, offset in offsets.items():
+                result.setdefault(part.topic, {})[str(part.partition)] = offset
+            return result
+        from kafka.admin import KafkaAdminClient
+        admin = KafkaAdminClient(bootstrap_servers=source['bootstrap_servers'])
+        try:
+            cluster_id = admin.describe_cluster()['cluster_id']
+        finally:
+            admin.close()
+        return {'beginning_offsets': convert(consumer.beginning_offsets(partitions)),
+                'ending_offsets': convert(consumer.end_offsets(partitions)), 'cluster_id': cluster_id}
+    finally:
+        consumer.close()
+
+
+def validate_kafka_bounds(source, bounds, *, frozen=False):
+    validate_kafka_source(source)
+    expected = source['starting_offsets']
+    if source.get('cluster_id') and source['cluster_id'] != bounds.get('cluster_id'):
+        raise ValueError('Kafka cluster identity changed')
+    for key in ('beginning_offsets', 'ending_offsets'):
+        actual = bounds.get(key, {})
+        if {t: set(p) for t, p in actual.items()} != {t: set(p) for t, p in expected.items()}:
+            raise ValueError('Kafka partition topology changed')
+    for topic, parts in expected.items():
+        for partition, start in parts.items():
+            low = bounds['beginning_offsets'][topic][partition]
+            high = bounds['ending_offsets'][topic][partition]
+            end = source['ending_offsets'][topic][partition]
+            if low > start or high < start:
+                raise ValueError('Kafka offset loss: explicit Bronze backfill in a separate file-source migration required')
+            if high < end or (frozen and high != end):
+                raise ValueError('Kafka frozen frontier changed; stop producers and create a new plan')
+    return bounds
+
+
+def _kafka_identities(records, source):
+    identities = []
+    seen = set()
+    for row in records:
+        topic, part, offset = row.get('source_topic'), row.get('source_partition'), row.get('source_offset')
+        raw = row.get('raw_value')
+        if not isinstance(raw, str) or type(part) is not int or type(offset) is not int:
+            raise ValueError('Kafka Bronze export requires exact raw_value and source topic/partition/offset')
+        key = (topic, str(part), offset)
+        start = source['starting_offsets'].get(topic, {}).get(str(part))
+        end = source['ending_offsets'].get(topic, {}).get(str(part))
+        if start is None or not start <= offset < end or key in seen:
+            raise ValueError('Duplicate or out-of-range Kafka Bronze identity')
+        seen.add(key)
+        try:
+            envelope = json.loads(raw)
+        except ValueError:
+            envelope = None
+        event_id = envelope.get('event_id') if isinstance(envelope, dict) else None
+        identities.append({'source_topic': topic, 'source_partition': part, 'source_offset': offset,
+                           'event_id': event_id, 'raw_payload_sha256': hashlib.sha256(raw.encode('utf-8')).hexdigest()})
+    return sorted(identities, key=_json)
+
+
+def kafka_checkpoint_frontier(checkpoint):
+    """Read committed source progress without modifying Spark's opaque state."""
+    checkpoint = _safe(checkpoint)
+    commits = sorted((int(p.name) for p in (checkpoint / 'commits').iterdir() if p.name.isdigit()))
+    if not commits:
+        raise ValueError('Missing committed Kafka checkpoint frontier')
+    lines = (checkpoint / 'offsets' / str(commits[-1])).read_text().splitlines()
+    sources = [json.loads(line) for line in lines[2:] if line.strip() and line != '-']
+    if len(sources) != 1 or not isinstance(sources[0], dict):
+        raise ValueError('Expected one actual Kafka checkpoint source')
+    return sources[0]
+
+
+def _check_kafka_checkpoints(destination, source, *, exact=True):
+    for kind in ('reviews_window', 'reviews_quarantine', 'reviews_audit'):
+        frontier = kafka_checkpoint_frontier(Path(destination) / 'checkpoint' / kind)
+        if {t: set(p) for t, p in frontier.items()} != {
+                t: set(p) for t, p in source['ending_offsets'].items()}:
+            raise ValueError('Kafka checkpoint source differs from pinned partition assignment')
+        for topic, parts in source['ending_offsets'].items():
+            for partition, end in parts.items():
+                if frontier[topic][partition] < end or (exact and frontier[topic][partition] != end):
+                    raise ValueError('Kafka checkpoint did not consume the frozen frontier')
+
+
+def resolve_stream_pointer(pointer, *, expected_topics=None):
+    """Resolve opt-in startup to an actual Kafka checkpoint and its original source."""
+    pointer = _safe(pointer)
+    if not pointer.is_file():
+        raise ValueError('Kafka serving pointer is missing')
+    change = json.loads(pointer.read_text())
+    generation = _safe(change['generation'])
+    path = generation / 'stream-source.json'
+    if not path.is_file():
+        raise ValueError('Kafka source binding is required; file-source checkpoints cannot resume Kafka')
+    binding = json.loads(path.read_text())
+    if change.get('source_binding_sha256') is not None and change['source_binding_sha256'] != _hash(binding):
+        raise ValueError('Promoted Kafka source binding changed')
+    if binding.get('source_kind') != 'kafka':
+        raise ValueError('Kafka startup cannot switch a file-source checkpoint to Kafka')
+    source = validate_kafka_source(binding['kafka_source'])
+    if binding.get('kafka_schema_sha256'):
+        from spark.streaming.spark_streaming_job import SparkStreamingJob
+        if binding['kafka_schema_sha256'] != _hash(SparkStreamingJob.get_envelope_raw_schema().jsonValue()):
+            raise ValueError('Promoted Kafka schema differs from current reader')
+    if expected_topics is not None and set(expected_topics.split(',')) != set(source['starting_offsets']):
+        raise ValueError('Kafka topics differ from promoted checkpoint source')
+    # Each query can be at a different position after a crash. All must still be
+    # retained; startingOffsets is ignored by Spark once its checkpoint exists.
+    _check_kafka_checkpoints(generation, source, exact=False)
+    bounds = read_kafka_bounds(source)
+    for kind in ('reviews_window', 'reviews_quarantine', 'reviews_audit'):
+        resumed = dict(source, starting_offsets=kafka_checkpoint_frontier(generation / 'checkpoint' / kind),
+                       ending_offsets=bounds['ending_offsets'])
+        validate_kafka_bounds(resumed, bounds)
+    return {'checkpoint_dir': str(generation / 'checkpoint'), 'output_path': str(generation / 'metrics'),
+            'quarantine_path': str(generation / 'quarantine'), 'kafka_source': source,
+            'configuration': binding['configuration'], 'audit_path': str(generation / 'audit')}
+
+
+def _audit_identities(path):
+    rows = []
+    for file in sorted(Path(path).glob('batch-*.json')):
+        rows.extend(json.loads(file.read_text()))
+    keys = [(r['source_topic'], r['source_partition'], r['source_offset']) for r in rows]
+    if len(keys) != len(set(keys)):
+        raise ValueError('Duplicate Kafka audit coordinates')
+    return sorted(rows, key=_json)

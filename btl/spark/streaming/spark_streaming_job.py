@@ -67,12 +67,15 @@ class SparkStreamingJob:
         output_path: Optional[str] = None,
         quarantine_path: Optional[str] = None,
         output_mode: str = "update",
+        negative_threshold: Optional[float] = None,
     ):
         if output_mode not in self.VALID_OUTPUT_MODES:
             raise ValueError(
                 f"Invalid streaming output_mode '{output_mode}'. Must be one of {self.VALID_OUTPUT_MODES}."
             )
         self.output_mode = output_mode
+        self.negative_threshold = (settings.analytics.sentiment_negative_threshold
+                                   if negative_threshold is None else negative_threshold)
         self._spark = spark_session
         self.checkpoint_dir = (
             SparkSessionFactory.resolve_checkpoint_path(checkpoint_dir)
@@ -91,6 +94,7 @@ class SparkStreamingJob:
         )
         self._active_query = None
         self._quarantine_query = None
+        self._audit_query = None
         self._last_stream_args: Dict[str, Any] = {}
 
     @property
@@ -130,7 +134,8 @@ class SparkStreamingJob:
         envelope_fields.extend(field for field in payload_fields if field.name not in names)
         return StructType(envelope_fields + [StructField('payload',StructType(payload_fields),True)])
 
-    def create_kafka_stream(self, topics: Optional[str] = None, starting_offsets: str = "earliest") -> "DataFrame":
+    def create_kafka_stream(self, topics: Optional[str] = None, starting_offsets: str = "earliest",
+                            kafka_source=None) -> "DataFrame":
         """Create a readStream from Kafka topics."""
         topic_list = topics or ",".join([
             settings.kafka.topic_reviews,
@@ -139,15 +144,22 @@ class SparkStreamingJob:
             settings.kafka.topic_events,
         ])
 
-        kafka_df = (
-            self.spark.readStream
-            .format("kafka")
-            .option("kafka.bootstrap.servers", settings.kafka.bootstrap_servers)
-            .option("subscribe", topic_list)
-            .option("startingOffsets", starting_offsets)
-            .option("failOnDataLoss", "false")
-            .load()
-        )
+        reader = self.spark.readStream.format("kafka").option("failOnDataLoss", "true")
+        if kafka_source is not None:
+            import json
+            from operations.migration import validate_kafka_source
+            validate_kafka_source(kafka_source)
+            if topics and set(topics.split(',')) != set(kafka_source['starting_offsets']):
+                raise ValueError('Kafka topics differ from pinned source assignment')
+            assignment = {topic: [int(p) for p in sorted(parts, key=int)]
+                          for topic, parts in kafka_source['starting_offsets'].items()}
+            reader = (reader.option("kafka.bootstrap.servers", kafka_source['bootstrap_servers'])
+                      .option('assign', json.dumps(assignment))
+                      .option('startingOffsets', json.dumps(kafka_source['starting_offsets'])))
+        else:
+            reader = (reader.option("kafka.bootstrap.servers", settings.kafka.bootstrap_servers)
+                      .option("subscribe", topic_list).option("startingOffsets", starting_offsets))
+        kafka_df = reader.load()
 
         return kafka_df.selectExpr(
             "CAST(key AS STRING) as key",
@@ -353,7 +365,7 @@ class SparkStreamingJob:
         - avg_rating
         - negative_count (rating <= threshold)
         """
-        neg_thresh = settings.analytics.sentiment_negative_threshold
+        neg_thresh = self.negative_threshold
 
         # Ensure only valid parsed records enter watermarked state store
         if "__parsed_and_casted" in review_stream.columns or "rating_raw" in review_stream.columns:
@@ -505,6 +517,8 @@ class SparkStreamingJob:
         trigger_available_now: bool = False,
         processing_time: str = "30 seconds",
         topics: Optional[str] = None,
+        kafka_source=None,
+        audit_path: Optional[str] = None,
     ):
         """Start the full streaming pipeline: Source (Kafka or S3A/File) -> Parse/Cast -> Validate -> Dedup & Window -> Sink.
         Supports clean stop and restart from persistent checkpointLocation.
@@ -524,12 +538,15 @@ class SparkStreamingJob:
             "trigger_available_now": trigger_available_now,
             "processing_time": processing_time,
             "topics": topics,
+            "kafka_source": kafka_source,
+            "audit_path": audit_path,
         }
 
         raw = (
             self.create_file_stream(source_path)
             if source_path
-            else self.create_kafka_stream(topics=topics or settings.kafka.topic_reviews)
+            else self.create_kafka_stream(topics=topics or (None if kafka_source else settings.kafka.topic_reviews),
+                                          kafka_source=kafka_source)
         )
         parsed = self.parse_review_stream(raw)
         valid_stream, invalid_stream = self.validate_review_stream(parsed)
@@ -539,6 +556,30 @@ class SparkStreamingJob:
 
         window_chk = f"{self.checkpoint_dir}/reviews_window"
         quarantine_chk = f"{self.checkpoint_dir}/reviews_quarantine"
+
+        if audit_path:
+            if source_path or not kafka_source:
+                raise ValueError('Kafka audit requires an explicit Kafka source')
+            audit = raw.select(
+                F.col('topic').alias('source_topic'), F.col('partition').alias('source_partition'),
+                F.col('offset').alias('source_offset'),
+                F.get_json_object(F.col('value'), '$.event_id').alias('event_id'),
+                F.sha2(F.col('value'), 256).alias('raw_payload_sha256'))
+            def write_audit(batch, batch_id):
+                from operations.migration import _json, _write
+                import json
+                target = Path(audit_path) / f'batch-{batch_id}.json'
+                rows = sorted([row.asDict() for row in batch.collect()], key=_json)
+                if target.exists():
+                    if json.loads(target.read_text()) != rows:
+                        raise ValueError('Kafka audit batch identity changed')
+                else:
+                    _write(target, rows)
+            writer = (audit.writeStream.outputMode('append')
+                      .option('checkpointLocation', f'{self.checkpoint_dir}/reviews_audit')
+                      .foreachBatch(write_audit))
+            writer = writer.trigger(availableNow=True) if trigger_available_now else writer.trigger(processingTime=processing_time)
+            self._audit_query = writer.start()
 
         # 1. Start quarantine stream writer
         q_writer = (
@@ -582,32 +623,48 @@ class SparkStreamingJob:
             self.stop()
             raise
 
+    @property
+    def queries(self):
+        return (self._active_query, self._quarantine_query, self._audit_query)
+
+    def observe_progress(self):
+        """Poll committed Spark reports, including failed/terminated sink queries."""
+        from operations.status import OperationStatus
+        queries=dict(zip(('window','quarantine','audit'),self.queries))
+        required=[name for name,query in queries.items() if query is not None]
+        previous=getattr(self,'_reported_progress',{})
+        pending={name:query.lastProgress for name,query in queries.items() if query is not None
+                 and query.lastProgress and query.lastProgress.get('batchId')!=previous.get(name)}
+        if not pending:return
+        with OperationStatus(mode=settings.runtime_mode) as status:
+            for name,progress in pending.items():
+                status.stream_progress(self.checkpoint_dir,name,progress,required_sinks=required)
+                previous[name]=progress['batchId']
+        self._reported_progress=previous
+
     def await_termination(self, timeout: Optional[float] = None) -> None:
-        if self._quarantine_query is not None and self._quarantine_query.isActive:
-            self._quarantine_query.awaitTermination(timeout)
-        if self._active_query is not None and self._active_query.isActive:
-            self._active_query.awaitTermination(timeout)
+        import time
+        deadline = time.monotonic() + timeout if timeout is not None else None
+        for query in self.queries:
+            if query is not None and query.isActive:
+                remaining = max(0, deadline - time.monotonic()) if deadline is not None else None
+                query.awaitTermination(remaining)
+        self.observe_progress()
 
     def stop(self) -> None:
-        """Cleanly stops active streaming queries while preserving checkpoint state for restart."""
-        if self._active_query is not None:
-            try:
-                if self._active_query.isActive:
-                    self._active_query.stop()
-            except Exception:
-                pass
-        if self._quarantine_query is not None:
-            try:
-                if self._quarantine_query.isActive:
-                    self._quarantine_query.stop()
-            except Exception:
-                pass
-
-        if not any(query is not None and query.isActive for query in (self._active_query,self._quarantine_query)):
-            guard=getattr(self,'_writer_guard',None)
+        """Stop all queries while preserving checkpoints for restart."""
+        for query in self.queries:
+            if query is not None:
+                try:
+                    if query.isActive:
+                        query.stop()
+                except Exception:
+                    pass
+        if not any(query is not None and query.isActive for query in self.queries):
+            guard = getattr(self, '_writer_guard', None)
             if guard:
-                guard.__exit__(None,None,None)
-                self._writer_guard=None
+                guard.__exit__(None, None, None)
+                self._writer_guard = None
 
     def restart(self, **override_kwargs):
         """Stops any active query and restarts the streaming job from the same checkpointLocation."""

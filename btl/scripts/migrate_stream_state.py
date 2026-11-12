@@ -25,6 +25,7 @@ def main():
     plan.add_argument("--old-output")
     plan.add_argument("--old-quarantine")
     plan.add_argument("--old-input-manifest")
+    plan.add_argument("--kafka-source-manifest", help="Pinned explicit Kafka partition/start/end manifest; requires stopped producers")
     plan.add_argument("--output", required=True)
     for name in ["replay", "verify", "promote", "rollback"]:
         command = sub.add_parser(name)
@@ -45,6 +46,8 @@ def main():
             old_output=args.old_output,
             old_quarantine=args.old_quarantine,
             old_input_manifest=args.old_input_manifest,
+            kafka_source=(json.loads(Path(args.kafka_source_manifest).read_text())
+                          if args.kafka_source_manifest else None),
         )
         with Path(args.output).open("x") as stream:
             json.dump(result, stream, ensure_ascii=False, indent=2)
