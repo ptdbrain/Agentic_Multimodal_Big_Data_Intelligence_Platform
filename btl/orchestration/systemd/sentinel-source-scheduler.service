@@ -1,0 +1,19 @@
+[Unit]
+Description=Sentinel managed source Airflow scheduler
+Wants=network-online.target
+After=network-online.target
+Conflicts=sentinel-tiki-capture.timer
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/sentinel/managed-sources.env
+ExecStart=/usr/bin/env bash -c 'cd "$SENTINEL_PROJECT_DIR" && exec "$SENTINEL_AIRFLOW_PYTHON" -m airflow scheduler'
+Restart=on-failure
+RestartSec=15s
+TimeoutStopSec=120s
+KillMode=mixed
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

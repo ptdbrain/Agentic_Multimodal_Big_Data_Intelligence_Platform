@@ -19,7 +19,7 @@ class RawConsumer:
         self,
         bronze_dir: Optional[Path] = None,
         bootstrap_servers: Optional[str] = None,
-        group_id: str = "sentinel-bronze-writer",
+        group_id: Optional[str] = None,
         auto_offset_reset: str = "earliest",
     ):
         self._custom_bronze_dir = Path(bronze_dir) if bronze_dir is not None else None
@@ -27,7 +27,7 @@ class RawConsumer:
         if self._custom_bronze_dir is not None:
             self.bronze_dir.mkdir(parents=True, exist_ok=True)
         self.bootstrap_servers = bootstrap_servers or settings.kafka.bootstrap_servers
-        self.group_id = group_id
+        self.group_id = group_id or settings.kafka.group_id
         self.auto_offset_reset = auto_offset_reset
         self.consumer = None
         self.current_consumed_count: int = 0

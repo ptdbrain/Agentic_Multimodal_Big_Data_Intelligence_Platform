@@ -463,10 +463,13 @@ def stage_4_spark_batch_silver_dq(
     topic_revs = settings.kafka.topic_reviews
     topic_prices = settings.kafka.topic_prices
 
-    if batches_by_topic:
-        prods_source = batches_by_topic.get(topic_prods) or topic_prods
-        revs_source = batches_by_topic.get(topic_revs) or topic_revs
-        prices_source = (batches_by_topic.get(topic_prices) or topic_prices) if include_prices else None
+    if batches_by_topic is not None:
+        required_topics=[topic_prods,topic_revs]+([topic_prices] if include_prices else [])
+        missing=[topic for topic in required_topics if not batches_by_topic.get(topic)]
+        if missing:raise ValueError('Pinned Bronze batches missing for runtime topics: '+', '.join(missing))
+        prods_source = batches_by_topic[topic_prods]
+        revs_source = batches_by_topic[topic_revs]
+        prices_source = batches_by_topic[topic_prices] if include_prices else None
     else:
         prods_source = topic_prods
         revs_source = topic_revs
@@ -786,6 +789,24 @@ def stage_6_warehouse_and_dashboard(
     }
 
 
+def _record_cli_stage(stage, payload):
+    from orchestration.run_manifest import current_manifest,checkpoint_stage,reference_output,manifest_path,refresh_working_outputs
+    manifest=current_manifest()
+    if manifest is None:return
+    manifest.stage_order=['start','collect_and_publish','spark_batch','data_quality','gold_analytics','warehouse_upsert','finish']
+    path=manifest_path(manifest.run_id).rsplit('/',1)[0]+'/stages/'+stage+'.json'
+    # Capture results are source evidence; other payloads are JSON operational receipts.
+    if storage.object_exists(path):
+        if storage.read_json(path)!=payload:raise ValueError('Existing stage evidence differs')
+    else:storage.write_json(path,payload)
+    outputs=[reference_output(path)]
+    if stage=='collect_and_publish':
+        from orchestration.run_manifest import reference_canonical_output
+        outputs += [reference_canonical_output(item) for paths in manifest.batches_by_topic.values() for item in paths]
+    refresh_working_outputs(manifest,stage)
+    checkpoint_stage(manifest,stage,outputs)
+
+
 @canonical_writer
 def run_end_to_end(
     products_path: Optional[str] = None,
@@ -802,6 +823,7 @@ def run_end_to_end(
     crawler_max_products: int = 5,
     crawler_reviews_per_product: int = 10,
     remove_user_id: bool = False,
+    run_id: Optional[str] = None,
 ) -> bool:
     """Executes the canonical 6-stage SentinelAI End-to-End Pipeline with strict stage verification."""
     effective_mode = configure_pipeline_mode(mode)
@@ -823,6 +845,18 @@ def run_end_to_end(
         remove_user_id=remove_user_id,
     )
 
+    from orchestration.run_manifest import current_manifest
+    active=current_manifest()
+    if active:
+        active.source_type=s1['source_type']
+        active.required_datasets=['products','reviews']+(['prices'] if s1['prices_raw'] else [])
+        from ingestion.provenance import classify_source_group
+        from operations.status import OperationStatus
+        group=classify_source_group(pd.DataFrame(s1['products_raw']))
+        with OperationStatus(mode=effective_mode) as status:
+            status.start(active.run_id,'commerce',group)
+    _record_cli_stage('start',s1)
+
     # Stage 2: Kafka Producer -> Kafka -> RawConsumer
     s2 = stage_2_kafka_produce_and_consume(
         products_raw=s1["products_raw"],
@@ -837,13 +871,21 @@ def run_end_to_end(
         effective_mode=effective_mode
     )
 
+    if active:active.batches_by_topic=s3['batches_by_topic']
+    _record_cli_stage('collect_and_publish',{'transport':s2,'bronze':s3})
+
     # Stage 4: Spark Batch -> Silver / Quarantine / DQ (reads directly from Bronze batches!)
     s4 = stage_4_spark_batch_silver_dq(
         batches_by_topic=s3["batches_by_topic"],
         include_prices=bool(s1["prices_raw"]),
         enforce_dq_gate=enforce_dq_gate,
         min_dq_score=min_dq_score,
+        run_id=active.run_id if active else run_id,
     )
+    if active:
+        active.dq_metrics=[s4['etl_res'][name] for name in ('products_dq','reviews_dq','prices_dq') if s4['etl_res'].get(name)]
+    _record_cli_stage('spark_batch',{'run_id':s4['etl_res']['run_id'],'dq_metrics':active.dq_metrics if active else []})
+    _record_cli_stage('data_quality',{'dq_metrics':active.dq_metrics if active else []})
 
     # Stage 5: Spark Gold Marts & Anomaly Events (blocked if DQ Gate failed)
     s5 = stage_5_spark_gold_marts(
@@ -860,11 +902,20 @@ def run_end_to_end(
         min_dq_score=min_dq_score,
     )
 
+    _record_cli_stage('gold_analytics',{'marts':list(s5['marts']),'anomalies_count':s5['anomalies_count']})
+
     # Stage 6: PostgreSQL Warehouse -> Dashboard Verification
     s6 = stage_6_warehouse_and_dashboard(
         effective_mode=effective_mode
     )
 
+    _record_cli_stage('warehouse_upsert',s6)
+    if active:
+        with OperationStatus(mode=effective_mode) as status:
+            status.finish(active.run_id,sum(int(row.get('records_received',0)) for row in active.dq_metrics),
+                sum(int(row.get('records_valid',0)) for row in active.dq_metrics),
+                sum(int(row.get('records_quarantined',0)) for row in active.dq_metrics))
+    _record_cli_stage('finish',{'completed':True})
     summary = DescriptiveStats.compute_summary(s4["df_prods"], s4["df_revs"])
     print("\n==========================================================")
     print(f"  PIPELINE VERIFICATION COMPLETE (MODE: {effective_mode.upper()})")

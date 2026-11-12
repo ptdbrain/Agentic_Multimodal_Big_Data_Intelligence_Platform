@@ -1,0 +1,36 @@
+version: 1
+root: storage/captures/source-jobs
+jobs:
+  - id: tiki
+    adapter: tiki
+    source_group: marketplace
+    namespace: observed-commerce
+    owner: airflow
+    timezone: Asia/Ho_Chi_Minh
+    schedule: '0 9 * * *'
+    minimum_records: 1
+    environment_file: /PRIVATE/source-jobs/tiki.env
+    target: {bucket: observed-commerce, postgres_schema: observed_commerce}
+    parameters: {query: iphone, max_products: 20, reviews_per_product: 20, review_max_pages: 10, delay_seconds: 8, allow_review_context_replay: true}
+  - id: web
+    adapter: web
+    source_group: web_content
+    namespace: observed-web
+    owner: airflow
+    timezone: Asia/Ho_Chi_Minh
+    schedule: '0 10 * * *'
+    minimum_records: 1
+    environment_file: /PRIVATE/source-jobs/web.env
+    target: {bucket: observed-web, postgres_schema: observed_web}
+    parameters: {seed_urls: ['https://tinhte.vn/'], limit: 50, max_pages: 150, delay_seconds: 1}
+  - id: simulation
+    adapter: simulation
+    source_group: simulation
+    namespace: generated
+    owner: airflow
+    timezone: Asia/Ho_Chi_Minh
+    schedule: '0 11 * * *'
+    minimum_records: 1
+    environment_file: /PRIVATE/source-jobs/simulation.env
+    target: {bucket: generated, postgres_schema: generated}
+    parameters: {products: 10, base_reviews: 100, inject_anomalies: true, burst_count: 60, seed: 42}

@@ -76,7 +76,7 @@ default_args = {
 dag = DAG(
     'sentinel_daily_pipeline',
     default_args=default_args,
-    schedule_interval='@daily',
+    schedule_interval=None,  # Managed live schedules live in sentinel_sources.
     catchup=False
 )
 
@@ -109,9 +109,15 @@ def _task_start(**context):
     mode = context.get("params", {}).get("mode", settings.runtime_mode)
     mode = configure_pipeline_mode(mode)
     run_id = str(context.get("run_id") or uuid.uuid4())
+    from orchestration.run_manifest import manifest_path,heartbeat,local_owner
+    existing_path=manifest_path(run_id)
+    if storage.object_exists(existing_path) and load_manifest(existing_path).status!='running':
+        raise ValueError('Existing run requires explicit recovery; lease is unchanged')
     lease = RunLease(mode)
+    acquired=False
     try:
         lease.acquire(run_id)
+        acquired=True
         import hashlib
         path = f"runs/{hashlib.sha256(run_id.encode()).hexdigest()}/manifest.json"
         if storage.object_exists(path):
@@ -121,8 +127,10 @@ def _task_start(**context):
         else:
             manifest = RunManifest(run_id=run_id, mode=mode)
             path = save_manifest(manifest)
+        owner=({'kind':'airflow','dag_id':context['ti'].dag_id,'dag_run_id':run_id} if context.get('ti') else local_owner())
+        heartbeat(manifest,owner=owner)
     except Exception:
-        lease.release(run_id)
+        if acquired:lease.release(run_id)
         raise
     finally:
         lease.close()
@@ -259,3 +267,56 @@ if __name__ == "__main__":
     except Exception as exc:
         print(f"\n[DAG FAILED] {exc}", file=sys.stderr)
         sys.exit(1)
+
+
+def recovery_stage_executor(manifest, next_stage, operation_id):
+    """Resume a verified canonical stage; collection uses pinned captured rows."""
+    from orchestration.run_manifest import manifest_path,reference_output,save_manifest
+    path=manifest_path(manifest.run_id)
+    context={'manifest_path':path,'params':{'mode':manifest.mode},'run_id':manifest.run_id}
+    if next_stage=='start':
+        raise ValueError('No verified source capture exists; abort and create a new captured run')
+    if next_stage=='collect_and_publish':
+        previous=manifest.checkpoints['start']['outputs']
+        if len(previous)!=1:raise ValueError('Pinned source capture receipt required')
+        captured=storage.read_json(previous[0]['path'])
+        result=stage_2_kafka_produce_and_consume(products_raw=captured['products_raw'],
+            reviews_raw=captured['reviews_raw'],prices_raw=captured['prices_raw'],effective_mode=manifest.mode)
+        bronze=stage_3_verify_bronze(result,effective_mode=manifest.mode)
+        manifest.batches_by_topic=bronze['batches_by_topic']
+        save_manifest(manifest)
+        payload={'transport':result,'bronze':bronze}
+    elif next_stage=='finish':
+        # Preserve the failed original operational run; recovery has its own
+        # durable success identity and does not falsify the earlier failure.
+        from operations.status import OperationStatus
+        recovery_id='recovered:'+manifest.run_id
+        with OperationStatus(mode=manifest.mode) as status:
+            row=status._execute('SELECT state FROM operations_runs WHERE run_id=?',(recovery_id,)).fetchone()
+            if row is None:
+                group=next((row.get('source_group') for row in manifest.dq_metrics if row.get('source_group')),'unverified')
+                status.start(recovery_id,'commerce',group)
+                status.finish(recovery_id,sum(int(row.get('records_received',0)) for row in manifest.dq_metrics),
+                    sum(int(row.get('records_valid',0)) for row in manifest.dq_metrics),
+                    sum(int(row.get('records_quarantined',0)) for row in manifest.dq_metrics))
+            elif row[0]!='success':raise ValueError('Recovery telemetry is not committed; inspect before retry')
+        manifest.result=True
+        payload={'completed':True,'recovered_run_id':manifest.run_id}
+    else:
+        functions={'spark_batch':task_spark_batch,'data_quality':task_data_quality,
+            'gold_analytics':task_gold_analytics,'warehouse_upsert':task_warehouse_upsert}
+        if next_stage not in functions:raise ValueError('Unknown canonical stage')
+        payload=functions[next_stage](**context)
+        latest=load_manifest(path)
+        manifest.__dict__.update(latest.__dict__)
+    evidence=path.rsplit('/',1)[0]+'/recovery/'+operation_id+'.json'
+    if storage.object_exists(evidence):
+        if storage.read_json(evidence)!=payload:raise ValueError('Recovery operation evidence changed')
+    else:storage.write_json(evidence,payload)
+    from orchestration.run_manifest import refresh_working_outputs
+    refresh_working_outputs(manifest,next_stage)
+    outputs=[reference_output(evidence)]
+    if next_stage=='collect_and_publish':
+        from orchestration.run_manifest import reference_canonical_output
+        outputs += [reference_canonical_output(item) for paths in manifest.batches_by_topic.values() for item in paths]
+    return outputs
