@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "firing_and_resolved": [
+    "SentinelPipelineFailed",
+    "SentinelInputShortage",
+    "SentinelCheckpointFailure",
+    "SentinelBackupStale",
+    "SentinelStreamFailed"
+  ],
+  "maintenance_silence_verified": true,
+  "rules_count": 20,
+  "boundary": "Real isolated native Prometheus/Alertmanager/webhook with explicit injected SQL fault measurements; production rule expressions/pending timers unchanged. Long pending/freshness/unknown cases also require promtool matrix."
+}

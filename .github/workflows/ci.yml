@@ -38,6 +38,10 @@ jobs:
         run: |
           ruff check .
 
+      - name: Verify operational alert rules and firing/resolution matrix
+        run: |
+          docker run --rm --entrypoint promtool -v "$GITHUB_WORKSPACE/btl/monitoring:/monitoring:ro" prom/prometheus:v2.54.1 test rules /monitoring/alerts.test.yml
+
   unit-tests:
     name: 2. Unit & Local Pipeline Tests
     needs: lint
@@ -59,8 +63,15 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Isolated Unit Test Suite (Gate 1)
+        env:
+          PYTEST_ADDOPTS: --junitxml=${{ runner.temp }}/sentinel-unit.xml
         run: |
           make test-unit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-evidence
+          path: ${{ runner.temp }}/sentinel-unit.xml
 
   spark-tests:
     name: Spark local correctness
@@ -83,11 +94,12 @@ jobs:
           SPARK_DRIVER_MEMORY: 2g
           SPARK_LOCAL_IP: 127.0.0.1
           RUNTIME_MODE: test
+          PYTEST_ADDOPTS: --junitxml=${{ runner.temp }}/sentinel-spark.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: spark-test-evidence
-          path: btl/docs/reports/remediation_status.md
+          path: ${{ runner.temp }}/sentinel-spark.xml
 
   integration-tests:
     name: 3. End-to-End Integration & 3V Benchmark Tests
@@ -192,7 +204,13 @@ jobs:
           KAFKA_BOOTSTRAP_SERVERS: localhost:9092
           POSTGRES_PASSWORD: sentinel_password
           SPARK_CONNECTOR_PACKAGES: org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4
-        run: pytest tests/integration tests/test_api_live.py -m "integration and not airflow and not live" -v
+        run: pytest tests/integration tests/test_api_live.py tests/test_kafka_checkpoint_migration.py -m "integration and not airflow and not live" -v --junitxml="$RUNNER_TEMP/sentinel-integration.xml"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-evidence
+          path: ${{ runner.temp }}/sentinel-integration.xml
 
       - name: Run Streaming & Advanced DQ Acceptance Verification
         env:
@@ -237,6 +255,9 @@ jobs:
       AIRFLOW_HOME: /tmp/sentinel-airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: "true"
+      SENTINEL_AIRFLOW_DISPOSABLE_METADATA: "true"
+      PYTEST_ADDOPTS: --junitxml=${{ runner.temp }}/sentinel-airflow.xml
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_test_password@localhost:5432/airflow_test
       RUNTIME_MODE: test
       SPARK_MASTER: local[2]
@@ -263,3 +284,8 @@ jobs:
           echo "SOURCE_PRICES_PATH=/tmp/sentinel-airflow-input/prices.json" >> "$GITHUB_ENV"
           airflow db migrate
       - run: pytest tests/integration/test_airflow_execution.py -v
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: airflow-test-evidence
+          path: ${{ runner.temp }}/sentinel-airflow.xml

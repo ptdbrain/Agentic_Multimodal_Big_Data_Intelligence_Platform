@@ -1,0 +1,59 @@
+{
+  "verified": true,
+  "snapshot_at": "2026-11-12T15:28:03.885978+00:00",
+  "duration_seconds": 1.0926327729998775,
+  "components": [
+    {
+      "name": "warehouse",
+      "role": "warehouse",
+      "kind": "postgres",
+      "files": 1
+    },
+    {
+      "name": "airflow",
+      "role": "orchestration",
+      "kind": "postgres",
+      "files": 1
+    },
+    {
+      "name": "lake_tiki",
+      "role": "lake",
+      "kind": "minio",
+      "files": 32
+    },
+    {
+      "name": "lake_web",
+      "role": "lake",
+      "kind": "minio",
+      "files": 5
+    },
+    {
+      "name": "lake_simulation",
+      "role": "lake",
+      "kind": "minio",
+      "files": 28
+    },
+    {
+      "name": "checkpoint_inventory",
+      "role": "checkpoints",
+      "kind": "directory",
+      "files": 1
+    },
+    {
+      "name": "source_registry",
+      "role": "registry",
+      "kind": "directory",
+      "files": 11
+    },
+    {
+      "name": "tiki_capture",
+      "role": "registry",
+      "kind": "directory",
+      "files": 73
+    }
+  ],
+  "source_scheduler_resumed": true,
+  "schedule": "02:00 Asia/Ho_Chi_Minh daily; first scheduled execution not yet observed",
+  "offhost_copy": false,
+  "disaster_recovery_certified": false
+}

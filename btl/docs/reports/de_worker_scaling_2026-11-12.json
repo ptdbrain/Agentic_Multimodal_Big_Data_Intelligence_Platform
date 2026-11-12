@@ -1,0 +1,85 @@
+{
+  "completed": true,
+  "cohorts": [
+    {
+      "version": 1,
+      "samples": 3,
+      "batch_latency_seconds": {
+        "p50": 41.38400000000001,
+        "p95": 42.48209,
+        "p99": 42.579698
+      },
+      "individual_seconds": [
+        42.6041,
+        41.38400000000001,
+        38.88119999999999
+      ],
+      "source_fingerprint": "904c98fbb296ba890bd03ea105ced41a174cfe748aba0fdd21ca4a8bdf868010",
+      "boundary": "independent full-path batch cohorts, from Kafka dispatch stage to SQL/DashboardDB visibility; not per-event streaming latency or browser rendering; no throughput SLA",
+      "workers": 1,
+      "cores": 2,
+      "review_inputs": 10000
+    },
+    {
+      "version": 1,
+      "samples": 3,
+      "batch_latency_seconds": {
+        "p50": 116.0445,
+        "p95": 117.16760999999998,
+        "p99": 117.26744199999999
+      },
+      "individual_seconds": [
+        116.0445,
+        117.29239999999999,
+        115.6122
+      ],
+      "source_fingerprint": "904c98fbb296ba890bd03ea105ced41a174cfe748aba0fdd21ca4a8bdf868010",
+      "boundary": "independent full-path batch cohorts, from Kafka dispatch stage to SQL/DashboardDB visibility; not per-event streaming latency or browser rendering; no throughput SLA",
+      "workers": 1,
+      "cores": 2,
+      "review_inputs": 100000
+    },
+    {
+      "version": 1,
+      "samples": 3,
+      "batch_latency_seconds": {
+        "p50": 44.7265,
+        "p95": 45.19864,
+        "p99": 45.240608
+      },
+      "individual_seconds": [
+        45.2511,
+        44.7044,
+        44.7265
+      ],
+      "source_fingerprint": "904c98fbb296ba890bd03ea105ced41a174cfe748aba0fdd21ca4a8bdf868010",
+      "boundary": "independent full-path batch cohorts, from Kafka dispatch stage to SQL/DashboardDB visibility; not per-event streaming latency or browser rendering; no throughput SLA",
+      "workers": 2,
+      "cores": 4,
+      "review_inputs": 10000
+    },
+    {
+      "version": 1,
+      "samples": 3,
+      "batch_latency_seconds": {
+        "p50": 118.507,
+        "p95": 119.39809,
+        "p99": 119.477298
+      },
+      "individual_seconds": [
+        119.4971,
+        117.4289,
+        118.507
+      ],
+      "source_fingerprint": "904c98fbb296ba890bd03ea105ced41a174cfe748aba0fdd21ca4a8bdf868010",
+      "boundary": "independent full-path batch cohorts, from Kafka dispatch stage to SQL/DashboardDB visibility; not per-event streaming latency or browser rendering; no throughput SLA",
+      "workers": 2,
+      "cores": 4,
+      "review_inputs": 100000
+    }
+  ],
+  "trials": 12,
+  "source_snapshot_inventory": "de_worker_scaling_2026-11-12/source-manifest.json",
+  "boundary": "Actual standalone workers on one host, generated labelled 10k/100k full Kafka/MinIO/Spark/PostgreSQL/DashboardDB batch cohorts; not Docker throughput, per-event streaming latency or multi-host HA",
+  "per_trial_reports": "de_worker_scaling_2026-11-12/w*-n*-trial*.json"
+}

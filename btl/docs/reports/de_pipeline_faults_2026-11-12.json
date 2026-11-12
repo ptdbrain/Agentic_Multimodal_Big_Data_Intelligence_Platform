@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "storage_outage_observed": "ConnectionError",
+  "consumer_rows_recovered": 4,
+  "consumer_committed_offset": 4,
+  "driver_killed_after_committed_rows": 2,
+  "driver_resumed_rows": 4,
+  "source_group": "simulation",
+  "acquisition_method": "generated",
+  "boundary": "Real isolated Docker MinIO stop/start, real Kafka consumer commit refusal and restart, actual Spark driver process-group SIGKILL and checkpoint resumption; no production service killed or observed-source records generated"
+}

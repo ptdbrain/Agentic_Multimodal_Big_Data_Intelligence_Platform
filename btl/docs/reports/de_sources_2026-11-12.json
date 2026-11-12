@@ -1,0 +1,38 @@
+{
+  "scope": "Fresh bounded Tiki/web captures, isolated service processing; not scheduled-cycle evidence",
+  "sources": {
+    "tiki": {
+      "state": "partial",
+      "capture_status": "partial",
+      "input_records": 2,
+      "warehouse_counts": {
+        "products": 2,
+        "reviews": 71,
+        "articles": 0,
+        "article_versions": 0
+      }
+    },
+    "web": {
+      "state": "partial",
+      "capture_status": "partial",
+      "input_records": 2,
+      "warehouse_counts": {
+        "products": 0,
+        "reviews": 0,
+        "articles": 2,
+        "article_versions": 2
+      }
+    },
+    "simulation": {
+      "state": "complete",
+      "capture_status": "complete",
+      "input_records": 10,
+      "warehouse_counts": {
+        "products": 10,
+        "reviews": 160,
+        "articles": 0,
+        "article_versions": 0
+      }
+    }
+  }
+}

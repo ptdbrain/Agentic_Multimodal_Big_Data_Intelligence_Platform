@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "test_count": 1,
+  "duration_seconds": 57.877,
+  "run_type": "manual",
+  "executor": "LocalExecutor",
+  "fresh_tasks_executed": "7",
+  "dagrun_started": "2026-11-12T15:46:55.193857+00:00",
+  "dagrun_ended": "2026-11-12T15:47:51.384697+00:00",
+  "scope": "Actual manual diagnostic DAG, disposable PostgreSQL Airflow metadata, LocalExecutor and seven fresh tasks using labelled local acceptance inputs; not scheduled-cycle or live-source evidence"
+}

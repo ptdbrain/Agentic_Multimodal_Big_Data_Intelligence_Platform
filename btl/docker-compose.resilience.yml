@@ -55,13 +55,25 @@ services:
     image: ${SPARK_DRILL_IMAGE:-apache/spark:3.5.0}
     labels: {sentinel.drill: 'true'}
     hostname: spark-master
+    user: '185:185'
     command: ['/opt/spark/bin/spark-class', 'org.apache.spark.deploy.master.Master', '--host', 'spark-master']
     mem_limit: 2g
     ports: ['127.0.0.1:37077:7077', '127.0.0.1:38080:8080']
-    volumes: ['./scripts/verify_operations_stack.py:/opt/sentinel/verify_operations_stack.py:ro', 'spark-drill:/tmp/sentinel-drill']
+    depends_on:
+      spark-drill-init: {condition: service_completed_successfully}
+    volumes: ['./scripts/verify_operations_stack.py:/opt/sentinel/verify_operations_stack.py:ro', './scripts/verify_native_spark.py:/opt/sentinel/verify_native_spark.py:ro', 'spark-drill:/tmp/sentinel-drill']
+  spark-drill-init:
+    image: ${SPARK_DRILL_IMAGE:-apache/spark:3.5.0}
+    labels: {sentinel.drill: 'true'}
+    user: '0:0'
+    entrypoint: ['/bin/sh', '-c']
+    command: ['install -d -m 0770 -o 185 -g 185 /tmp/sentinel-drill']
+    mem_limit: 1g
+    volumes: ['spark-drill:/tmp/sentinel-drill']
   spark-worker1:
     image: ${SPARK_DRILL_IMAGE:-apache/spark:3.5.0}
     labels: {sentinel.drill: 'true'}
+    user: '185:185'
     command: ['/opt/spark/bin/spark-class', 'org.apache.spark.deploy.worker.Worker', '--cores', '2', '--memory', '2g', 'spark://spark-master:7077']
     mem_limit: 3g
     depends_on: [spark-master]
@@ -69,6 +81,7 @@ services:
   spark-worker2:
     image: ${SPARK_DRILL_IMAGE:-apache/spark:3.5.0}
     labels: {sentinel.drill: 'true'}
+    user: '185:185'
     command: ['/opt/spark/bin/spark-class', 'org.apache.spark.deploy.worker.Worker', '--cores', '2', '--memory', '2g', 'spark://spark-master:7077']
     mem_limit: 3g
     depends_on: [spark-master]

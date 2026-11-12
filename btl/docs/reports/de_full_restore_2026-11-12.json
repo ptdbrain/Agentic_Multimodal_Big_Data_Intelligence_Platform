@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "backup_verified": true,
+  "restored_fernet_secret_verified": true,
+  "actual_localexecutor_probe_runs": 2,
+  "checkpoint_before_rows": 2,
+  "checkpoint_after_rows": 3,
+  "warehouse_expected_counts": {
+    "source_tiki.products": 2,
+    "source_tiki.reviews": 71,
+    "source_web.articles": 2,
+    "source_simulation.products": 10,
+    "source_simulation.reviews": 160
+  },
+  "full_restore_and_resume_seconds": 17.461421982000047,
+  "recovery_point_age_seconds": 18.019729,
+  "rpo_target_seconds": 86400,
+  "rto_target_seconds": 3600,
+  "disaster_recovery_certified": false,
+  "outside_host_copy": false,
+  "scope": "Actual PostgreSQL warehouse+Airflow metadata, 3 MinIO buckets, real Kafka/Spark checkpoint, registry and HTTP captures; restored LocalExecutor verifies SQL/MinIO and decrypts secret before resuming checkpoint. Simulated stream fixture is isolated from observed source data."
+}

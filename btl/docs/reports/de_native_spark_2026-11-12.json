@@ -1,0 +1,95 @@
+{
+  "rows": 100000,
+  "unique": 100000,
+  "business_sha256": "de287f6fd2459640affb0974c614163c897371fdc0d2e7464860bf61db6edcc1",
+  "max_task_attempt": 0,
+  "seconds_including_fault_barrier": 5.293181177999941,
+  "passed": true,
+  "retried_partitions": [
+    [
+      2,
+      0
+    ],
+    [
+      2,
+      2
+    ]
+  ],
+  "source_group": "simulation",
+  "acquisition_method": "generated",
+  "fault_at": "2026-11-12T10:58:05.753194+00:00",
+  "stopped_owned_worker_pid": 99960,
+  "workers_before": [
+    {
+      "id": "worker-20261112175800-127.0.0.1-37078",
+      "host": "127.0.0.1",
+      "port": 37078,
+      "webuiaddress": "http://127.0.0.1:38081",
+      "cores": 2,
+      "coresused": 2,
+      "coresfree": 0,
+      "memory": 2048,
+      "memoryused": 1024,
+      "memoryfree": 1024,
+      "resources": {},
+      "resourcesused": {},
+      "resourcesfree": {},
+      "state": "ALIVE",
+      "lastheartbeat": 1794481080690
+    },
+    {
+      "id": "worker-20261112175800-127.0.0.1-37079",
+      "host": "127.0.0.1",
+      "port": 37079,
+      "webuiaddress": "http://127.0.0.1:38082",
+      "cores": 2,
+      "coresused": 2,
+      "coresfree": 0,
+      "memory": 2048,
+      "memoryused": 1024,
+      "memoryfree": 1024,
+      "resources": {},
+      "resourcesused": {},
+      "resourcesfree": {},
+      "state": "ALIVE",
+      "lastheartbeat": 1794481080690
+    }
+  ],
+  "workers_after": [
+    {
+      "id": "worker-20261112175809-127.0.0.1-37078",
+      "host": "127.0.0.1",
+      "port": 37078,
+      "webuiaddress": "http://127.0.0.1:38081",
+      "cores": 2,
+      "coresused": 0,
+      "coresfree": 2,
+      "memory": 2048,
+      "memoryused": 0,
+      "memoryfree": 2048,
+      "resources": {},
+      "resourcesused": {},
+      "resourcesfree": {},
+      "state": "ALIVE",
+      "lastheartbeat": 1794481089855
+    },
+    {
+      "id": "worker-20261112175800-127.0.0.1-37079",
+      "host": "127.0.0.1",
+      "port": 37079,
+      "webuiaddress": "http://127.0.0.1:38082",
+      "cores": 2,
+      "coresused": 0,
+      "coresfree": 2,
+      "memory": 2048,
+      "memoryused": 0,
+      "memoryfree": 2048,
+      "resources": {},
+      "resourcesused": {},
+      "resourcesfree": {},
+      "state": "ALIVE",
+      "lastheartbeat": 1794481080690
+    }
+  ],
+  "boundary": "Two real single-host Spark standalone workers; one owned worker/executor process group lost during blocked tasks; exact shuffled ID reconciliation and observed task retries. Not ETL throughput, Docker, host loss or multi-host HA."
+}

@@ -1,0 +1,32 @@
+{
+  "local": {
+    "tests": "785",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "281.842",
+    "timestamp": "2026-11-12T22:44:17.520565+07:00"
+  },
+  "service_integration": {
+    "tests": "7",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "17.937",
+    "timestamp": "2026-11-12T22:40:34.837204+07:00"
+  },
+  "airflow_executor": {
+    "tests": "1",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "57.877",
+    "timestamp": "2026-11-12T22:46:54.044744+07:00"
+  },
+  "local_selection": "not integration and not live and not airflow",
+  "service_selection": "article/source PostgreSQL-MinIO route and actual Kafka migration/retention; integration marker only",
+  "airflow_selection": "actual manual LocalExecutor diagnostic DAG,7fresh tasks",
+  "ruff": "passed",
+  "promtool_20_rule_matrix": "passed",
+  "git_diff_check": "passed"
+}

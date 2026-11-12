@@ -1,0 +1,9 @@
+{
+  "topic": "sentinel-chaos-34b01acea4844f73b504074d7988efd0",
+  "acknowledged": 200,
+  "received": 200,
+  "unique": 200,
+  "business_sha256": "78b87caf956d95b024bcee5ee0f225df25607f49be4046979f0d619d3851d6ed",
+  "seconds": 8.784738066999125,
+  "boundary": "one broker process outage, acks=all, actual Kafka payload reconciliation; not whole-host HA"
+}

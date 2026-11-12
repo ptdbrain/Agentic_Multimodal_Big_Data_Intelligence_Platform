@@ -1,0 +1,13 @@
+{
+  "verified": true,
+  "owned_active_core_services": 3,
+  "owned_active_monitoring_services": 7,
+  "source_scheduler_active": true,
+  "linger_enabled": true,
+  "healthy_scrape_targets": 3,
+  "managed_daily_backup_enabled": true,
+  "managed_daily_retention_enabled": true,
+  "hourly_acceptance_enabled": true,
+  "old_capture_and_generic_backup_timers_inactive": true,
+  "scope": "Actual current single-host service/unit/HTTP checks; future scheduled execution and whole-host recovery remain unverified"
+}

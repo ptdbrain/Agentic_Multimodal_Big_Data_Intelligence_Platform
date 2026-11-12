@@ -1,0 +1,59 @@
+{
+  "rows": 100000,
+  "unique": 100000,
+  "business_sha256": "de287f6fd2459640affb0974c614163c897371fdc0d2e7464860bf61db6edcc1",
+  "max_task_attempt": 0,
+  "seconds_including_fault_barrier": 126.47275760499997,
+  "retried_partitions": [
+    [
+      2,
+      1
+    ],
+    [
+      2,
+      3
+    ]
+  ],
+  "workers_before": [
+    {
+      "id": "worker-20261112144938-172.21.0.6-34257",
+      "host": "172.21.0.6",
+      "port": 34257,
+      "webuiaddress": "http://172.21.0.6:8081",
+      "cores": 2,
+      "coresused": 2,
+      "coresfree": 0,
+      "memory": 2048,
+      "memoryused": 1024,
+      "memoryfree": 1024,
+      "resources": {},
+      "resourcesused": {},
+      "resourcesfree": {},
+      "state": "ALIVE",
+      "lastheartbeat": 1794495008996
+    },
+    {
+      "id": "worker-20261112144938-172.21.0.7-37259",
+      "host": "172.21.0.7",
+      "port": 37259,
+      "webuiaddress": "http://172.21.0.7:8081",
+      "cores": 2,
+      "coresused": 2,
+      "coresfree": 0,
+      "memory": 2048,
+      "memoryused": 1024,
+      "memoryfree": 1024,
+      "resources": {},
+      "resourcesused": {},
+      "resourcesfree": {},
+      "state": "ALIVE",
+      "lastheartbeat": 1794495008993
+    }
+  ],
+  "driver_log": "docs/reports/de_docker_spark_2026-11-12.driver.log.gz",
+  "source_group": "simulation",
+  "acquisition_method": "generated",
+  "boundary": "Two actual Docker Spark workers, loss of an owned worker during blocked tasks, observed task reexecution and exact shuffled ID reconciliation; not ETL throughput, multi-host HA or SQL/UI latency",
+  "driver_log_original_path": "docs/reports/de_docker_spark_2026-11-12.driver.log",
+  "driver_log_uncompressed_sha256": "202954b0fae1dd923fe9997fc29bebfb16bb842351097d1b5d788b4338786e43"
+}

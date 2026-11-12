@@ -53,7 +53,7 @@ python scripts/verify_operations_stack.py --action chaos --service kafka1 --rows
 python scripts/verify_operations_stack.py --action chaos --service spark-worker1 --rows 100000 --output /private/path/spark-drill.json
 ```
 
-The profile has3 KRaft broker/controllers, RF3/minISR2 and2 Spark workers; hard service memory limits total11GiB (plus Docker overhead). Host Kafka ports39094–39096 and Spark37077/38080 are loopback-only. Volumes are project-owned and distinct from serving data. The project must start with `sentinel-resilience-` and containers must carry `sentinel.drill=true`; the harness refuses unowned targets. No Kafka endpoint override is accepted by the drill.
+The profile has3 KRaft broker/controllers, RF3/minISR2 and2 Spark workers; hard service memory limits total12GiB (including the short-lived shared-volume initialization service) (plus Docker overhead). Host Kafka ports39094–39096 and Spark37077/38080 are loopback-only. Volumes are project-owned and distinct from serving data. The project must start with `sentinel-resilience-` and containers must carry `sentinel.drill=true`; the harness refuses unowned targets. No Kafka endpoint override is accepted by the drill.
 
 Kafka drill sends simulation-labelled payloads with acks=all before/during one broker outage, restarts the broker in a finally block, and reconciles acknowledged payloads against actual consumed bytes. Spark drill runs a real shuffled workload and checks every ordered output ID against an independent deterministic checksum while a worker is stopped; it fails if the workload ended before injection. The workload/consumer failures are not converted into passes. Failed Kafka reconciliation retains the temporary topic for investigation.
 
@@ -97,3 +97,57 @@ Expected daily jobs are configured with `OPS_EXPECTED_PIPELINES` (default
 a job that never starts emits unknown success/start times and can alert after26h.
 Set an explicit comma-separated list for enabled jobs; an empty value disables
 expectations. This does not pretend a job ran and does not create an Airflow DAG.
+
+### Sources
+
+Set `OPS_SOURCE_JOBS_CONFIG` to the same managed source configuration used by the
+scheduler. The exporter reads durable handoff manifests across their separate
+warehouses, without changing its own database connection. `source_job` is a
+bounded configured identifier; run IDs never become metric labels. Actual
+capture and processing timestamps are distinct. A successful process does not
+change a partial collection into complete coverage. Failed/partial jobs, input
+shortages, captures older than 26 hours, and configured sources that have never
+captured all have dedicated rules. Unknown timestamps remain NaN. The config
+file's actual modification time anchors never-started monitoring.
+
+### Streaming
+
+The Spark CLI polls `lastProgress` for window, quarantine and optional audit
+queries. SQL deduplicates repeated/older batch reports per checkpoint and sink.
+`stream_heartbeat_timestamp` advances only when every required sink has reported
+committed progress. `stream_progress_timestamp` additionally requires actual
+input at every sink; idle batches do not refresh data freshness.
+`stream_input_rows` is the window query's reported input scans, not a sum across
+sinks or a unique-event counter. Actual CLI query failures increment outstanding
+`stream_errors`; old progress cannot clear a newer failure. All required sinks
+must report newer committed progress before it clears.
+
+Add `streaming:system` to `OPS_EXPECTED_PIPELINES` only for an enabled continuous
+stream. Its heartbeat alert uses two minutes of delay after a 120-second gap;
+its no-data alert uses five minutes after 15 minutes without input. These are
+configured operational thresholds, not a measured latency SLA. A daily batch
+schedule does not imply a continuously fed stream.
+
+Run the PromQL rule matrix with the same Prometheus version as deployment:
+
+```bash
+promtool check rules monitoring/alerts.yml
+promtool test rules monitoring/alerts.test.yml
+```
+
+The matrix evaluates firing, selected resolved states, disabled streaming, and
+unknown measurements with controlled metric samples. It does not prove webhook
+routing or actual infrastructure outages. Alertmanager silences remain the
+maintenance mechanism; retain the silence ID, exact matchers, operator reason
+and bounded expiry when rehearsing maintenance.
+
+
+## Current repeatable operational gates
+
+Use `scripts/verify_alert_delivery.py --tools /vendor/tools --work /private/new-alert-drill` for actual native Prometheus/Alertmanager firing+resolved delivery for five immediate rules and actual maintenance silence. Fault measurements are explicitly injected into an isolated SQL test namespace. Long pending timers, freshness and unknown/disabled cases use `promtool test rules monitoring/alerts.test.yml`; shortening those production timers is not part of this drill.
+
+`scripts/verify_pipeline_faults.py --help` describes the isolated Docker MinIO outage/consumer restart and killed Spark-driver checkpoint drill. It requires the compiled MinIO binary, cached Spark image, isolated RF3 Kafka and Java/connectors. It stops only the resources it creates. Consumer offsets must not advance while durable object writes fail. Driver recovery must produce exact counts without duplicates.
+
+`scripts/benchmark_worker_scaling.py --spark-home /vendor/spark --environment /private/native.env --work /private/new-campaign` freezes source files and runs twelve independent10k/100k review batches with one/two actual standalone workers. Reports include worker allocation evidence. Its batch latency spans Kafka dispatch through SQL/DashboardDB visibility; it is not browser-render time or per-event streaming latency. Each p95/p99 estimate has only three samples and must not become an SLA. See [current evidence](reports/de_completion_2026-11-12.md).
+
+For persistent native process ownership and boot behavior, use [native operations](native-operations.md). `OPS_BACKUP_STATUS_FILE` points at the managed backup's atomically written verified snapshot pointer; it reports the real recovery-point timestamp across separate dashboard/source schemas, never file modification time.
