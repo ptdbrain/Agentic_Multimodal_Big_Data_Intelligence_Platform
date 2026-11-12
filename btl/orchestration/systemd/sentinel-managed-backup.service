@@ -1,0 +1,11 @@
+[Unit]
+Description=Sentinel fenced managed-source backup
+After=sentinel-native@postgres.service sentinel-native@minio.service sentinel-native@kafka.service
+Conflicts=sentinel-backup.timer
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/sentinel/managed-backup.env
+ExecStart=/usr/bin/env bash -c 'cd "$SENTINEL_PROJECT_DIR" && exec "$SENTINEL_PROJECT_PYTHON" scripts/run_scheduled_backup.py --config "$SENTINEL_BACKUP_CONFIG"'
+TimeoutStartSec=45min
+UMask=0077
+NoNewPrivileges=true

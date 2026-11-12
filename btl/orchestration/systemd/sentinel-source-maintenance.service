@@ -1,0 +1,10 @@
+[Unit]
+Description=Sentinel verified managed web topic cleanup
+After=sentinel-native@postgres.service sentinel-native@minio.service sentinel-native@kafka.service
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/sentinel/source-maintenance.env
+ExecStart=/usr/bin/env bash -c 'cd "$SENTINEL_PROJECT_DIR" && exec "$SENTINEL_PROJECT_PYTHON" scripts/run_source_maintenance.py --config "$SOURCE_JOBS_CONFIG" --output-root "$SENTINEL_MAINTENANCE_REPORTS"'
+TimeoutStartSec=15min
+UMask=0077
+NoNewPrivileges=true

@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily fenced Sentinel source backup
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+AccuracySec=1min
+Unit=sentinel-managed-backup.service
+[Install]
+WantedBy=timers.target

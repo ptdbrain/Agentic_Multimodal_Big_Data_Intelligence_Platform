@@ -1,0 +1,15 @@
+[Unit]
+Description=Sentinel owned monitoring %i
+Requires=sentinel-native@postgres.service sentinel-native@minio.service sentinel-native@kafka.service
+After=sentinel-native@postgres.service sentinel-native@minio.service sentinel-native@kafka.service
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/sentinel/monitoring.env
+ExecStart=/usr/bin/env bash -c 'cd "$SENTINEL_PROJECT_DIR" && exec "$SENTINEL_PROJECT_PYTHON" scripts/run_monitoring_service.py --config "$SENTINEL_MONITORING_CONFIG" --service "%i"'
+Restart=always
+RestartSec=5s
+TimeoutStopSec=60s
+UMask=0077
+NoNewPrivileges=true
+[Install]
+WantedBy=default.target

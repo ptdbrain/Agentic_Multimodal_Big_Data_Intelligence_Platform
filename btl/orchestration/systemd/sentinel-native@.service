@@ -1,0 +1,18 @@
+[Unit]
+Description=Sentinel persistent native %i
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/sentinel/native-services.env
+ExecStart=/usr/bin/env bash -c 'cd "$SENTINEL_PROJECT_DIR" && exec "$SENTINEL_PROJECT_PYTHON" scripts/run_native_service.py --config "$SENTINEL_NATIVE_CONFIG" --service "%i"'
+Restart=always
+RestartSec=5s
+KillSignal=SIGINT
+TimeoutStopSec=120s
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

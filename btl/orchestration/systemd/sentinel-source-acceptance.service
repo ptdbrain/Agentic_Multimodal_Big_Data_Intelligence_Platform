@@ -1,0 +1,10 @@
+[Unit]
+Description=Sentinel genuine scheduled-cycle acceptance report
+After=sentinel-monitoring@prometheus.service
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/sentinel/managed-sources.env
+EnvironmentFile=%h/.config/sentinel/source-acceptance.env
+ExecStart=/usr/bin/env bash -c 'cd "$SENTINEL_PROJECT_DIR" && exec "$SENTINEL_AIRFLOW_PYTHON" scripts/verify_source_acceptance.py --config "$SOURCE_JOBS_CONFIG" --window "$SENTINEL_STABILITY_WINDOW" --output "$SENTINEL_ACCEPTANCE_REPORT"'
+UMask=0077
+NoNewPrivileges=true

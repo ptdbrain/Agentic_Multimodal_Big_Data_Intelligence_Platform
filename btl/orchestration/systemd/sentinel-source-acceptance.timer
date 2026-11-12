@@ -1,0 +1,8 @@
+[Unit]
+Description=Refresh genuine source acceptance evidence hourly
+[Timer]
+OnCalendar=*-*-* *:15:00
+Persistent=true
+Unit=sentinel-source-acceptance.service
+[Install]
+WantedBy=timers.target

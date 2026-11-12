@@ -19,3 +19,7 @@ python scripts/kafka_maintenance.py archive-failure --topic raw.articles.RUN --p
 `archive.json` is a list with `kind` (`bronze`, `quality`, `quarantine`), storage `path`, and SHA256 of canonical JSON (sorted keys, compact separators). Cleanup still requires seven days after review, idle consumers and verified archive. Age alone never proves a failed payload was saved. Cleanup does not delete Bronze or quarantine objects.
 
 The current admission fence coordinates participating producers, Bronze consumers, canonical pipelines and streaming writers with backup/migration. Direct external database/object-store clients must be stopped separately. A dead run's durable lease is never stolen automatically.
+
+## Managed daily retention
+
+`scripts/run_source_maintenance.py --config /private/source-jobs.yml --output-root /private/topic-maintenance` runs only configured web namespaces in separate environments. It verifies actual physical targets before creating and applying an immutable cleanup plan. Install `sentinel-source-maintenance.service/.timer` with a private `source-maintenance.env` defining `SENTINEL_PROJECT_DIR`, `SENTINEL_PROJECT_PYTHON`, `SOURCE_JOBS_CONFIG` and `SENTINEL_MAINTENANCE_REPORTS`. The timer runs at03:00 local daily. Successful topics still need48hours; failed topics still need a reviewed archive and7days. No eligible topics means no deletion, not permission to reduce the age thresholds. Inspect failed unit logs and retained plans; never force deletion to clear a backup failure.

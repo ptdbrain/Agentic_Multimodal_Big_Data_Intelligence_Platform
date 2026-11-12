@@ -40,7 +40,7 @@ def main():
 
     @contextmanager
     def guarded():
-        with maintenance_guard(mode) as state:
+        with maintenance_guard(mode,all_schemas=True) as state:
             if args.operation == "backup" and args.action == "create" and mode in ("integration", "production"):
                 kafka = config.get("kafka")
                 if not kafka:

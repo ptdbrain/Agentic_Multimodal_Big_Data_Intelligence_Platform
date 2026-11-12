@@ -221,10 +221,29 @@ def writer_admission(mode=None):
 
 
 @contextmanager
-def maintenance_guard(mode=None):
+def maintenance_guard(mode=None, all_schemas=False):
     """Reject active logical runs; shared locks reject active participating writers."""
     with _admission(mode, exclusive=True) as warehouse:
         cursor = warehouse._conn.cursor()
+        if all_schemas and warehouse._engine_type == "postgres":
+            from psycopg2 import sql
+
+            cursor.execute(
+                "SELECT schemaname,tablename FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema') AND tablename IN ('pipeline_run_lease','ops_topic_registry')"
+            )
+            for schema, table in cursor.fetchall():
+                relation = sql.SQL("{}.{}").format(sql.Identifier(schema), sql.Identifier(table))
+                if table == "pipeline_run_lease":
+                    cursor.execute(sql.SQL("SELECT COUNT(*) FROM {}").format(relation))
+                    if cursor.fetchone()[0]:
+                        raise ValueError("Active or unrecovered canonical run lease in " + schema)
+                else:
+                    cursor.execute(sql.SQL("SELECT payload_json FROM {}").format(relation))
+                    if any(
+                        json.loads(row[0]).get("state", json.loads(row[0]).get("status")) == "running"
+                        for row in cursor.fetchall()
+                    ):
+                        raise ValueError("Active or unrecovered topic run in " + schema)
         if warehouse._engine_type == "postgres":
             cursor.execute("SELECT tablename FROM pg_tables WHERE schemaname=current_schema()")
         else:

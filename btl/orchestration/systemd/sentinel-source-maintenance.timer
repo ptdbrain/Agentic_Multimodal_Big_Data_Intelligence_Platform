@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily managed web topic retention checks
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=sentinel-source-maintenance.service
+[Install]
+WantedBy=timers.target

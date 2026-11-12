@@ -109,20 +109,30 @@ decimal, null and UTF-8) and one object. Local checkpoint/orchestration/registry
 fixtures were copied; this does not certify Airflow restore, Spark restart,
 off-host durability, 24-hour scheduling or production-scale RTO.
 
-## Daily scheduling and success metrics
+## Managed daily scheduling
 
-A user systemd service/timer is provided under `orchestration/systemd/`. Create
-`~/.config/sentinel/operations.env` (mode0600) with absolute paths for
-`SENTINEL_PROJECT_DIR` (the btl directory), `SENTINEL_PYTHON` and
-`SENTINEL_BACKUP_CONFIG`, plus required endpoint/credential environment values.
-Install the two unit files into the user's systemd directory, reload and enable
-`sentinel-backup.timer` only after a manual fenced create/verify succeeds.
-It runs daily at02:00 local time with Persistent=true; this is a target schedule,
-not proof of a24-hour RPO. Stop scheduled input and streaming first; if admission
-or offsets are busy the job fails and never pretends a valid snapshot exists.
+`python scripts/run_scheduled_backup.py --config /private/managed-backup.json` pauses the owned scheduler, locks original Tiki/web capture stores, fences participating writers across all source schemas and verifies actual Kafka drain. Dynamic article subscriptions are enumerated inside the fence. It captures the full source warehouse, full Airflow metadata, every configured source bucket, batch checkpoint inventory, source registry and original Tiki HTTP captures. It always restores the scheduler's previous active state. Private JSON configuration:
 
-The CLI updates `backup_last_complete_timestamp` only after successful create;
-restore success updates `restore_last_success_timestamp` and measured duration.
-Operational metrics and topic lifecycle writers honor the same maintenance lock.
-External direct SQL/MinIO clients and Airflow metadata writers must be stopped
-before capture; the application fence cannot control arbitrary external writers.
+```json
+{
+  "source_jobs":"/private/source-jobs.yml",
+  "pg_bin":"/opt/postgresql16/bin",
+  "airflow_metadata_database":"sentinel_airflow",
+  "checkpoint_inventory":"/srv/sentinel/checkpoint-inventory",
+  "backup_target":"/srv/sentinel/backups",
+  "secret_key_reference":"/private/airflow.env",
+  "active_streaming_queries":[]
+}
+```
+
+This batch deployment refuses nonempty active streams: a deployed streaming service needs its own explicit stop/fenced checkpoint component before extending the schedule. Different PostgreSQL/MinIO/Kafka endpoints are refused rather than silently omitted. Secrets are referenced separately; retaining the encrypted metadata dump without its Fernet key is insufficient.
+
+Install `sentinel-managed-backup.service/.timer`. Private `~/.config/sentinel/managed-backup.env` defines absolute `SENTINEL_PROJECT_DIR`, `SENTINEL_PROJECT_PYTHON`, `SENTINEL_BACKUP_CONFIG`. After first create/verify succeeds, enable the timer (daily02:00 local, persistent). Disable the older generic `sentinel-backup.timer`; never enable both. A scheduled target is not evidence that24hours of successful backups have occurred.
+
+The verified pointer `backup_target/last-complete.json` records the actual snapshot timestamp; set `OPS_BACKUP_STATUS_FILE` on the operations exporter. SQL success gauges update only after successful create/verify. Failed quiescence retains incomplete evidence and cannot update a valid recovery point.
+
+## Full restore and resumption gate
+
+`python scripts/verify_full_recovery.py --help` exposes the coordinated isolated rehearsal for a configured shared warehouse. It requires explicit source/scheduler state references, private scheduler environment, PostgreSQL binaries, a new work root and report path. It runs actual Airflow LocalExecutor tasks before and after restore, verifies a Fernet-encrypted connection secret, all database/object/file inventories, then appends a labelled isolated Kafka event and resumes the restored Spark checkpoint without duplication. It preserves original serving data and resumes the original scheduler in its cleanup path.
+
+The2026-11-12 full-source rehearsal restored three source schemas, real Airflow metadata, three buckets, registry/captures and actual checkpoint, then resumed2to3 stream rows. Full restore/verify/resume took17.421seconds on this small local dataset; recovery-point age was17.84seconds. See [evidence](reports/de_full_restore_generic_2026-11-12.json). Kafka remained available on the same machine. This does not prove recovery after broker-data loss, off-host durability or production-scale RTO. The daily local bundle still requires an authorized external destination and a whole-host drill before disaster recovery certification.
