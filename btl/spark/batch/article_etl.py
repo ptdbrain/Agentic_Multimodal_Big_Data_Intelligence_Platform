@@ -12,7 +12,7 @@ from urllib.parse import urlsplit
 import pandas as pd
 from config.settings import settings
 from data.schemas.validator import SchemaValidator
-from database.warehouse import WarehouseManager
+from database.warehouse import WarehouseManager, _database_value
 from orchestration.run_manifest import canonical_writer
 from storage.storage_manager import storage
 
@@ -94,6 +94,79 @@ def prepare_articles(records, run_id):
     return frame, gold, quarantine, quality
 
 
+def _article_fingerprint(row):
+    """Content/publication changes version; re-collection alone does not."""
+    fields = ('title', 'body', 'published_at', 'published_at_raw', 'publication_time_precision')
+    payload = {key: _database_value(row.get(key), sqlite=True) for key in fields}
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def _merge_article_serving(wh, silver, run_id):
+    """Join the caller's SQL transaction for current state, versions and dates."""
+    cursor = wh._conn.cursor()
+    placeholder = '%s' if wh._engine_type == 'postgres' else '?'
+    affected_dates = set()
+    current_rows = []
+    for row in silver.to_dict('records'):
+        cursor.execute(f'SELECT * FROM articles WHERE article_id={placeholder}', (row['article_id'],))
+        stored = cursor.fetchone()
+        previous = dict(zip((column[0] for column in cursor.description), stored)) if stored else None
+        fingerprint = _article_fingerprint(row)
+        cursor.execute(f'SELECT version_number,content_fingerprint,collected_at FROM article_versions WHERE article_id={placeholder}',(row['article_id'],))
+        historical=cursor.fetchall()
+        matching_version=None
+        new_clock=pd.to_datetime(row['collected_at'],utc=True)
+        for number,stored_fingerprint,clock in historical:
+            if pd.to_datetime(clock,utc=True)==new_clock:
+                if stored_fingerprint!=fingerprint:
+                    raise ValueError('Conflicting article observation at the same collection clock')
+                matching_version=number
+        older=False
+        if previous:
+            old_clock=pd.to_datetime(previous['collected_at'],utc=True)
+            older=new_clock<old_clock
+            if new_clock==old_clock and previous['content_fingerprint'] not in (None,fingerprint):
+                raise ValueError('Conflicting article observation at the same collection clock')
+        if matching_version is not None:
+            version=matching_version
+        elif previous is None or previous['content_fingerprint'] != fingerprint:
+            # Legacy rows deliberately have no inferred version. The first new
+            # observation starts recorded history without inventing a past one.
+            cursor.execute(f'SELECT MAX(version_number) FROM article_versions WHERE article_id={placeholder}',(row['article_id'],))
+            version=int(cursor.fetchone()[0] or 0)+1
+            snapshot = {**row, 'version_number': version, 'content_fingerprint': fingerprint}
+            columns = list(snapshot)
+            cursor.execute(
+                f'INSERT INTO article_versions ({", ".join(columns)}) '
+                f'VALUES ({", ".join([placeholder] * len(columns))})',
+                tuple(_database_value(snapshot[key], sqlite=wh._engine_type == 'sqlite') for key in columns))
+        else:
+            version = previous['current_version']
+        if older:
+            # Keep this genuinely observed older version, but a delayed replay
+            # cannot roll back the latest observed serving record or its stats.
+            continue
+        current_rows.append({**row, 'content_fingerprint': fingerprint, 'current_version': version,
+                             'first_seen_run_id': previous['first_seen_run_id'] if previous else run_id,
+                             'last_seen_run_id': run_id})
+        for observation in (previous, row):
+            if observation and observation.get('published_at') is not None:
+                timestamp = pd.to_datetime(observation['published_at'], utc=True, errors='coerce')
+                if not pd.isna(timestamp):
+                    affected_dates.add(timestamp.date().isoformat())
+    if current_rows:wh.upsert_dataframe('articles', pd.DataFrame(current_rows), ['article_id'])
+    # Recompute affected dates from all currently served articles, including
+    # those absent from this batch. Remove dates made empty by a correction.
+    for date in sorted(affected_dates):
+        cursor.execute(f'DELETE FROM article_daily_stats WHERE date={placeholder}', (date,))
+        cursor.execute(
+            'INSERT INTO article_daily_stats '
+            '(date, source_name, article_count, total_text_characters, source_group, run_id) '
+            f'SELECT DATE(published_at), source_name, COUNT(*), SUM(LENGTH(body)), source_group, {placeholder} '
+            f'FROM articles WHERE DATE(published_at)={placeholder} '
+            'GROUP BY DATE(published_at), source_name, source_group', (run_id, date))
+
+
 @canonical_writer
 def publish_articles(records, mode=None, run_id=None, bronze_paths=None):
     run_id = run_id or str(uuid.uuid4())
@@ -142,10 +215,7 @@ def _publish_articles_locked(records, mode, run_id, prefix, bronze_paths):
                     'quarantine_path': quarantine_path, 'bronze_paths': bronze_paths or [], 'quality': quality,
                     'engine': 'pandas', 'status': 'complete'}
         with wh.transaction():
-            wh._conn.cursor().execute('DELETE FROM articles')
-            wh._conn.cursor().execute('DELETE FROM article_daily_stats')
-            wh.upsert_dataframe('articles', silver, ['article_id'])
-            wh.upsert_dataframe('article_daily_stats', gold, ['date', 'source_name'])
+            _merge_article_serving(wh, silver, run_id)
             wh.upsert_dataframe('article_pipeline_runs', pd.DataFrame([{
                 'run_id': run_id, 'manifest_json': json.dumps(manifest, ensure_ascii=False)}]), ['run_id'])
         return manifest

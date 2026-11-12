@@ -186,7 +186,22 @@ CREATE TABLE IF NOT EXISTS articles (
     article_id TEXT PRIMARY KEY, source_group TEXT NOT NULL, source_name TEXT NOT NULL,
     source_url TEXT NOT NULL, acquisition_method TEXT NOT NULL, title TEXT NOT NULL,
     body TEXT NOT NULL, published_at TIMESTAMP, collected_at TIMESTAMP NOT NULL,
-    content_sha256 TEXT NOT NULL, run_id TEXT NOT NULL
+    content_sha256 TEXT NOT NULL, run_id TEXT NOT NULL,
+    content_fingerprint TEXT, current_version INTEGER,
+    first_seen_run_id TEXT, last_seen_run_id TEXT
+);
+-- Only snapshots actually observed after history was enabled are recorded.
+-- A version is append-only; collection clocks and provenance belong to it.
+CREATE TABLE IF NOT EXISTS article_versions (
+    article_id TEXT NOT NULL, version_number INTEGER NOT NULL,
+    content_fingerprint TEXT NOT NULL, run_id TEXT NOT NULL,
+    source_group TEXT NOT NULL, source_name TEXT NOT NULL, source_url TEXT NOT NULL,
+    acquisition_method TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL,
+    published_at TIMESTAMP, published_at_raw TEXT, publication_time_precision TEXT,
+    collected_at TIMESTAMP NOT NULL, collected_at_raw TEXT, content_sha256 TEXT NOT NULL,
+    evidence_sha256 TEXT, source_record_id TEXT, evidence_ref TEXT, parser_version TEXT,
+    schema_version TEXT, collection_run_id TEXT, original_acquisition_method TEXT,
+    PRIMARY KEY(article_id, version_number)
 );
 CREATE TABLE IF NOT EXISTS article_daily_stats (
     date DATE NOT NULL, source_name TEXT NOT NULL, article_count INTEGER NOT NULL,

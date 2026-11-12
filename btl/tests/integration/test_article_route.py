@@ -9,7 +9,7 @@ from database.warehouse import WarehouseManager
 pytestmark = pytest.mark.integration
 
 
-def test_article_two_distinct_batches_use_actual_transport_and_replace_serving(remote_storage):
+def test_article_two_distinct_batches_use_actual_transport_and_preserve_cumulative_serving(remote_storage):
     first = run_article_pipeline([article('https://tinhte.vn/thread/fixture-one/')], mode='integration', run_id=str(uuid.uuid4()))
     second_input = article('https://tinhte.vn/thread/fixture-two/')
     second = run_article_pipeline([second_input], mode='integration', run_id=str(uuid.uuid4()))
@@ -18,7 +18,9 @@ def test_article_two_distinct_batches_use_actual_transport_and_replace_serving(r
     wh = WarehouseManager(mode='integration')
     try:
         rows = wh.query('SELECT * FROM articles')
-        assert rows['article_id'].tolist() == [second_input['article_id']]
+        assert set(rows['article_id']) == {article('https://tinhte.vn/thread/fixture-one/')['article_id'],second_input['article_id']}
+        assert wh.query('SELECT article_count FROM article_daily_stats').iloc[0,0]==2
+        assert len(wh.query('SELECT * FROM article_versions'))==2
         assert len(wh.query('SELECT * FROM article_pipeline_runs')) == 2
     finally:
         wh.close()

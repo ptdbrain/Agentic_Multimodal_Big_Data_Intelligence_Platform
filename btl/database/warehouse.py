@@ -140,7 +140,9 @@ class WarehouseManager:
                                                   'publication_time_precision': 'TEXT', 'collected_at_raw': 'TEXT',
                                                   'source_record_id':'TEXT','evidence_ref':'TEXT','parser_version':'TEXT',
                                                   'schema_version':'TEXT','collection_run_id':'TEXT',
-                                                  'original_acquisition_method':'TEXT'},
+                                                  'original_acquisition_method':'TEXT',
+                                                  'content_fingerprint':'TEXT', 'current_version':'INTEGER',
+                                                  'first_seen_run_id':'TEXT', 'last_seen_run_id':'TEXT'},
                                       'article_daily_stats': {'source_group': 'TEXT'}}.items():
                 existing = ({row[1] for row in cur.execute(f'PRAGMA table_info({table})').fetchall()}
                             if self._engine_type == 'sqlite' else self._postgres_columns(cur, table))
