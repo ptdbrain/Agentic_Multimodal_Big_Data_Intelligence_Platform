@@ -1,144 +1,633 @@
-version: '3.8'
-
-networks:
-  sentinel-network:
-    driver: bridge
-
-volumes:
-  kafka_data:
-  minio_data:
-  postgres_data:
-  es_data:
-
 services:
-  # Kafka in KRaft mode (no zookeeper dependency)
   kafka:
     image: apache/kafka:3.7.0
-    container_name: sentinel-kafka
-    ports:
-      - "9092:9092"
-      - "9094:9094"
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-    volumes:
-      - kafka_data:/var/lib/kafka/data
+    mem_limit: 768m
+    restart: unless-stopped
     networks:
-      - sentinel-network
+    - sentinel-network
+    environment:
+      KAFKA_NODE_ID: '1'
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: '1'
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: '1'
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    volumes:
+    - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # MinIO S3-compatible Data Lake
+      test:
+      - CMD-SHELL
+      - /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null
+      interval: 15s
+      timeout: 10s
+      retries: 20
   minio:
     image: sentinel-minio-source:20240330
+    mem_limit: 768m
+    restart: unless-stopped
+    networks:
+    - sentinel-network
     build:
       context: ./docker
       dockerfile: minio.Dockerfile
-    container_name: sentinel-minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?private access key required}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?private secret key required}
     volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
-    networks:
-      - sentinel-network
+    - minio_data:/data
+    command:
+    - server
+    - /data
+    - --address
+    - :9000
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
+      test:
+      - CMD
+      - curl
+      - -fsS
+      - http://localhost:9000/minio/health/ready
+      interval: 15s
       timeout: 5s
-      retries: 5
-
-  # Apache Spark Master
-  spark-master:
-    image: bitnami/spark:3.5.0
-    container_name: sentinel-spark-master
-    environment:
-      - SPARK_MODE=master
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-    ports:
-      - "7077:7077"
-      - "8080:8080"
-    networks:
-      - sentinel-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Apache Spark Worker
-  spark-worker:
-    image: bitnami/spark:3.5.0
-    container_name: sentinel-spark-worker
-    depends_on:
-      - spark-master
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_MEMORY=2G
-      - SPARK_WORKER_CORES=2
-    networks:
-      - sentinel-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # PostgreSQL Data Warehouse
+      retries: 10
   postgres:
     image: postgres:16-alpine
-    container_name: sentinel-postgres
-    ports:
-      - "5432:5432"
+    mem_limit: 768m
+    restart: unless-stopped
+    networks:
+    - sentinel-network
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-sentinel_dw}
       POSTGRES_USER: ${POSTGRES_USER:-sentinel}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sentinelpass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?private password required}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - sentinel-network
+    - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sentinel"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
       interval: 10s
       timeout: 5s
-      retries: 5
-
-  # Elasticsearch for search indexing
+      retries: 15
   elasticsearch:
     image: elasticsearch:8.13.0
-    container_name: sentinel-elasticsearch
-    ports:
-      - "9200:9200"
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    volumes:
-      - es_data:/usr/share/elasticsearch/data
+    mem_limit: 1g
+    restart: unless-stopped
     networks:
-      - sentinel-network
+    - sentinel-network
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: 'false'
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes:
+    - es_data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
-      interval: 10s
+      test:
+      - CMD-SHELL
+      - curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s'
+        >/dev/null
+      interval: 15s
+      timeout: 10s
+      retries: 20
+  spark-master:
+    image: sentinel-application:local
+    build: &id001
+      context: .
+      dockerfile: docker/application.Dockerfile
+    init: false
+    restart: unless-stopped
+    environment:
+      RUNTIME_MODE: integration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?private password required}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_dw}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ENDPOINT_DOCKER: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?private access key required}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?private secret key required}
+      DATA_LAKE_BUCKET: ${DATA_LAKE_BUCKET:-sentinel-data}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPARK_MASTER: spark://spark-master:7077
+      SPARK_DRIVER_MEMORY: 2g
+      SPARK_CONNECTOR_PACKAGES: org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4
+      SOURCE_JOBS_CONFIG: /private/source-jobs.yml
+      SERVING_DATASETS_CONFIG: /private/serving-datasets.yml
+      SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
+      AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
+      PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
+        --executor-memory 1g pyspark-shell
+      DASHBOARD_DATA_SCOPE: real
+      SPARK_DAEMON_MEMORY: 128m
+    volumes: &id002
+    - ${SENTINEL_PRIVATE_DIR:?private directory required}:/private:ro
+    - app_state:/var/lib/sentinel
+    networks: &id003
+    - sentinel-network
+    mem_limit: 256m
+    command:
+    - /opt/spark/bin/spark-class
+    - org.apache.spark.deploy.master.Master
+    - --host
+    - spark-master
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -fsS
+      - http://localhost:8080
+      interval: 15s
       timeout: 5s
-      retries: 5
+      retries: 20
+  spark-worker1:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment:
+      RUNTIME_MODE: integration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?private password required}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_dw}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ENDPOINT_DOCKER: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?private access key required}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?private secret key required}
+      DATA_LAKE_BUCKET: ${DATA_LAKE_BUCKET:-sentinel-data}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPARK_MASTER: spark://spark-master:7077
+      SPARK_DRIVER_MEMORY: 2g
+      SPARK_CONNECTOR_PACKAGES: org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4
+      SOURCE_JOBS_CONFIG: /private/source-jobs.yml
+      SERVING_DATASETS_CONFIG: /private/serving-datasets.yml
+      SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
+      AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
+      PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
+        --executor-memory 1g pyspark-shell
+      DASHBOARD_DATA_SCOPE: real
+      SPARK_DAEMON_MEMORY: 128m
+    volumes: *id002
+    networks: *id003
+    mem_limit: 1536m
+    command:
+    - /opt/spark/bin/spark-class
+    - org.apache.spark.deploy.worker.Worker
+    - --cores
+    - '2'
+    - --memory
+    - 1g
+    - spark://spark-master:7077
+    depends_on:
+      spark-master:
+        condition: service_healthy
+  spark-worker2:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment:
+      RUNTIME_MODE: integration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?private password required}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_dw}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ENDPOINT_DOCKER: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?private access key required}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?private secret key required}
+      DATA_LAKE_BUCKET: ${DATA_LAKE_BUCKET:-sentinel-data}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPARK_MASTER: spark://spark-master:7077
+      SPARK_DRIVER_MEMORY: 2g
+      SPARK_CONNECTOR_PACKAGES: org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4
+      SOURCE_JOBS_CONFIG: /private/source-jobs.yml
+      SERVING_DATASETS_CONFIG: /private/serving-datasets.yml
+      SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
+      AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
+      PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
+        --executor-memory 1g pyspark-shell
+      DASHBOARD_DATA_SCOPE: real
+      SPARK_DAEMON_MEMORY: 128m
+    volumes: *id002
+    networks: *id003
+    mem_limit: 1536m
+    command:
+    - /opt/spark/bin/spark-class
+    - org.apache.spark.deploy.worker.Worker
+    - --cores
+    - '2'
+    - --memory
+    - 1g
+    - spark://spark-master:7077
+    depends_on:
+      spark-master:
+        condition: service_healthy
+  airflow-init:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: 'no'
+    environment: &id004
+      RUNTIME_MODE: integration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?private password required}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_dw}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ENDPOINT_DOCKER: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?private access key required}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?private secret key required}
+      DATA_LAKE_BUCKET: ${DATA_LAKE_BUCKET:-sentinel-data}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPARK_MASTER: spark://spark-master:7077
+      SPARK_DRIVER_MEMORY: 2g
+      SPARK_CONNECTOR_PACKAGES: org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4
+      SOURCE_JOBS_CONFIG: /private/source-jobs.yml
+      SERVING_DATASETS_CONFIG: /private/serving-datasets.yml
+      SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
+      AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
+      PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
+        --executor-memory 1g pyspark-shell
+      DASHBOARD_DATA_SCOPE: real
+      PATH: /opt/airflow-venv/bin:/opt/project-venv/bin:/opt/spark/bin:/usr/local/bin:/usr/bin:/bin
+      AIRFLOW_HOME: /var/lib/sentinel/airflow
+      AIRFLOW__CORE__DAGS_FOLDER: /app/orchestration/dags
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__EXECUTE_TASKS_NEW_PYTHON_INTERPRETER: 'true'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW_SQL_ALCHEMY_CONN:?private Airflow
+        database URI required}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:?private Fernet key required}
+      AIRFLOW__LOGGING__LOG_FILENAME_TEMPLATE: dag_id={{ ti.dag_id }}/run_id={{ ti.run_id
+        | replace(':','_') }}/task_id={{ ti.task_id }}/attempt={{ try_number }}.log
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    volumes: *id002
+    networks: *id003
+    mem_limit: 512m
+    command:
+    - /opt/airflow-venv/bin/python
+    - -m
+    - airflow
+    - db
+    - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+      application-init:
+        condition: service_completed_successfully
+  airflow:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment: *id004
+    volumes: *id002
+    networks: *id003
+    mem_limit: 4g
+    command:
+    - /opt/airflow-venv/bin/python
+    - -m
+    - airflow
+    - scheduler
+    depends_on:
+      postgres: &id006
+        condition: service_healthy
+      kafka: &id007
+        condition: service_healthy
+      minio: &id008
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - /opt/airflow-venv/bin/python -m airflow jobs check --job-type SchedulerJob
+        --local
+      interval: 30s
+      timeout: 15s
+      retries: 10
+  dashboard:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment: &id005
+      RUNTIME_MODE: integration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?private password required}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_dw}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ENDPOINT_DOCKER: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?private access key required}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?private secret key required}
+      DATA_LAKE_BUCKET: ${DATA_LAKE_BUCKET:-sentinel-data}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPARK_MASTER: spark://spark-master:7077
+      SPARK_DRIVER_MEMORY: 2g
+      SPARK_CONNECTOR_PACKAGES: org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4
+      SOURCE_JOBS_CONFIG: /private/source-jobs.yml
+      SERVING_DATASETS_CONFIG: /private/serving-datasets.yml
+      SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
+      AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
+      PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
+        --executor-memory 1g pyspark-shell
+      DASHBOARD_DATA_SCOPE: real
+    volumes: *id002
+    networks: *id003
+    mem_limit: 512m
+    depends_on:
+      postgres:
+        condition: service_healthy
+      application-init:
+        condition: service_completed_successfully
+    ports:
+    - 127.0.0.1:${DASHBOARD_PORT:-18502}:8502
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -fsS
+      - http://localhost:8502/_stcore/health
+      interval: 15s
+      timeout: 5s
+      retries: 20
+  streaming:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment: *id005
+    volumes: *id002
+    networks: *id003
+    mem_limit: 2g
+    command:
+    - python
+    - scripts/run_streaming.py
+    - --mode
+    - spark
+    - --deployment
+    - /private/streaming.json
+    profiles:
+    - streaming
+    depends_on:
+      postgres: *id006
+      kafka: *id007
+      minio: *id008
+      application-init:
+        condition: service_completed_successfully
+  search-worker:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment:
+      RUNTIME_MODE: integration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?private password required}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_dw}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ENDPOINT_DOCKER: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?private access key required}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?private secret key required}
+      DATA_LAKE_BUCKET: ${DATA_LAKE_BUCKET:-sentinel-data}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPARK_MASTER: spark://spark-master:7077
+      SPARK_DRIVER_MEMORY: 2g
+      SPARK_CONNECTOR_PACKAGES: org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4
+      SOURCE_JOBS_CONFIG: /private/source-jobs.yml
+      SERVING_DATASETS_CONFIG: /private/serving-datasets.yml
+      SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
+      AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
+      PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
+        --executor-memory 1g pyspark-shell
+      DASHBOARD_DATA_SCOPE: real
+      ES_URL: http://elasticsearch:9200
+    volumes: *id002
+    networks: *id003
+    mem_limit: 512m
+    command:
+    - python
+    - scripts/run_search_worker.py
+    - --registry
+    - /private/serving-datasets.yml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      application-init:
+        condition: service_completed_successfully
+  alert-worker:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment:
+      SERVING_DATASETS_CONFIG: /private/serving-datasets.yml
+      ALERT_WEBHOOK_URL: http://receiver:18093/alerts
+    volumes: *id002
+    networks: *id003
+    mem_limit: 128m
+    command:
+    - python
+    - scripts/run_alert_worker.py
+    - --registry
+    - /private/serving-datasets.yml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      receiver:
+        condition: service_started
+      application-init:
+        condition: service_completed_successfully
+  metrics:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment: *id005
+    volumes: *id002
+    networks: *id003
+    mem_limit: 128m
+    command:
+    - python
+    - monitoring/metrics_exporter.py
+    - --serve
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+  dependencies:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment: *id005
+    volumes: *id002
+    networks: *id003
+    mem_limit: 128m
+    command:
+    - python
+    - monitoring/services_exporter.py
+    - --serve
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+  operations:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment: *id005
+    volumes: *id002
+    networks: *id003
+    mem_limit: 128m
+    command:
+    - python
+    - monitoring/operations_exporter.py
+    - --serve
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8002'
+    depends_on:
+      postgres:
+        condition: service_healthy
+  receiver:
+    image: sentinel-application:local
+    build: *id001
+    init: false
+    restart: unless-stopped
+    environment: *id005
+    volumes: *id002
+    networks: *id003
+    mem_limit: 64m
+    command:
+    - python
+    - scripts/verify_operations_stack.py
+    - --action
+    - receiver
+    - --host
+    - 0.0.0.0
+    - --output
+    - /var/lib/sentinel/notifications.jsonl
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    mem_limit: 512m
+    restart: unless-stopped
+    networks:
+    - sentinel-network
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
+    - --storage.tsdb.path=/prometheus
+    volumes:
+    - ./monitoring/prometheus-application.yml:/etc/prometheus/prometheus.yml:ro
+    - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+    - prometheus_data:/prometheus
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    mem_limit: 128m
+    restart: unless-stopped
+    networks:
+    - sentinel-network
+    command:
+    - --config.file=/etc/alertmanager/alertmanager.yml
+    - --storage.path=/alertmanager
+    volumes:
+    - ./monitoring/alertmanager-application.yml:/etc/alertmanager/alertmanager.yml:ro
+    - alertmanager_data:/alertmanager
+  grafana:
+    image: grafana/grafana:11.2.0
+    mem_limit: 256m
+    restart: unless-stopped
+    networks:
+    - sentinel-network
+    ports:
+    - 127.0.0.1:${GRAFANA_PORT:-13000}:3000
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?private Grafana password
+        required}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+    volumes:
+    - grafana_data:/var/lib/grafana
+    - ./monitoring/grafana-application:/etc/grafana/provisioning:ro
+    - ./monitoring/grafana:/var/lib/sentinel-dashboards:ro
+  application-init:
+    image: sentinel-application:local
+    build:
+      context: .
+      dockerfile: docker/application.Dockerfile
+    init: false
+    environment:
+      RUNTIME_MODE: integration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?private password required}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_dw}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ENDPOINT_DOCKER: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?private access key required}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?private secret key required}
+      DATA_LAKE_BUCKET: ${DATA_LAKE_BUCKET:-sentinel-data}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPARK_MASTER: spark://spark-master:7077
+      SPARK_DRIVER_MEMORY: 2g
+      SPARK_CONNECTOR_PACKAGES: org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4
+      SOURCE_JOBS_CONFIG: /private/source-jobs.yml
+      SERVING_DATASETS_CONFIG: /private/serving-datasets.yml
+      SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
+      AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
+      PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
+        --executor-memory 1g pyspark-shell
+      DASHBOARD_DATA_SCOPE: real
+      ES_URL: http://elasticsearch:9200
+    volumes:
+    - ${SENTINEL_PRIVATE_DIR:?private directory required}:/private:ro
+    - app_state:/var/lib/sentinel
+    networks:
+    - sentinel-network
+    mem_limit: 128m
+    command:
+    - python
+    - scripts/initialize_application.py
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+networks:
+  sentinel-network:
+    driver: bridge
+volumes:
+  kafka_data: {}
+  minio_data: {}
+  postgres_data: {}
+  es_data: {}
+  app_state: {}
+  prometheus_data: {}
+  alertmanager_data: {}
+  grafana_data: {}

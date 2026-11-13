@@ -1,0 +1,6 @@
+apiVersion: 1
+providers:
+- name: sentinel
+  options:
+    path: /var/lib/sentinel-dashboards
+  type: file

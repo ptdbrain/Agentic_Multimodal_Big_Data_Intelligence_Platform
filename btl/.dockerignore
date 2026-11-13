@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+**/__pycache__
+.pytest_cache
+.ruff_cache
+storage/datalake
+storage/captures
+storage/minio_root
+spark-warehouse
+docs/reports
+*.log
+*.sqlite*
+.git

@@ -1,0 +1,16 @@
+global:
+  resolve_timeout: 2m
+route:
+  receiver: local-webhook
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 4h
+  group_by:
+  - alertname
+  - pipeline
+  - source
+receivers:
+- name: local-webhook
+  webhook_configs:
+  - url: http://receiver:18093/alerts
+    send_resolved: true
