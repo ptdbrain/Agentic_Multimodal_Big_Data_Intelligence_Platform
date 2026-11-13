@@ -34,6 +34,15 @@ def page_groups():
             "PHÂN TÍCH DỮ LIỆU",
             [
                 (
+                    "basic",
+                    st.Page(
+                        str(ROOT / "pages/9_Basic_Analytics.py"),
+                        title="Phân tích cơ bản",
+                        icon=":material/bar_chart:",
+                        url_path="basic-analytics",
+                    ),
+                ),
+                (
                     "products",
                     st.Page(
                         str(ROOT / "pages/3_Products.py"),

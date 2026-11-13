@@ -1,0 +1,15 @@
+[Unit]
+Description=Sentinel analytics dashboard
+After=network-online.target sentinel-native@postgres.service
+Wants=network-online.target
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/sentinel/dashboard.env
+ExecStart=/usr/bin/env bash -c 'cd "$SENTINEL_PROJECT_DIR" && exec "$SENTINEL_PROJECT_PYTHON" -m streamlit run dashboard/app.py --server.address=127.0.0.1 --server.port=8502 --server.headless=true --browser.gatherUsageStats=false'
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+[Install]
+WantedBy=default.target
