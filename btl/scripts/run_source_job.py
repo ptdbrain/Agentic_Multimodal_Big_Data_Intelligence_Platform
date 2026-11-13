@@ -34,6 +34,7 @@ def main(argv=None):
             os.environ[key.strip()] = parsed[0] if parsed else ""
         if os.environ.get("SOURCE_JOB_NAMESPACE") != job["namespace"]:
             raise ValueError("Source environment namespace mismatch")
+        os.environ["SERVING_DATASET_ID"] = job["id"]
         from orchestration.source_jobs import preflight_target
     run_id = args.job + "-" + hashlib.sha256(args.run_id.encode()).hexdigest()[:32]
     result = execute_job(

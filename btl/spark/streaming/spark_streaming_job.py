@@ -68,11 +68,21 @@ class SparkStreamingJob:
         quarantine_path: Optional[str] = None,
         output_mode: str = "update",
         negative_threshold: Optional[float] = None,
+        serving_binding: Optional[Any] = None,
+        serving_generation: Optional[str] = None,
+        serving_window_seconds: int = 60,
     ):
         if output_mode not in self.VALID_OUTPUT_MODES:
             raise ValueError(
                 f"Invalid streaming output_mode '{output_mode}'. Must be one of {self.VALID_OUTPUT_MODES}."
             )
+        self.serving_binding=serving_binding
+        self.serving_generation=serving_generation
+        self.serving_window_seconds=serving_window_seconds
+        if serving_binding is not None:
+            from serving.store import identifier
+            identifier(serving_generation)
+            if serving_binding.kind!='commerce':raise ValueError('Streaming requires a commerce dataset')
         self.output_mode = output_mode
         self.negative_threshold = (settings.analytics.sentiment_negative_threshold
                                    if negative_threshold is None else negative_threshold)
@@ -426,6 +436,7 @@ class SparkStreamingJob:
         so late data within watermark updates window metrics in-place and restarts never duplicate rows.
         """
         if batch_df.rdd.isEmpty():
+            self._serve_sql_batch(batch_df,batch_id)
             return
 
         if 'source_group' not in batch_df.columns:
@@ -468,6 +479,21 @@ class SparkStreamingJob:
             target_path=self.output_path,
             expected_count=final_count,
         )
+        self._serve_sql_batch(batch_df,batch_id)
+
+    def _serve_sql_batch(self,batch_df,batch_id):
+        if self.serving_binding is not None:
+            from serving.store import ServingStore,connect_dataset
+            connection=connect_dataset(self.serving_binding)
+            try:
+                store=ServingStore(connection,self.serving_binding.id,self.serving_binding.source_group)
+                store.initialize();connection.commit()
+                # Spark timestamps become explicit UTC strings before Python conversion.
+                if self.spark.conf.get('spark.sql.session.timeZone')!='UTC':
+                    raise ValueError('SQL serving requires Spark UTC session timezone')
+                encoded=batch_df.withColumn('window_start',F.date_format('window_start',"yyyy-MM-dd'T'HH:mm:ss.SSSXXX")).withColumn('window_end',F.date_format('window_end',"yyyy-MM-dd'T'HH:mm:ss.SSSXXX"))
+                store.write_windows(self.serving_generation,int(batch_id),(row.asDict() for row in encoded.toLocalIterator()),window_seconds=self.serving_window_seconds)
+            finally:connection.close()
 
     @synchronized_path("quarantine_path")
     def _write_quarantine_batch(self, batch_df: "DataFrame", batch_id: int) -> None:
@@ -641,6 +667,15 @@ class SparkStreamingJob:
                 status.stream_progress(self.checkpoint_dir,name,progress,required_sinks=required)
                 previous[name]=progress['batchId']
         self._reported_progress=previous
+        if self.serving_binding is not None:
+            from serving.progress import committed_serving_progress
+            from serving.store import ServingStore,connect_dataset
+            progress=committed_serving_progress(self._active_query.lastProgress or {},[q.lastProgress or {} for q in (self._quarantine_query,self._audit_query) if q is not None])
+            if progress:
+                connection=connect_dataset(self.serving_binding)
+                try:ServingStore(connection,self.serving_binding.id,self.serving_binding.source_group).stream_progress(self.serving_generation,progress)
+                finally:connection.close()
+
 
     def await_termination(self, timeout: Optional[float] = None) -> None:
         import time

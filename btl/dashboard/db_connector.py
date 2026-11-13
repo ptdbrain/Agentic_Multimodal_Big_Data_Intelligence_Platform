@@ -14,9 +14,12 @@ class DashboardDB:
       Connects to SQLite warehouse.
     """
 
-    def __init__(self, mode: Optional[str] = None, use_postgres: Optional[bool] = None, data_scope: str = "all"):
+    def __init__(
+        self, mode: Optional[str] = None, use_postgres: Optional[bool] = None, data_scope: str = "all", binding=None
+    ):
         if data_scope not in ("real", "simulation", "unverified", "all"):
             raise ValueError("Unknown dashboard data scope")
+        self.binding = binding
         self.data_scope = data_scope
         self._scope_columns = {}
         self._conn = None
@@ -26,7 +29,11 @@ class DashboardDB:
         self._connect()
 
     def _connect(self):
-        target_engine = settings.database.resolve_db_engine(explicit_mode=self._mode, use_postgres=self._use_postgres)
+        target_engine = (
+            ("sqlite" if self.binding.sqlite_path else "postgres")
+            if self.binding
+            else settings.database.resolve_db_engine(explicit_mode=self._mode, use_postgres=self._use_postgres)
+        )
 
         if target_engine == "postgres":
             try:
@@ -37,14 +44,19 @@ class DashboardDB:
                 ) from e
 
             try:
-                self._conn = psycopg2.connect(
-                    host=settings.database.host,
-                    port=settings.database.port,
-                    user=settings.database.user,
-                    password=settings.database.password,
-                    database=settings.database.database,
-                    connect_timeout=10,
+                params = (
+                    dict(self.binding.connection)
+                    if self.binding
+                    else dict(
+                        host=settings.database.host,
+                        port=settings.database.port,
+                        user=settings.database.user,
+                        password=settings.database.password,
+                        database=settings.database.database,
+                        connect_timeout=10,
+                    )
                 )
+                self._conn = psycopg2.connect(**params)
                 self._conn.set_session(isolation_level="REPEATABLE READ", readonly=True)
                 self._source = "postgres"
                 return
@@ -58,7 +70,7 @@ class DashboardDB:
         try:
             import sqlite3
 
-            db_path = settings.database.sqlite_path
+            db_path = self.binding.sqlite_path if self.binding else settings.database.sqlite_path
             db_path.parent.mkdir(parents=True, exist_ok=True)
             self._conn = sqlite3.connect(str(db_path))
             self._conn.execute("BEGIN")
@@ -78,6 +90,8 @@ class DashboardDB:
 
     def get_active_source_label(self) -> str:
         """Returns explicit readable label for the active database engine."""
+        if self.binding:
+            return self.binding.label + " · " + self.binding.schema + " · " + self.binding.source_group
         if self._source == "postgres":
             return f"PostgreSQL Warehouse ({settings.database.user}@{settings.database.host}:{settings.database.port}/{settings.database.database})"
         elif self._source == "sqlite":
@@ -124,6 +138,16 @@ class DashboardDB:
         "reviews",
         "articles",
         "article_daily_stats",
+        "article_versions",
+        "serving_generation",
+        "stream_windows",
+        "stream_deployments",
+        "stream_batches",
+        "search_jobs",
+        "serving_alerts",
+        "publication_lineage",
+        "serving_alert_history",
+        "alert_notifications",
         "article_pipeline_runs",
         "product_daily_stats",
         "brand_daily_stats",
@@ -156,25 +180,34 @@ class DashboardDB:
 
     def _table_source(self, table):
         columns = self._columns(table)
-        if self.data_scope == "all" or not columns:
+        if not columns:
             return table
-        if "source_group" not in columns:
-            condition = "1=1" if self.data_scope == "unverified" else "1=0"
-        else:
-            observed = "TRIM(source_group) IN ('marketplace','web_content')"
-            simulated = "TRIM(source_group) = 'simulation'"
-            if "acquisition_method" in columns:
-                observed += " AND TRIM(acquisition_method) IN ('live','snapshot_replay')"
-                simulated += " AND TRIM(acquisition_method) = 'generated'"
-            elif table in ("products", "reviews", "articles"):
-                observed = simulated = "FALSE"
-            if self.data_scope == "real":
-                condition = observed
-            elif self.data_scope == "simulation":
-                condition = simulated
+        condition = "1=1"
+        if self.data_scope != "all":
+            if "source_group" not in columns:
+                metadata = {"stream_deployments", "stream_batches", "search_jobs", "serving_alert_history", "alert_notifications"}
+                condition = "1=1" if (self.binding and table in metadata) or self.data_scope == "unverified" else "1=0"
             else:
-                condition = f"NOT (COALESCE(({observed}), FALSE) OR COALESCE(({simulated}), FALSE))"
-        return f"(SELECT * FROM {table} WHERE {condition})"
+                observed = "TRIM(source_group) IN ('marketplace','web_content')"
+                simulated = "TRIM(source_group) = 'simulation'"
+                if "acquisition_method" in columns:
+                    observed += " AND TRIM(acquisition_method) IN ('live','snapshot_replay')"
+                    simulated += " AND TRIM(acquisition_method) = 'generated'"
+                elif table in ("products", "reviews", "articles"):
+                    observed = simulated = "FALSE"
+                condition = (
+                    observed
+                    if self.data_scope == "real"
+                    else simulated
+                    if self.data_scope == "simulation"
+                    else f"NOT (COALESCE(({observed}), FALSE) OR COALESCE(({simulated}), FALSE))"
+                )
+        if self.binding:
+            if "source_group" in columns:
+                condition += f" AND source_group='{self.binding.source_group}'"
+            if "dataset_id" in columns:
+                condition += f" AND dataset_id='{self.binding.id}'"
+        return table if condition == "1=1" else f"(SELECT * FROM {table} WHERE {condition})"
 
     def read_table(self, table, order_by=None, descending=True, limit=None):
         columns = self._columns(table)

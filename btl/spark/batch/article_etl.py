@@ -218,6 +218,13 @@ def _publish_articles_locked(records, mode, run_id, prefix, bronze_paths):
             _merge_article_serving(wh, silver, run_id)
             wh.upsert_dataframe('article_pipeline_runs', pd.DataFrame([{
                 'run_id': run_id, 'manifest_json': json.dumps(manifest, ensure_ascii=False)}]), ['run_id'])
+            import os
+            from serving.store import ServingStore
+            publication=ServingStore(wh._conn,os.environ.get('SERVING_DATASET_ID',os.environ.get('SOURCE_JOB_NAMESPACE','legacy-web')),'web_content')
+            publication.initialize()
+            from serving.lineage import article_receipt, stage_lineage
+            stage_lineage(publication, run_id, article_receipt(run_id, bronze_paths or [], silver_path, gold_path))
+            publication.stage_publication(run_id,run_id,'web')
         return manifest
     finally:
         wh.close()

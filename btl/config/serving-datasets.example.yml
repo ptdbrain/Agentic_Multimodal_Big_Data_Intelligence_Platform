@@ -1,0 +1,23 @@
+version: 1
+datasets:
+  - id: tiki
+    label: Tiki — dữ liệu quan sát
+    kind: commerce
+    source_group: marketplace
+    postgres_schema: observed_commerce
+    bucket: observed-commerce
+    environment_file: /private/tiki.env
+  - id: web
+    label: Web — bài viết quan sát
+    kind: web
+    source_group: web_content
+    postgres_schema: observed_web
+    bucket: observed-web
+    environment_file: /private/web.env
+  - id: simulation
+    label: Giả lập có nhãn
+    kind: commerce
+    source_group: simulation
+    postgres_schema: generated
+    bucket: generated
+    environment_file: /private/simulation.env

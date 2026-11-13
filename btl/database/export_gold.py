@@ -155,6 +155,25 @@ def export_gold_to_db(
                     print(f"Prepared {rows} rows for database table '{name}' ({wh._engine_type})")
                 except Exception as exc:
                     raise RuntimeError(f"Export to warehouse failed for table '{name}': {exc}") from exc
+            if generation and generation.get('run_id'):
+                import os
+                from serving.store import ServingStore
+                dataset_id=os.environ.get('SERVING_DATASET_ID',os.environ.get('SOURCE_JOB_NAMESPACE','legacy'))
+                publication=ServingStore(wh._conn,dataset_id,next(iter(incoming or {'unverified'})))
+                publication.initialize()
+                from serving.lineage import commerce_receipt, stage_lineage
+                stage_lineage(publication, str(generation['run_id']), commerce_receipt(str(generation['run_id'])))
+                publication.stage_publication(str(generation['run_id']),str(generation['run_id']),'commerce')
+                if 'price_daily_stats' in frames:
+                    from analytics.causal import price_evaluations
+                    quality = generation.get('quality', {})
+                    verified = (quality.get('status') == 'valid'
+                                and quality.get('run_id') == generation['run_id']
+                                and 'prices' in quality.get('required_datasets', []))
+                    prices = wh.query('SELECT product_id,date,avg_price,currency,source_group FROM price_daily_stats')
+                    publication.stage_evaluations(str(generation['run_id']), price_evaluations(
+                        prices.to_dict(orient='records'), dataset_id=dataset_id,
+                        generation=str(generation['run_id']), quality_status='valid' if verified else 'unverified'))
     finally:
         wh.close()
 

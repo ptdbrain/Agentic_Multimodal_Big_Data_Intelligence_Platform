@@ -602,7 +602,10 @@ class SparkGoldBuilder:
             from storage.write_lock import write_lock
             with write_lock(SparkSessionFactory.resolve_storage_path('', layer='gold')):
                 snapshot = {'run_id':effective_run_id,'source_run_id':effective_source_run_id,
-                            'status':'publishing','source_group':source_group,'rows':{name:frame.count() for name,frame in marts.items()}}
+                            'status':'publishing','source_group':source_group,
+                            'quality':{'status':'valid' if gated else 'unverified', 'run_id':effective_run_id,
+                                       'required_datasets':sorted(consumed) if gated else []},
+                            'rows':{name:frame.count() for name,frame in marts.items()}}
                 storage.write_json('gold/_snapshot.json', snapshot)
                 for mart_name, df_mart in marts.items():
                     gold_dest = SparkSessionFactory.resolve_storage_path(mart_name, layer="gold")

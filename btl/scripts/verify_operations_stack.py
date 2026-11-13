@@ -16,7 +16,7 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
-    sys.path.insert(0,str(ROOT))
+    sys.path.insert(0, str(ROOT))
 
 
 def assert_isolated_container(info):
@@ -45,11 +45,34 @@ def webhook_server(path, host="127.0.0.1", port=18093):
                 if not isinstance(payload.get("alerts"), list) or payload.get("status") not in ("firing", "resolved"):
                     raise ValueError("Invalid alert notification")
                 record = {"received_at": datetime.now(timezone.utc).isoformat(), "notification": payload}
-                fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND | os.O_NOFOLLOW, 0o600)
-                with os.fdopen(fd, "a") as stream:
-                    stream.write(json.dumps(record, ensure_ascii=False) + "\n")
-                    stream.flush()
-                    os.fsync(stream.fileno())
+                import fcntl
+
+                key = self.headers.get("Idempotency-Key")
+                if key and (len(key) > 160 or not key.isascii() or not all(c.isalnum() or c in "-_:" for c in key)):
+                    raise ValueError("Invalid notification identity")
+                digest = hashlib.sha256(
+                    json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+                ).hexdigest()
+                if key:
+                    record.update(idempotency_key=key, payload_sha256=digest)
+                fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_NOFOLLOW, 0o600)
+                with os.fdopen(fd, "a+") as stream:
+                    fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+                    duplicate = False
+                    if key:
+                        stream.seek(0)
+                        for line in stream:
+                            previous = json.loads(line)
+                            if previous.get("idempotency_key") == key:
+                                if previous.get("payload_sha256") != digest:
+                                    raise ValueError("Notification identity changed")
+                                duplicate = True
+                                break
+                    if not duplicate:
+                        stream.seek(0, os.SEEK_END)
+                        stream.write(json.dumps(record, ensure_ascii=False) + "\n")
+                        stream.flush()
+                        os.fsync(stream.fileno())
             except (ValueError, OSError):
                 self.send_error(400)
                 return
@@ -348,6 +371,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--action", choices=["receiver", "verify", "chaos", "spark-workload"], required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--host", default="127.0.0.1", help="Webhook bind address")
     parser.add_argument("--project", default="sentinel-resilience-drill")
     parser.add_argument(
         "--service", choices=["kafka1", "kafka2", "kafka3", "spark-worker1", "spark-worker2"], default="kafka1"
@@ -358,7 +382,7 @@ def main():
     if not 2 <= args.rows <= 1000000:
         parser.error("Rows must be between2 and1000000")
     if args.action == "receiver":
-        with webhook_server(args.output) as server:
+        with webhook_server(args.output, host=args.host) as server:
             server.serve_forever()
         return
     if args.output.exists():
