@@ -1,0 +1,31 @@
+{
+  "local": {
+    "tests": "796",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "321.862",
+    "timestamp": "2026-11-13T17:49:15.373990+07:00"
+  },
+  "focused_ui_analytics": {
+    "tests": "38",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "4.432",
+    "timestamp": "2026-11-13T17:52:24.876452+07:00"
+  },
+  "selection": "Local: not integration and not live and not airflow; includes Spark JVM. Focused UI/analytics overlaps local; do not add totals.",
+  "new_tests": 11,
+  "ruff": "passed",
+  "compileall": "passed",
+  "git_diff_check": "passed",
+  "source_sha256": {
+    "analytics/basic.py": "e81d817f385a80e65b1a793522eac5b993853be4c60926fdff5bbb13ca33ac06",
+    "dashboard/pages/9_Basic_Analytics.py": "7ede051fd9aeb4d67cecf20c1f677d85fca7442006724671aab8b78912f8c6d7",
+    "dashboard/navigation.py": "6f43cc4592d6e71786c15c674c4b4711bf074bbe342c38596bf2f6d144fa650d",
+    "dashboard/ui.py": "aba2072f3fe96258a50a273d13a6c3631b3bff78e113243b333110137a952cdb",
+    "tests/test_basic_analytics.py": "38f58557fabc257c18cba7933ed7417010b53edb3fa098856bc1ec5bdac9b56a",
+    "tests/test_basic_analytics_page.py": "ce0529a2a72072574bbffcf1308409fc59fd04ec09338a97fbc92f67800072a0"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "checked_at": "2026-11-13T10:52:31.060885+00:00",
+  "backend": "PostgreSQL, read-only transaction",
+  "data_scope": "real",
+  "summary": {
+    "products": 40,
+    "reviews": 65,
+    "valid_ratings": 65,
+    "avg_rating": 4.815384615384615,
+    "positive_ratio": 0.9692307692307692,
+    "negative_ratio": 0.03076923076923077
+  },
+  "sql_valid_rating_oracle": 65,
+  "sql_average_rating_oracle": 4.815384615384615,
+  "daily_price_rows": 40,
+  "product_currency_histories": 40,
+  "app_rendered_without_exception": true,
+  "boundary": "Read existing observed serving namespace only; no seeded records, data collection, warehouse mutation or AI. AppTest verifies UI logic, not pixel layout.",
+  "dashboard_url": "http://127.0.0.1:8502/basic-analytics",
+  "http_health_and_route_verified_at": "2026-11-13T10:54:08.169833+00:00",
+  "visual_browser_verification": "unavailable: browser access host unavailable"
+}
