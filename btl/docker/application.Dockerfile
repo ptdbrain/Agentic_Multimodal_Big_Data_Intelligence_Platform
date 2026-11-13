@@ -1,6 +1,6 @@
 FROM apache/spark:3.5.0 AS sparkdist
 FROM python:3.11-slim-bookworm
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 SPARK_HOME=/opt/spark \
+ENV PYTHONPATH=/app JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 SPARK_HOME=/opt/spark \
     PYSPARK_PYTHON=/opt/project-venv/bin/python PYSPARK_DRIVER_PYTHON=/opt/project-venv/bin/python \
     PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 RUNNING_IN_DOCKER=true
 RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jre-headless curl tini && rm -rf /var/lib/apt/lists/*

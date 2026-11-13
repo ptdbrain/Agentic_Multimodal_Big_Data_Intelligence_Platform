@@ -62,3 +62,8 @@ def test_fresh_application_initializes_namespaces_before_scheduler_and_dashboard
     for name in ("airflow-init", "dashboard", "search-worker", "alert-worker", "streaming"):
         assert services[name]["depends_on"]["application-init"]["condition"] == "service_completed_successfully"
     assert services["airflow"]["environment"]["AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION"] == "true"
+
+
+def test_executor_python_can_import_project_modules_outside_app_working_directory():
+    dockerfile = (ROOT / 'docker/application.Dockerfile').read_text()
+    assert 'PYTHONPATH=/app' in dockerfile
