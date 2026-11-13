@@ -127,11 +127,26 @@ def filter_source_scope(frame, scope):
     return frame.loc[masks[scope]].copy()
 
 
-def open_dashboard_db():
+def open_dashboard_db(kind="commerce"):
     import streamlit as st
     from dashboard.db_connector import DashboardDB
 
     scope = st.session_state.get("dashboard_data_scope", os.environ.get("DASHBOARD_DATA_SCOPE", "real"))
+    if os.environ.get("SERVING_DATASETS_CONFIG"):
+        from serving.registry import DatasetRegistry, ServingContext, DashboardSources
+
+        registry = DatasetRegistry.load(os.environ["SERVING_DATASETS_CONFIG"])
+        chosen = {}
+        for data_kind, key in (("commerce", "serving_commerce"), ("web", "serving_articles")):
+            choices = registry.choices(data_kind, scope)
+            ids = [item.id for item in choices]
+            current = st.session_state.get(key)
+            chosen[data_kind] = current if current in ids else (ids[0] if ids else None)
+        context = ServingContext(registry, chosen["commerce"], chosen["web"], scope)
+        result = DashboardSources(context)
+        if result._db("articles" if kind == "web" else "products") is None:
+            raise ConnectionError("Chưa có nguồn phù hợp với trang và phạm vi đang chọn")
+        return result
     return DashboardDB(data_scope=scope)
 
 
@@ -141,7 +156,21 @@ def render_sidebar_source():
     sidebar()
 
 
+def selected_dataset_lake():
+    from serving.lake import DatasetLake
+
+    db = open_dashboard_db()
+    try:
+        if not hasattr(db, "context"):
+            return None
+        return DatasetLake(db.context.resolve("products"))
+    finally:
+        db.close()
+
+
 def get_datalake_metrics() -> dict:
+    if os.environ.get("SERVING_DATASETS_CONFIG"):
+        return selected_dataset_lake().metrics()
     return storage.get_storage_stats()
 
 

@@ -4,7 +4,8 @@ import streamlit as st
 from storage.storage_manager import storage
 from config.settings import settings
 from dashboard import ui
-from dashboard.utils import get_datalake_metrics, filter_source_scope
+from dashboard.utils import get_datalake_metrics, filter_source_scope, selected_dataset_lake
+import os
 
 ui.setup_page(
     "Luồng dữ liệu", "Theo dõi dữ liệu đang lưu trong các tầng xử lý và đọc báo cáo chất lượng đã ghi nhận.", "pipeline"
@@ -89,7 +90,15 @@ with st.expander("Mẫu đánh giá Bronze và thông tin vận hành"):
     st.caption(
         "Quét tối đa 1.000 bản ghi, hiển thị tối đa 10 bản khớp phạm vi nguồn. Đây không phải luồng theo dõi trực tiếp."
     )
-    rows = storage.read_bronze_records(settings.kafka.topic_reviews, limit=1000)
+    try:
+        rows = (
+            selected_dataset_lake().bronze_reviews(limit=1000)
+            if os.environ.get("SERVING_DATASETS_CONFIG")
+            else storage.read_bronze_records(settings.kafka.topic_reviews, limit=1000)
+        )
+    except (ConnectionError, RuntimeError, OSError, ValueError) as error:
+        st.warning("Chưa đọc được mẫu Bronze của nguồn đang chọn.")
+        rows = []
     sample = filter_source_scope(pd.DataFrame(rows), scope).head(10) if rows else pd.DataFrame()
     if sample.empty:
         st.info("Chưa có bản ghi phù hợp trong phần dữ liệu được quét.")

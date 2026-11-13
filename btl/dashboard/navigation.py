@@ -34,6 +34,15 @@ def page_groups():
             "PHÂN TÍCH DỮ LIỆU",
             [
                 (
+                    "search",
+                    st.Page(
+                        str(ROOT / "pages/11_Search.py"),
+                        title="Tìm kiếm toàn văn",
+                        icon=":material/search:",
+                        url_path="search",
+                    ),
+                ),
+                (
                     "basic",
                     st.Page(
                         str(ROOT / "pages/9_Basic_Analytics.py"),
@@ -84,6 +93,15 @@ def page_groups():
             "VẬN HÀNH",
             [
                 (
+                    "streaming",
+                    st.Page(
+                        str(ROOT / "pages/10_Streaming.py"),
+                        title="Luồng đang xử lý",
+                        icon=":material/stream:",
+                        url_path="streaming",
+                    ),
+                ),
+                (
                     "anomalies",
                     st.Page(
                         str(ROOT / "pages/6_Anomalies.py"),
@@ -91,6 +109,11 @@ def page_groups():
                         icon=":material/report:",
                         url_path="anomalies",
                     ),
+                ),
+                (
+                    "lineage",
+                    st.Page(str(ROOT / "pages/12_Lineage.py"), title="Truy vết dữ liệu",
+                            icon=":material/fact_check:", url_path="lineage"),
                 ),
                 (
                     "pipeline",

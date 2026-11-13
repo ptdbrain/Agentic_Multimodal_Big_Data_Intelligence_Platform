@@ -9,7 +9,7 @@ ui.setup_page(
     "Đọc bài viết và thảo luận độc lập, với nguồn gốc và thời gian được giữ rõ ràng.",
     "articles",
 )
-with ui.warehouse() as db:
+with ui.warehouse(kind="web") as db:
     articles = db.read_table("articles", order_by="collected_at", limit=1000)
     daily = db.read_table("article_daily_stats", order_by="date")
 if articles.empty:

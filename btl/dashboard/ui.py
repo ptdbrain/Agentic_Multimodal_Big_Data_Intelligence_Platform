@@ -146,6 +146,25 @@ def sidebar():
         key="dashboard_data_scope",
         help="Dữ liệu thật gồm bản thu trực tiếp và bản phát lại có nhãn. Dữ liệu sinh được tách riêng.",
     )
+    registry_path = os.environ.get("SERVING_DATASETS_CONFIG")
+    if registry_path:
+        from serving.registry import DatasetRegistry
+
+        registry = DatasetRegistry.load(registry_path)
+        scope = st.session_state["dashboard_data_scope"]
+        for kind, key, title in [
+            ("commerce", "serving_commerce", "Nguồn thương mại"),
+            ("web", "serving_articles", "Nguồn bài viết"),
+        ]:
+            choices = registry.choices(kind, scope)
+            labels = {item.id: item.label for item in choices}
+            if choices:
+                if st.session_state.get(key) not in labels:
+                    st.session_state.pop(key, None)
+                st.sidebar.selectbox(title, list(labels), format_func=labels.get, key=key)
+            else:
+                st.session_state.pop(key, None)
+                st.sidebar.caption(title + ": chưa có nguồn trong phạm vi này")
     st.sidebar.caption("Bản phát lại vẫn giữ nhãn và thời gian của nguồn.")
     st.sidebar.button("Làm mới dữ liệu", icon=":material/refresh:", width="stretch")
     try:
@@ -163,17 +182,28 @@ def sidebar():
 
 
 @contextmanager
-def warehouse():
+def warehouse(kind="commerce"):
     from dashboard.utils import open_dashboard_db
 
     try:
-        db = open_dashboard_db()
+        db = open_dashboard_db(kind=kind)
     except ConnectionError as error:
         empty_state("Không thể kết nối dữ liệu", "Kiểm tra dịch vụ kho dữ liệu, sau đó bấm Làm mới dữ liệu.", "!")
         with st.expander("Chi tiết kết nối"):
             st.code(str(error))
         st.stop()
     try:
+        if hasattr(db, "context"):
+            for metadata in db.publication_metadata():
+                st.caption(
+                    metadata["label"]
+                    + " · Dataset: "
+                    + metadata["dataset_id"]
+                    + " · Phiên xuất bản: "
+                    + str(metadata.get("generation") or "Chưa có metadata")
+                    + " · Dữ liệu đến: "
+                    + str(metadata.get("data_as_of") or "Chưa xác định")
+                )
         with st.spinner("Đang đọc dữ liệu…"):
             yield db
     finally:

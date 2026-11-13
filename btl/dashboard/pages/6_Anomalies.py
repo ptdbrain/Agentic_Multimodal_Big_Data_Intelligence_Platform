@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 import streamlit as st
 from dashboard import ui
@@ -10,6 +11,52 @@ ui.setup_page(
 )
 with ui.warehouse() as db:
     events = db.get_anomaly_events()
+    causal = db.read_table("serving_alerts", order_by="updated_at", limit=200)
+    causal_history = (
+        db.read_table("serving_alert_history", order_by="observed_at", limit=1000)
+        if not causal.empty
+        else pd.DataFrame()
+    )
+
+with st.container(border=True):
+    st.subheader("Cảnh báo thống kê theo thời gian")
+    st.caption(
+        "So sánh với dữ liệu đã quan sát trong quá khứ. Cảnh báo luồng và giá ngày được theo dõi riêng với phân tích toàn kỳ bên dưới."
+    )
+    if causal.empty:
+        st.info("Chưa có đánh giá thống kê được xác nhận cho nguồn đang chọn.")
+    else:
+        states = st.multiselect(
+            "Trạng thái đánh giá",
+            ["firing", "clear", "insufficient_data"],
+            default=["firing", "insufficient_data"],
+            key="causal_states",
+        )
+        selected_causal = causal.loc[causal["state"].isin(states)]
+        ui.table(
+            selected_causal,
+            [
+                "event_id",
+                "product_id",
+                "event_type",
+                "state",
+                "score",
+                "revision",
+                "window_start",
+                "window_end",
+                "generation",
+                "updated_at",
+            ],
+        )
+        ui.download(selected_causal, "canh-bao-thong-ke.csv")
+        if not selected_causal.empty:
+            event_id = st.selectbox("Bằng chứng cảnh báo", selected_causal["event_id"].tolist())
+            evidence = selected_causal.loc[selected_causal["event_id"].eq(event_id)].iloc[0]
+            with st.expander("Mẫu so sánh, ngưỡng và chất lượng", expanded=False):
+                st.json(json.loads(evidence["evidence_json"]))
+                if not causal_history.empty:
+                    ui.table(causal_history.loc[causal_history["event_id"].eq(event_id)])
+
 records = events.to_dict("records") if not events.empty else []
 kind = events.get("anomaly_type", pd.Series(dtype=str)).fillna("").astype(str)
 for col, (label, value, note) in zip(
