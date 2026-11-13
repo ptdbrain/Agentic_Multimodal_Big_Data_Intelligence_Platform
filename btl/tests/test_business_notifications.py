@@ -75,3 +75,83 @@ def test_outbox_worker_delivers_actual_loopback_firing_and_resolved_once(tmp_pat
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
+
+
+def test_killed_worker_after_receiver_fsync_recovers_without_duplicate_receipt(tmp_path):
+    """Kill a real child after durable HTTP receipt but before response/SQL acknowledgement."""
+    import subprocess, sys
+    from pathlib import Path
+    from serving.registry import DatasetRegistry
+    from serving.store import connect_dataset, ServingStore
+    from serving.notifications import deliver_notifications
+    from scripts.verify_operations_stack import webhook_server
+    from tests.test_serving_registry import registry_file
+
+    config = registry_file(tmp_path)
+    binding = DatasetRegistry.load(config).datasets["tiki"]
+    connection = connect_dataset(binding)
+    store = ServingStore(connection, binding.id, binding.source_group)
+    with connection:
+        store.initialize()
+        store.stage_evaluations(
+            "g",
+            [
+                {
+                    "event_id": "c" * 64,
+                    "product_id": "p",
+                    "rule": "traffic",
+                    "event_type": "REVIEW_BURST",
+                    "state": "firing",
+                    "score": 5,
+                    "window_start": "2026-11-13T00:00:00Z",
+                    "window_end": "2026-11-13T00:01:00Z",
+                    "evidence": {"quality_status": "valid"},
+                }
+            ],
+        )
+    receipt = tmp_path / "crash-receipt.jsonl"
+    server = webhook_server(receipt, port=0)
+    accepted, release = threading.Event(), threading.Event()
+    original = server.RequestHandlerClass.send_response
+
+    def hold_first_response(self, code, message=None):
+        if code == 200 and not accepted.is_set():
+            accepted.set()
+            release.wait(timeout=10)
+        return original(self, code, message)
+
+    server.RequestHandlerClass.send_response = hold_first_response
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    url = f"http://127.0.0.1:{server.server_port}/alerts"
+    command = [
+        sys.executable,
+        "-c",
+        "import sys;from serving.registry import DatasetRegistry;from serving.notifications import deliver_notifications;"
+        'deliver_notifications(DatasetRegistry.load(sys.argv[1]).datasets["tiki"],url=sys.argv[2])',
+        str(config),
+        url,
+    ]
+    child = subprocess.Popen(
+        command, cwd=Path(__file__).resolve().parents[1], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+    try:
+        assert accepted.wait(timeout=8), "Receiver did not reach durable write before crash"
+        assert len(receipt.read_text().splitlines()) == 1
+        child.kill()
+        child.wait(timeout=5)
+        release.set()
+        assert connection.execute("SELECT delivered_at FROM alert_notifications").fetchone()[0] is None
+        assert deliver_notifications(binding, url=url) == 1
+        assert deliver_notifications(binding, url=url) == 0
+        assert len(receipt.read_text().splitlines()) == 1
+        assert connection.execute("SELECT delivered_at FROM alert_notifications").fetchone()[0] is not None
+    finally:
+        if child.poll() is None:
+            child.kill()
+            child.wait(timeout=5)
+        release.set()
+        connection.close()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
