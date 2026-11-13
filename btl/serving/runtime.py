@@ -1,5 +1,6 @@
 """Fail before starting Spark if process-level writers do not match the selected dataset."""
 
+import re
 from pathlib import Path
 from urllib.parse import urlsplit
 from scripts.run_scheduled_backup import environment
@@ -28,6 +29,10 @@ def validate_stream_binding(binding, env: dict, paths: dict) -> None:
     for key in keys:
         if not expected.get(key) or env.get(key) != expected[key]:
             raise ValueError("Stream process runtime differs from private dataset; use --deployment")
+    if not binding.sqlite_path:
+        match = re.fullmatch(r"-c\s*search_path=([a-z_][a-z0-9_]*)", expected.get("PGOPTIONS", ""))
+        if match is None or match.group(1) != binding.schema:
+            raise ValueError("Stream runtime schema differs from SQL sink schema")
     if not binding.sqlite_path and expected.get("DATA_LAKE_BUCKET") != binding.bucket:
         raise ValueError("Dataset lake bucket differs from private runtime")
     for name in ("checkpoint_dir", "output_path", "quarantine_path"):
