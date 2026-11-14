@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "checked_at": "2026-11-13T12:13:46.591463+00:00",
+  "datasets": {
+    "tiki": {
+      "table": "products",
+      "rows": 20,
+      "schema": "source_tiki",
+      "group": "marketplace"
+    },
+    "web": {
+      "table": "articles",
+      "rows": 52,
+      "schema": "source_web",
+      "group": "web_content"
+    },
+    "simulation": {
+      "table": "products",
+      "rows": 10,
+      "schema": "source_simulation",
+      "group": "simulation"
+    }
+  },
+  "read_only_connections": true,
+  "global_environment_unchanged": true,
+  "boundary": "Actual existing isolated source PostgreSQLschemas, read-only routing andSQLcountoracles; noDockerstartup,captureorwarehousewrites"
+}

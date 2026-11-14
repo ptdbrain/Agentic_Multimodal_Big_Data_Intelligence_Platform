@@ -1,29 +1,12 @@
 # SentinelAI — Agentic Multimodal Big Data Intelligence Platform
 
-## Phase 1 Status: Under Active Development
+## Current scope and status
 
-### ✅ Completed
-- [x] Schema design & data contracts (JSON Schema validation)
-- [x] Multi-format data ingestion (CSV, JSON, JSONL, Parquet)
-- [x] E-commerce crawler ecosystem (Tiki, Universal, Mock)
-- [x] Kafka real producer with message envelope (event_id, event_type, source, ingested_at, payload)
-- [x] Kafka consumer with manual offset commit and DLQ
-- [x] MinIO storage backend with local fallback
-- [x] Batch ETL pipeline (Clean -> Normalize -> Deduplicate -> Validate)  
-- [x] Price pipeline
-- [x] Gold analytics marts (product_daily_stats, brand_daily_stats, category_daily_stats, price_daily_stats)
-- [x] PostgreSQL warehouse with UPSERT
-- [x] Spark Structured Streaming (windowed aggregation with watermark)
-- [x] Anomaly detection (Review Burst, Price Anomaly, Rating Drop)
-- [x] Data Quality evaluator with per-rule metrics
-- [x] Streamlit dashboard
-- [x] 3V Benchmark suite
-- [x] Airflow DAG orchestration
-- [x] 65+ unit tests passing
+The current implementation covers non-AI ingestion, processing, statistical analytics and serving. Sources are managed separately: observed marketplace data, observed web articles and explicitly labelled simulation. Currency values retain their source units. Collection cadence and processing latency are separate measurements.
 
-### 🔄 Infrastructure Requirements  
-- Docker Compose with Kafka (KRaft), MinIO, Spark, PostgreSQL, Elasticsearch
-- `pip install -r requirements.txt`
+The active completion work adds dataset-bound dashboard sessions, SQL streaming receipts, causal alerts, transactional Elasticsearch publishing and verified input lineage. **Full Docker cutover and operational acceptance remain pending.** See [implementation status and acceptance gaps](docs/non-ai-completion.md) for evidence and limitations; the project proposal describes the intended scope, not a deployment certification.
+
+Integration/production require actual Kafka, MinIO, PostgreSQL and Elasticsearch. Local/test storage must be selected explicitly; service failures do not silently switch to local data or simulation.
 
 ### Architecture
 
@@ -86,21 +69,27 @@ cd Agentic_Multimodal_Big_Data_Intelligence_Platform
 pip install -r requirements.txt
 ```
 
-### 2. Run the End-to-End Pipeline
-Executes data generation, Bronze ingestion, Spark batch ETL, Data Quality evaluation, Anomaly Detection, and Gold DW sync in one command:
+### 2. Prepare the isolated application stack
+
+From `btl`, prepare a new private directory and validate the Compose configuration:
+
 ```bash
-python scripts/run_e2e_pipeline.py
+python scripts/prepare_application.py --directory ../.runtime/nonai-docker-private
+docker compose --env-file ../.runtime/nonai-docker-private/compose.env -p sentinel-nonai config --quiet
+docker compose --env-file ../.runtime/nonai-docker-private/compose.env -p sentinel-nonai up -d --build
 ```
 
-### 3. Launch Interactive Streamlit Dashboard
+The preparation command refuses existing directories. Keep these private files out of Git. New DAGs remain paused; confirm source ownership before enabling collection. Dashboard staging uses port 18502 and Grafana uses 13000. See the [run instructions and remaining acceptance work](docs/non-ai-completion.md).
+
+### 3. Local development and tests
+
 ```bash
 streamlit run dashboard/app.py
+make test-unit
+make test-spark
 ```
 
-### 4. Run Test Suite
-```bash
-pytest -v
-```
+Use `SERVING_DATASETS_CONFIG` with private connection references for independent source selectors. An unconfigured legacy dashboard keeps its existing connection. The end-to-end CLI requires an explicitly configured source/runtime; running it is not a substitute for deployment acceptance.
 
 ## 👥 Author
 **PTDBrain** — *phandat20052009@gmail.com*
@@ -126,8 +115,8 @@ See [remediation validation status](docs/reports/remediation_status.md) for exec
 
 ## Source layout
 
-The source tree is now in `btl/`; Git and GitHub Actions remain at its parent. Start development commands with `cd btl`. Python configuration prefers `btl/.env` and otherwise loads the parent Git repository's `.env`; `make up`/`make down` use the same environment-file priority. CI run steps execute inside `btl/`.
+The source tree is now in `btl/`; Git and GitHub Actions remain at its parent. Start development commands with `cd btl`. Python configuration prefers `btl/.env` and otherwise loads the parent Git repository's `.env`; `make up`/`make down` use the same environment-file priority; use `COMPOSE_ENV=../.runtime/nonai-docker-private/compose.env` for the new application stack. CI run steps execute inside `btl/`.
 
-MinIO is built from the upstream `RELEASE.2024-03-30T09-41-56Z` source using `docker/minio.Dockerfile`, with a SHA256-pinned source archive. The verification environment encountered registry pull failures for that release. Run `docker compose build minio` before starting the stack; the build needs network access to fetch source and Go dependencies. This is a source build of MinIO, not a substitute S3 server.
+MinIO is built from the upstream `RELEASE.2024-03-30T09-41-56Z` source using `docker/minio.Dockerfile`, with a SHA256-pinned source archive. The verification environment encountered registry pull failures for that release. Run the Compose build with the private `--env-file` shown above; the build needs network access to fetch source and Go dependencies. This is a source build of MinIO, not a substitute S3 server.
 
 Gold reads are strict by default. `SparkGoldBuilder(allow_local_fallback=True)` enables a pandas fallback only in local/test mode and only for a missing implicit Silver path. Permission, schema, connector and supplied-path failures propagate. Integration/production reject this opt-in.

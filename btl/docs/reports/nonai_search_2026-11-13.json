@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "checked_at": "2026-11-13T15:47:57.205306+00:00",
+  "vendor_services": [
+    "PostgreSQL16",
+    "Elasticsearch8.13"
+  ],
+  "sql_fixture_group": "simulation",
+  "initial_indexed_products": 1,
+  "recovered_indexed_products": 2,
+  "review_documents": 1,
+  "replay_jobs_completed": 0,
+  "old_alias_retained_during_injected_request_failure": true,
+  "document_content_verified": true,
+  "actual_search_after_paging_verified": true,
+  "actual_fulltext_match_and_zero_result_verified": true,
+  "boundary": "Actual SQL/ES paged indexing and aliases, explicit labelled SQL fixtures in isolated new schema, injected transport-call failure for retry scenario; not a real ES process outage or Docker proof"
+}

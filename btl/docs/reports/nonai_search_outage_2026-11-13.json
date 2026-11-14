@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "checked_at": "2026-11-13T15:57:49.455060+00:00",
+  "actual_owned_process_stopped_and_restarted": true,
+  "transport_error_kind": "ConnectionError",
+  "old_alias_survived_restart": true,
+  "products_before": 2,
+  "products_after_recovery": 3,
+  "replay_jobs": 0,
+  "fixture_group": "simulation",
+  "boundary": "Native PostgreSQL and owned isolated Elasticsearch process; not Docker or cross-host HA."
+}

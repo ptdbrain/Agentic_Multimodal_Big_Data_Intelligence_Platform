@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "checked_at": "2026-11-13T16:11:20.631368+00:00",
+  "pages_checked_against_actual_pg": [
+    "10_Streaming.py",
+    "11_Search.py",
+    "12_Lineage.py",
+    "1_Overview.py",
+    "2_Pipeline.py",
+    "3_Products.py",
+    "4_Reviews.py",
+    "5_Trends.py",
+    "6_Anomalies.py",
+    "7_Data_Quality.py",
+    "8_Web_Content.py",
+    "9_Basic_Analytics.py"
+  ],
+  "real_commerce_dataset": "tiki",
+  "real_web_dataset": "web",
+  "simulation_selection_verified": true,
+  "boundary": "Streamlit AppTest against actual source PostgreSQL read-only sessions; not browser rendering/latency or Docker deployment."
+}
