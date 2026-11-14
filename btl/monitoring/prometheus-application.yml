@@ -3,6 +3,7 @@ global:
   evaluation_interval: 15s
 rule_files:
 - /etc/prometheus/alerts.yml
+- /etc/prometheus/datasets-alerts.yml
 alerting:
   alertmanagers:
   - static_configs:
@@ -21,3 +22,7 @@ scrape_configs:
   static_configs:
   - targets:
     - operations:8002
+- job_name: sentinel-datasets
+  static_configs:
+  - targets:
+    - datasets:8003

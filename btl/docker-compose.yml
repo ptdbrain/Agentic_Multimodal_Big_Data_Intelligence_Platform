@@ -545,6 +545,7 @@ services:
     - ./monitoring/prometheus-application.yml:/etc/prometheus/prometheus.yml:ro
     - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
     - prometheus_data:/prometheus
+    - ./monitoring/datasets-alerts.yml:/etc/prometheus/datasets-alerts.yml:ro
   alertmanager:
     image: prom/alertmanager:v0.27.0
     mem_limit: 128m
@@ -571,10 +572,12 @@ services:
       GF_USERS_ALLOW_SIGN_UP: 'false'
       GF_ANALYTICS_REPORTING_ENABLED: 'false'
       GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/sentinel-application-dashboards/datasets.json
     volumes:
     - grafana_data:/var/lib/grafana
     - ./monitoring/grafana-application:/etc/grafana/provisioning:ro
     - ./monitoring/grafana:/var/lib/sentinel-dashboards:ro
+    - ./monitoring/grafana-application/json:/var/lib/sentinel-application-dashboards:ro
   application-init:
     image: sentinel-application:local
     build:
@@ -619,6 +622,54 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+  datasets:
+    image: sentinel-application:local
+    build:
+      context: .
+      dockerfile: docker/application.Dockerfile
+    init: false
+    restart: unless-stopped
+    environment:
+      RUNTIME_MODE: integration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?private password required}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_dw}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ENDPOINT_DOCKER: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?private access key required}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?private secret key required}
+      DATA_LAKE_BUCKET: ${DATA_LAKE_BUCKET:-sentinel-data}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPARK_MASTER: spark://spark-master:7077
+      SPARK_DRIVER_MEMORY: 2g
+      SPARK_CONNECTOR_PACKAGES: org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.apache.hadoop:hadoop-aws:3.3.4
+      SOURCE_JOBS_CONFIG: /private/source-jobs.yml
+      SERVING_DATASETS_CONFIG: /private/serving-datasets.yml
+      SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
+      AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
+      PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
+        --executor-memory 1g pyspark-shell
+      DASHBOARD_DATA_SCOPE: real
+    volumes:
+    - ${SENTINEL_PRIVATE_DIR:?private directory required}:/private:ro
+    - app_state:/var/lib/sentinel
+    networks:
+    - sentinel-network
+    mem_limit: 128m
+    command:
+    - python
+    - monitoring/serving_exporter.py
+    - --registry
+    - /private/serving-datasets.yml
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8003'
+    depends_on:
+      application-init:
+        condition: service_completed_successfully
 networks:
   sentinel-network:
     driver: bridge

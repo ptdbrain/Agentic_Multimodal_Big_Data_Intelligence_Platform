@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "checked_at": "2026-11-13T17:22:09.694635+00:00",
+  "actual_prometheus_version": "2.54.1",
+  "sql_datasets_ready": 3,
+  "minio_buckets_ready": 3,
+  "prometheus_observed_records": {
+    "tiki:products": 20,
+    "tiki:reviews": 258,
+    "web:articles": 52,
+    "simulation:products": 10,
+    "simulation:reviews": 160
+  },
+  "independent_sql_counts": {
+    "tiki:products": 20,
+    "tiki:reviews": 258,
+    "web:articles": 52,
+    "simulation:products": 10,
+    "simulation:reviews": 160
+  },
+  "rules_validated_with_promtool": true,
+  "source_journals_ready": 3,
+  "source_unresolved_failures": {
+    "tiki": 0,
+    "web": 0,
+    "simulation": 0
+  },
+  "boundary": "Read-only real native source schemas/buckets scraped by isolated actual Prometheus; no Docker or Grafana rendering certification."
+}

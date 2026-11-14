@@ -65,5 +65,5 @@ def test_fresh_application_initializes_namespaces_before_scheduler_and_dashboard
 
 
 def test_executor_python_can_import_project_modules_outside_app_working_directory():
-    dockerfile = (ROOT / 'docker/application.Dockerfile').read_text()
-    assert 'PYTHONPATH=/app' in dockerfile
+    dockerfile = (ROOT / "docker/application.Dockerfile").read_text()
+    assert "PYTHONPATH=/app" in dockerfile

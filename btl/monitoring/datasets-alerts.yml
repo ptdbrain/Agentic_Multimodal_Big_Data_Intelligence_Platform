@@ -1,0 +1,63 @@
+groups:
+- name: sentinel-datasets
+  rules:
+  - alert: SentinelDatasetSQLUnavailable
+    expr: sentinel_dataset_up == 0
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: A registered dataset SQL snapshot cannot be queried
+      runbook: docs/non-ai-completion.md
+  - alert: SentinelDatasetLakeUnavailable
+    expr: sentinel_dataset_lake_up == 0
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: A registered dataset bucket cannot be listed
+      runbook: docs/non-ai-completion.md
+  - alert: SentinelDatasetPublicationMissing
+    expr: sentinel_dataset_publication_present == 0
+    for: 30m
+    labels:
+      severity: warning
+    annotations:
+      summary: Dataset is initialized but has no publication receipt; check paused
+        schedules and source ownership
+      runbook: docs/non-ai-completion.md
+  - alert: SentinelDatasetPublicationStale
+    expr: time() - sentinel_dataset_publication_timestamp_seconds > 93600
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: Registered daily dataset has not published for over 26 hours
+      runbook: docs/non-ai-completion.md
+  - alert: SentinelSourceJournalUnavailable
+    expr: sentinel_dataset_source_state_up == 0
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: Registered source journals cannot be validated against the selected
+        dataset
+      runbook: docs/non-ai-completion.md
+  - alert: SentinelSourceExecutionFailed
+    expr: sentinel_dataset_source_unresolved_failure == 1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: Source capture or processing failed after its last completed processing
+        receipt
+      runbook: docs/non-ai-completion.md
+  - alert: SentinelSourceCapturePartial
+    expr: sentinel_dataset_source_capture_partial == 1
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      summary: The last processed source capture was partial; warehouse publication
+        does not imply complete collection
+      runbook: docs/non-ai-completion.md

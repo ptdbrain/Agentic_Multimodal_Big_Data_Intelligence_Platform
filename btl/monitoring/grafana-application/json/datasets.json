@@ -1,0 +1,581 @@
+{
+  "uid": "sentinel-datasets",
+  "title": "Sentinel · Từng nguồn dữ liệu",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "timezone": "browser",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "tags": [
+    "sentinel",
+    "datasets"
+  ],
+  "description": "Số liệu từ từng schema/bucket trong registry. Thiếu receipt giữ trạng thái chưa xác định. Đếm bản ghi có provenance đúng nguồn; không hợp nhất nguồn giả lập với dữ liệu quan sát.",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Kết nối SQL từng nguồn",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_up{dataset_id=~\"${dataset:regex}\"}",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Bản ghi theo nguồn và loại",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_records{dataset_id=~\"${dataset:regex}\"}",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Receipt xuất dữ liệu",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_publication_present{dataset_id=~\"${dataset:regex}\"}",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Lần xuất warehouse gần nhất",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_publication_timestamp_seconds{dataset_id=~\"${dataset:regex}\"} * 1000",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Công việc tìm kiếm còn chờ",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_search_pending{dataset_id=~\"${dataset:regex}\"}",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Đánh giá firing trong lịch sử",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_alerts_firing{dataset_id=~\"${dataset:regex}\"}",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Kết nối bucket từng nguồn",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_lake_up{dataset_id=~\"${dataset:regex}\"}",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Dung lượng lake theo nguồn và tầng",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_lake_bytes{dataset_id=~\"${dataset:regex}\"}",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Lỗi thu thập/xử lý chưa có lần hoàn tất mới hơn",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_source_unresolved_failure{dataset_id=~\"${dataset:regex}\"}",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Lần xử lý nguồn hoàn tất gần nhất",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_source_last_processed_timestamp_seconds{dataset_id=~\"${dataset:regex}\"} * 1000",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeAsIso",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Đầu vào của lần xử lý nguồn gần nhất",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_source_input_records{dataset_id=~\"${dataset:regex}\"}",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Lần thu gần nhất còn thiếu dữ liệu",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "sentinel-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 30,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sentinel_dataset_source_capture_partial{dataset_id=~\"${dataset:regex}\"}",
+          "instant": true,
+          "legendFormat": "{{dataset_id}} {{entity}} {{layer}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "graphMode": "none",
+        "colorMode": "value",
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Chưa có dữ liệu xác nhận",
+          "decimals": 0,
+          "displayName": "${__field.labels.dataset_id} ${__field.labels.entity} ${__field.labels.layer}"
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "dataset",
+        "label": "Nguồn dữ liệu",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "sentinel-prometheus"
+        },
+        "query": "label_values(sentinel_dataset_up, dataset_id)",
+        "refresh": 1,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  }
+}

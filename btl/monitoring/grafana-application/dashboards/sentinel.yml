@@ -4,3 +4,7 @@ providers:
   options:
     path: /var/lib/sentinel-dashboards
   type: file
+- name: sentinel-datasets
+  options:
+    path: /var/lib/sentinel-application-dashboards
+  type: file
