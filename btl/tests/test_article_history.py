@@ -210,3 +210,11 @@ def test_repeated_older_observation_does_not_duplicate_a_historical_version():
             mode="test",
             run_id="late-conflict",
         )
+
+
+def test_serving_lineage_snapshot_includes_cumulative_sql_gold_and_latest_articles():
+    publish_articles([observed()], mode='test', run_id='lineage-first')
+    latest = publish_articles([observed('two', 'Second text')], mode='test', run_id='lineage-second')
+    assert len(storage.read_parquet(latest['serving_silver_path'])) == 2
+    assert storage.read_parquet(latest['serving_gold_path'])['article_count'].tolist() == [2]
+    assert storage.read_parquet(latest['gold_path'])['article_count'].tolist() == [1]

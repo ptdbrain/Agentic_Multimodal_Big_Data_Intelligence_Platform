@@ -603,6 +603,9 @@ class SparkGoldBuilder:
             with write_lock(SparkSessionFactory.resolve_storage_path('', layer='gold')):
                 snapshot = {'run_id':effective_run_id,'source_run_id':effective_source_run_id,
                             'status':'publishing','source_group':source_group,
+                            'strict_analytics_time': bool(settings.analytics.strict_analytics_time),
+                            'sentiment_thresholds':{'positive':float(settings.analytics.sentiment_positive_threshold),
+                                                    'negative':float(settings.analytics.sentiment_negative_threshold)},
                             'quality':{'status':'valid' if gated else 'unverified', 'run_id':effective_run_id,
                                        'required_datasets':sorted(consumed) if gated else []},
                             'rows':{name:frame.count() for name,frame in marts.items()}}

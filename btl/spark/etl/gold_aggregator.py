@@ -162,6 +162,8 @@ class GoldAggregator:
             from spark.spark_session import SparkSessionFactory
             with write_lock(SparkSessionFactory.resolve_storage_path('', layer='gold')):
                 snapshot = {'run_id':effective_run,'source_run_id':source_run_id,'status':'publishing','source_group':source_group,
+                            'strict_analytics_time':bool(settings.analytics.strict_analytics_time),
+                            'sentiment_thresholds':{'positive':positive,'negative':negative},
                             'rows':{name:len(frame) for name,frame in marts.items()}}
                 mgr.write_json('gold/_snapshot.json', snapshot)
                 for name, frame in marts.items():

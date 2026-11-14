@@ -138,7 +138,8 @@ def refresh_working_outputs(manifest, stage):
         path
         for prefix in prefixes
         for path in storage.list_objects(prefix)
-        if "/_temporary/" not in path
+        if "/serving_snapshots/" not in path
+        and "/_temporary/" not in path
         and not path.rsplit("/", 1)[-1].endswith(".crc")
         and not path.rsplit("/", 1)[-1].startswith(".")
     }

@@ -95,6 +95,11 @@ def export_gold_to_db(
                 frames[table] = storage.read_silver_parquet(table)
             except Exception as exc:
                 raise RuntimeError(f"Failed to read Silver table '{table}' from storage: {exc}") from exc
+        cohort_tables = set(canonical_marts[:4]) | {'products', 'reviews'}
+        service_export = wh._engine_type == 'postgres' or mode in ('integration', 'production')
+        complete_cohort = cohort_tables.issubset(frames)
+        if generation and service_export and cohort_tables.intersection(frames) and not complete_cohort:
+            raise ValueError('Service snapshot publication requires the complete Gold/Silver cohort; partial export refused')
         # A separate lake bucket alone is insufficient: generated snapshots
         # must not overwrite an observed warehouse (or vice versa).
         from ingestion.provenance import classify_source_group
@@ -155,14 +160,23 @@ def export_gold_to_db(
                     print(f"Prepared {rows} rows for database table '{name}' ({wh._engine_type})")
                 except Exception as exc:
                     raise RuntimeError(f"Export to warehouse failed for table '{name}': {exc}") from exc
-            if generation and generation.get('run_id'):
+            if generation and generation.get('run_id') and (not service_export or complete_cohort):
                 import os
                 from serving.store import ServingStore
                 dataset_id=os.environ.get('SERVING_DATASET_ID',os.environ.get('SOURCE_JOB_NAMESPACE','legacy'))
                 publication=ServingStore(wh._conn,dataset_id,next(iter(incoming or {'unverified'})))
                 publication.initialize()
                 from serving.lineage import commerce_receipt, stage_lineage
-                stage_lineage(publication, str(generation['run_id']), commerce_receipt(str(generation['run_id'])))
+                lineage_tables = list(tables_to_sync)
+                if 'price_daily_stats' in frames and not frames['price_daily_stats'].empty:
+                    lineage_tables.append('prices')
+                lineage_receipt = commerce_receipt(str(generation['run_id']), tables=sorted(set(lineage_tables)),
+                    marts=[name for name in canonical_marts[:4] if name in frames], store=publication)
+                if type(generation.get('strict_analytics_time')) is bool:
+                    lineage_receipt['strict_analytics_time'] = generation['strict_analytics_time']
+                if 'sentiment_thresholds' in generation:
+                    lineage_receipt['sentiment_thresholds'] = generation['sentiment_thresholds']
+                stage_lineage(publication, str(generation['run_id']), lineage_receipt)
                 publication.stage_publication(str(generation['run_id']),str(generation['run_id']),'commerce')
                 if 'price_daily_stats' in frames:
                     from analytics.causal import price_evaluations

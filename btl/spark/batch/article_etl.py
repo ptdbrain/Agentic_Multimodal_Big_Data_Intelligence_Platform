@@ -223,7 +223,16 @@ def _publish_articles_locked(records, mode, run_id, prefix, bronze_paths):
             publication=ServingStore(wh._conn,os.environ.get('SERVING_DATASET_ID',os.environ.get('SOURCE_JOB_NAMESPACE','legacy-web')),'web_content')
             publication.initialize()
             from serving.lineage import article_receipt, stage_lineage
-            stage_lineage(publication, run_id, article_receipt(run_id, bronze_paths or [], silver_path, gold_path))
+            serving_silver_path = f"silver/article_snapshots/{prefix}/serving_articles.parquet"
+            storage.write_parquet(serving_silver_path, wh.query("SELECT * FROM articles WHERE source_group='web_content'"))
+            serving_gold_path = f"gold/article_snapshots/{prefix}/serving_article_daily_stats.parquet"
+            storage.write_parquet(serving_gold_path, wh.query("SELECT * FROM article_daily_stats WHERE source_group='web_content'"))
+            manifest['serving_silver_path'] = serving_silver_path
+            manifest['serving_gold_path'] = serving_gold_path
+            wh.upsert_dataframe('article_pipeline_runs', pd.DataFrame([{
+                'run_id': run_id, 'manifest_json': json.dumps(manifest, ensure_ascii=False)}]), ['run_id'])
+            stage_lineage(publication, run_id, article_receipt(run_id, bronze_paths or [], serving_silver_path, serving_gold_path,
+                                                             store=publication))
             publication.stage_publication(run_id,run_id,'web')
         return manifest
     finally:

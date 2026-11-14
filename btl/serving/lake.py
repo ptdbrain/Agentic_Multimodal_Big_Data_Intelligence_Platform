@@ -2,6 +2,9 @@
 
 from pathlib import Path, PurePosixPath
 import json
+import hashlib
+import tempfile
+from contextlib import contextmanager
 from scripts.run_scheduled_backup import environment
 
 
@@ -18,11 +21,16 @@ class DatasetLake:
         else:
             from minio import Minio
 
+            import urllib3
+
             self.client = Minio(
                 self.env["MINIO_ENDPOINT"],
                 access_key=self.env["MINIO_ACCESS_KEY"],
                 secret_key=self.env["MINIO_SECRET_KEY"],
                 secure=self.env.get("MINIO_SECURE", "false").lower() == "true",
+                http_client=urllib3.PoolManager(
+                    timeout=urllib3.Timeout(connect=1, read=2), retries=urllib3.Retry(total=1, connect=1, read=0)
+                ),
             )
 
     def _key(self, key):
@@ -62,6 +70,34 @@ class DatasetLake:
         finally:
             response.close()
             response.release_conn()
+
+    @contextmanager
+    def verified_file(self, reference: dict, *, max_bytes: int = 512 * 1024 * 1024):
+        """Freeze verified evidence into a bounded private temporary file for Parquet reads."""
+        key = self._key(reference["path"])
+        if type(reference["size"]) is not int or not 0 <= reference["size"] <= max_bytes:
+            raise ValueError("Evidence object exceeds verified read limit")
+        stream = (self.root / key).open("rb") if self.root else self.client.get_object(self.binding.bucket, key)
+        try:
+            with tempfile.TemporaryFile(mode="w+b") as target:
+                digest, size = hashlib.sha256(), 0
+                while True:
+                    chunk = stream.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                    if size > min(max_bytes, reference["size"]):
+                        raise ValueError("Evidence bytes exceed pinned size")
+                    digest.update(chunk)
+                    target.write(chunk)
+                if size != reference["size"] or digest.hexdigest() != reference["sha256"]:
+                    raise ValueError("Evidence bytes/checksum mismatch")
+                target.seek(0)
+                yield target
+        finally:
+            stream.close()
+            if not self.root:
+                stream.release_conn()
 
     def metrics(self):
         result = {}
