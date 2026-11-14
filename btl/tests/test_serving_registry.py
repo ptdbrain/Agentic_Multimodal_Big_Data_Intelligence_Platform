@@ -144,24 +144,44 @@ def test_direct_dataset_reference_cannot_bypass_sql_identity_validation(tmp_path
     from dataclasses import replace
     from serving.registry import DatasetRegistry
 
-    binding = DatasetRegistry.load(registry_file(tmp_path)).datasets['tiki']
-    with pytest.raises(ValueError, match='identity|ID'):
+    binding = DatasetRegistry.load(registry_file(tmp_path)).datasets["tiki"]
+    with pytest.raises(ValueError, match="identity|ID"):
         replace(binding, id="x' OR TRUE --")
-    with pytest.raises(ValueError, match='schema'):
-        replace(binding, schema='public; DROP SCHEMA source_tiki')
+    with pytest.raises(ValueError, match="schema"):
+        replace(binding, schema="public; DROP SCHEMA source_tiki")
 
 
 def test_remote_lake_prefix_keeps_directory_boundary(tmp_path):
     from serving.lake import DatasetLake
 
     seen = []
+
     class Client:
         def list_objects(self, bucket, *, prefix, recursive):
             seen.append(prefix)
             return []
+
     lake = object.__new__(DatasetLake)
     lake.root = None
-    lake.binding = type('Binding', (), {'bucket': 'fixture'})()
+    lake.binding = type("Binding", (), {"bucket": "fixture"})()
     lake.client = Client()
-    assert list(lake.objects('bronze/reviews/')) == []
-    assert seen == ['bronze/reviews/']
+    assert list(lake.objects("bronze/reviews/")) == []
+    assert seen == ["bronze/reviews/"]
+
+
+def test_absent_optional_table_is_not_queried_and_cannot_abort_read_snapshot(tmp_path, monkeypatch):
+    from serving.registry import DatasetRegistry
+    from dashboard.db_connector import DashboardDB
+
+    binding = DatasetRegistry.load(registry_file(tmp_path)).datasets["tiki"]
+    db = DashboardDB(binding=binding, data_scope="real")
+
+    def query_absent_table(*args, **kwargs):
+        raise RuntimeError("Undefined table would abort a PostgreSQL snapshot")
+
+    monkeypatch.setattr(db, "query", query_absent_table)
+    try:
+        assert db.read_table("stream_deployments").empty
+        assert db.read_table("stream_windows").empty
+    finally:
+        db.close()

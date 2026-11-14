@@ -213,3 +213,17 @@ def test_alerts_exclude_sql_windows_ahead_of_all_sink_frontier(tmp_path):
     assert s.stream_progress("g", {**progress, "batchId": 2})
     assert s.conn.execute("SELECT COUNT(*) FROM serving_alerts").fetchone()[0] == 4
     s.conn.close()
+
+
+def test_stream_registration_respects_the_actual_dataset_maintenance_fence(tmp_path):
+    import fcntl
+    from pathlib import Path
+
+    s = store(tmp_path)
+    path = s.conn.execute("PRAGMA database_list").fetchone()[2]
+    with Path(path + ".maintenance.lock").open("a") as fence:
+        fcntl.flock(fence, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        with pytest.raises(RuntimeError, match="maintenance"):
+            s.register_stream("g", {"window_seconds": 60, "watermark_seconds": 600})
+        assert s.conn.execute("SELECT COUNT(*) FROM stream_deployments").fetchone()[0] == 0
+    s.conn.close()

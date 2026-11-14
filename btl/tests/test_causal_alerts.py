@@ -157,3 +157,20 @@ def test_price_sources_cannot_collide_in_one_dataset_identity():
             dataset_id="fixture",
             generation="g",
         )
+
+
+def test_candidate_bound_avoids_revisiting_history_without_changing_its_baseline():
+    from analytics.causal import stream_evaluations
+
+    past, current, start = windows()
+    watermark = (start + timedelta(minutes=13)).isoformat()
+    all_results = stream_evaluations(past + [current], dataset_id="fixture", generation="g", watermark=watermark)
+    bounded = stream_evaluations(
+        past + [current],
+        dataset_id="fixture",
+        generation="g",
+        watermark=watermark,
+        candidate_from=current["window_start"],
+    )
+    assert bounded == [result for result in all_results if result["window_start"] == current["window_start"]]
+    assert len(bounded) == 2 and all(result["evidence"]["baseline_windows"] == 12 for result in bounded)

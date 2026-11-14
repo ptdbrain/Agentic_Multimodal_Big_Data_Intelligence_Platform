@@ -163,8 +163,10 @@ def main():
                 )
                 owner = connect_dataset(binding)
                 store = ServingStore(owner, binding.id, binding.source_group)
-                store.initialize()
-                owner.commit()
+                from serving.admission import writer_transaction
+
+                with writer_transaction(owner):
+                    store.initialize()
                 from serving.ownership import acquire_stream_owner
 
                 owner_guard = acquire_stream_owner(owner, binding)
@@ -232,7 +234,7 @@ def main():
                 try:
                     owner.rollback()
                     if stream_registered:
-                        with owner:
+                        with writer_transaction(owner):
                             store.execute(
                                 "UPDATE stream_deployments SET state=? WHERE dataset_id=? AND generation=?",
                                 ("failed" if failed else "stopped", binding.id, args.generation),

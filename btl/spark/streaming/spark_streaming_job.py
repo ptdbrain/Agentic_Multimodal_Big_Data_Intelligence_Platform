@@ -487,7 +487,9 @@ class SparkStreamingJob:
             connection=connect_dataset(self.serving_binding)
             try:
                 store=ServingStore(connection,self.serving_binding.id,self.serving_binding.source_group)
-                store.initialize();connection.commit()
+                from serving.admission import writer_transaction
+                with writer_transaction(connection):
+                    store.initialize()
                 # Spark timestamps become explicit UTC strings before Python conversion.
                 if self.spark.conf.get('spark.sql.session.timeZone')!='UTC':
                     raise ValueError('SQL serving requires Spark UTC session timezone')

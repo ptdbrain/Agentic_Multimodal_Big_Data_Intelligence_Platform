@@ -27,7 +27,9 @@ def deliver_notifications(binding, *, url: str | None = None, session=None) -> i
             store.initialize()
         with acquire_stream_owner(connection, replace(binding, id=binding.id + "-notifications")):
             rows = store.execute(
-                "SELECT notification_id,payload_json FROM alert_notifications WHERE dataset_id=? AND delivered_at IS NULL ORDER BY created_at,revision",
+                "SELECT notification_id,payload_json FROM alert_notifications WHERE dataset_id=? AND delivered_at IS NULL "
+                "ORDER BY MIN(created_at) OVER (PARTITION BY event_id),event_id,revision,"
+                "CASE state WHEN 'resolved' THEN 0 ELSE 1 END,notification_id LIMIT 100",
                 (binding.id,),
             ).fetchmany(100)
             connection.commit()

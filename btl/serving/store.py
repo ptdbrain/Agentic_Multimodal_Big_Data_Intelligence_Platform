@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS alert_notifications (
  notification_id TEXT PRIMARY KEY,dataset_id TEXT NOT NULL,event_id TEXT NOT NULL,revision BIGINT NOT NULL,
  state TEXT NOT NULL,payload_json TEXT NOT NULL,created_at TEXT NOT NULL,delivered_at TEXT,attempts INTEGER NOT NULL DEFAULT 0,error_kind TEXT);
 
+CREATE INDEX IF NOT EXISTS alert_notifications_event ON alert_notifications(dataset_id,event_id,revision,state);
+CREATE INDEX IF NOT EXISTS alert_notifications_delivery ON alert_notifications(dataset_id,delivered_at,created_at);
+
 CREATE TABLE IF NOT EXISTS search_jobs (
  dataset_id TEXT NOT NULL,generation TEXT NOT NULL,entity_kind TEXT NOT NULL,
  state TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,error_kind TEXT,
@@ -107,6 +110,8 @@ class ServingStore:
             if state not in {"firing", "clear", "insufficient_data"}:
                 raise ValueError("Invalid statistical evaluation state")
             evidence = value["evidence"]
+            if evidence.get("source_group", self.source_group) != self.source_group:
+                raise ValueError("Alert source identity differs from dataset")
             if state == "firing" and evidence.get("quality_status") != "valid":
                 raise ValueError("Invalid quality cannot emit a firing alert")
             start = instant(value["window_start"])
@@ -116,9 +121,18 @@ class ServingStore:
             payload = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
             digest = hashlib.sha256(payload.encode()).hexdigest()
             old = self.execute(
-                "SELECT payload_sha256,revision,state,event_type FROM serving_alerts WHERE dataset_id=? AND event_id=?",
+                "SELECT payload_sha256,revision,state,event_type,product_id,rule,window_start,window_end,source_group "
+                "FROM serving_alerts WHERE dataset_id=? AND event_id=?",
                 (self.dataset_id, event),
             ).fetchone()
+            if old and tuple(old[4:]) != (
+                str(value["product_id"]),
+                value["rule"],
+                start.isoformat(),
+                end.isoformat(),
+                self.source_group,
+            ):
+                raise ValueError("Stable alert identity cannot change entity, rule or window")
             if old and old[0] == digest:
                 self.execute(
                     "UPDATE serving_alerts SET generation=? WHERE dataset_id=? AND event_id=?",
@@ -155,15 +169,26 @@ class ServingStore:
                 (self.dataset_id, event, revision, generation, payload, clock),
             )
             changed += 1
-            notify = (
-                state == "firing"
-                and (not old or old[2] != "firing" or old[3] != value["event_type"])
-                or state == "clear"
-                and old
-                and old[2] == "firing"
-            )
-            if notify:
-                status = "firing" if state == "firing" else "resolved"
+            # Evaluation quality may become unknown without resolving the last
+            # known incident. Reconstruct its actual enqueued state rather than
+            # treating the immediately previous evaluation as delivery state.
+            active_type = None
+            for delivered_state, previous_payload in self.execute(
+                "SELECT state,payload_json FROM alert_notifications WHERE dataset_id=? AND event_id=? "
+                "ORDER BY revision,CASE state WHEN 'resolved' THEN 0 ELSE 1 END,notification_id",
+                (self.dataset_id, event),
+            ):
+                previous_type = json.loads(previous_payload)["alerts"][0]["labels"]["alertname"]
+                if delivered_state == "firing":
+                    active_type = previous_type
+                elif active_type == previous_type:
+                    active_type = None
+            transitions = []
+            if active_type and (state == "clear" or state == "firing" and active_type != value["event_type"]):
+                transitions.append(("resolved", active_type))
+            if state == "firing" and active_type != value["event_type"]:
+                transitions.append(("firing", value["event_type"]))
+            for status, notification_type in transitions:
                 notification_id = hashlib.sha256(
                     (self.dataset_id + ":" + event + ":" + str(revision) + ":" + status).encode()
                 ).hexdigest()
@@ -173,13 +198,13 @@ class ServingStore:
                         {
                             "status": status,
                             "labels": {
-                                "alertname": value["event_type"],
+                                "alertname": notification_type,
                                 "dataset_id": self.dataset_id,
                                 "source": self.source_group,
                                 "event_id": event,
                             },
                             "annotations": {
-                                "summary": value["event_type"],
+                                "summary": notification_type,
                                 "product_id": value["product_id"],
                                 "configuration_sha256": evidence.get("configuration_sha256", ""),
                             },
@@ -237,7 +262,7 @@ class ServingStore:
     def register_stream(self, generation: str, configuration: dict) -> None:
         generation = identifier(generation)
         encoded = json.dumps(configuration, sort_keys=True, separators=(",", ":"), allow_nan=False)
-        with self.conn:
+        with writer_transaction(self.conn):
             existing = self.execute(
                 "SELECT configuration,state FROM stream_deployments WHERE dataset_id=? AND generation=?",
                 (self.dataset_id, generation),
@@ -326,6 +351,7 @@ class ServingStore:
             generation=generation,
             watermark=watermark,
             config=config,
+            candidate_from=changed,
         )
         # Earlier rows supply the baseline; do not replace their historical
         # evidence with the intentionally truncated baseline of this query.

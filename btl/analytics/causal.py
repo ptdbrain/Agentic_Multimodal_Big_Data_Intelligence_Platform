@@ -102,9 +102,11 @@ def stream_evaluations(
     watermark: str,
     config: StatisticalConfig | None = None,
     quality_status: str = "valid",
+    candidate_from: str | None = None,
 ) -> list[dict]:
     config = config or StatisticalConfig.from_settings()
     water = instant(watermark)
+    candidate_start = instant(candidate_from) if candidate_from is not None else None
     groups = defaultdict(list)
     sources = set()
     for source in rows:
@@ -130,6 +132,8 @@ def stream_evaluations(
         if len({r["_start"] for r in values}) != len(values):
             raise ValueError("Duplicate statistical window")
         for current in values:
+            if candidate_start is not None and current["_start"] < candidate_start:
+                continue
             history = [
                 r
                 for r in values

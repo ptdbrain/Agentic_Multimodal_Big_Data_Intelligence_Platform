@@ -212,7 +212,7 @@ class DashboardDB:
     def read_table(self, table, order_by=None, descending=True, limit=None):
         columns = self._columns(table)
         if not columns:
-            return self.query(f"SELECT * FROM {table} LIMIT 0")
+            return pd.DataFrame()
         statement = f"SELECT * FROM {self._table_source(table)} AS scoped_data"
         if order_by:
             if order_by not in columns:
