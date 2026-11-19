@@ -1,0 +1,201 @@
+{
+  "source": "Labelled simulation in separate Docker database, Kafka topics and MinIO bucket.",
+  "attempts": [
+    {
+      "completed": false,
+      "status": "failed",
+      "executed_at": "2026-11-19T08:40:35.277654+00:00",
+      "review_inputs": 10000,
+      "source": "labelled deterministic synthetic workload",
+      "source_fingerprint": {
+        "sha256": "5644d354d8dd3807f3656213b8beaed579e5bbe1e7af3fea5f886624284a5f22",
+        "files": 417,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "times_sec": {
+        "source_load_pii": 0.0786
+      },
+      "inputs": {
+        "expected_reviews": {
+          "input": 10000,
+          "silver": 9200,
+          "quarantine": 500,
+          "duplicates": 300
+        },
+        "products": {
+          "records": 100,
+          "sha256": "683f26f6dd7966769334462afc2d59c76c25e750f66da12632f0ee7010ad62e7"
+        },
+        "reviews": {
+          "records": 10000,
+          "sha256": "3beb08d4cbd1e15144f1b8c7aeff06982385ffa08da7ec13a95a2ebbbd84226e"
+        },
+        "prices": {
+          "records": 1000,
+          "sha256": "64df49de793f81953a0cab320a592f53a2f5f0e7f21591e1012d991240e3d7e0"
+        }
+      },
+      "workspace": "/var/lib/sentinel/benchmark-work/sentinel-fullpath-5ml6v0qi",
+      "namespace": {
+        "database": "source_load_d11ab619a4e5",
+        "bucket": "source-load-d11ab619a4e5",
+        "topics": {
+          "products": "source-load-d11ab619a4e5-products",
+          "reviews": "source-load-d11ab619a4e5-reviews",
+          "prices": "source-load-d11ab619a4e5-prices"
+        }
+      },
+      "failed_stage": "kafka_bronze",
+      "error_type": "RuntimeError",
+      "resources_at_failure": {
+        "wall_sec": 6.7891,
+        "cpu_percent": 34.5,
+        "python_cpu_percent": 30.5,
+        "peak_ram_mb": 695.45,
+        "peak_tree_ram_mb": 695.45,
+        "peak_python_ram_mb": 210.88,
+        "peak_children_ram_mb": 488.41,
+        "sample_count": 115
+      }
+    },
+    {
+      "completed": true,
+      "status": "passed",
+      "executed_at": "2026-11-19T09:33:27.376228+00:00",
+      "review_inputs": 10000,
+      "source": "labelled deterministic synthetic workload",
+      "source_fingerprint": {
+        "sha256": "d99610a44038ada41b78a5e14538faffcd97dde1ab55b60b6a180af13c884201",
+        "files": 418,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "times_sec": {
+        "source_load_pii": 0.0799,
+        "kafka_bronze": 9.8706,
+        "bronze_verify": 0.1232,
+        "spark_silver_dq": 23.5483,
+        "spark_gold_anomalies": 27.3191,
+        "postgres_dashboard": 2.1994
+      },
+      "inputs": {
+        "expected_reviews": {
+          "input": 10000,
+          "silver": 9200,
+          "quarantine": 500,
+          "duplicates": 300
+        },
+        "products": {
+          "records": 100,
+          "sha256": "683f26f6dd7966769334462afc2d59c76c25e750f66da12632f0ee7010ad62e7"
+        },
+        "reviews": {
+          "records": 10000,
+          "sha256": "3beb08d4cbd1e15144f1b8c7aeff06982385ffa08da7ec13a95a2ebbbd84226e"
+        },
+        "prices": {
+          "records": 1000,
+          "sha256": "64df49de793f81953a0cab320a592f53a2f5f0e7f21591e1012d991240e3d7e0"
+        }
+      },
+      "workspace": "/var/lib/sentinel/benchmark-work/sentinel-fullpath-uexi2k7b",
+      "namespace": {
+        "database": "source_load_815f05c171b1",
+        "bucket": "source-load-815f05c171b1",
+        "topics": {
+          "products": "source-load-815f05c171b1-products",
+          "reviews": "source-load-815f05c171b1-reviews",
+          "prices": "source-load-815f05c171b1-prices"
+        }
+      },
+      "run_id": "bfcd2c73-e382-470a-90a0-6e4a14d2ed98",
+      "review_accounting": {
+        "input_count": 10000,
+        "valid_input_count": 9500,
+        "quarantine_count": 500,
+        "intra_batch_duplicate_count": 300,
+        "cross_batch_duplicate_count": 0,
+        "silver_written_count": 9200,
+        "reconciled": true
+      },
+      "transport": {
+        "records_consumed": 11100,
+        "records_valid": 11100,
+        "records_dlq": 0,
+        "source_contracts": {
+          "products": {
+            "records_received": 100,
+            "records_accepted": 100,
+            "records_rejected": 0,
+            "dq_score": 100.0,
+            "content_verified": true,
+            "payload_multiset_sha256": "3e86bf260a0b439449109b8f10d5589be84fa9755757c0edd785450f879781b9"
+          },
+          "reviews": {
+            "records_received": 10000,
+            "records_accepted": 10000,
+            "records_rejected": 0,
+            "dq_score": 100.0,
+            "content_verified": true,
+            "payload_multiset_sha256": "fd979867226df04c2828e7d07718b5e43c3dced9ec9a27d6a63c33d516367049"
+          },
+          "prices": {
+            "records_received": 1000,
+            "records_accepted": 1000,
+            "records_rejected": 0,
+            "dq_score": 100.0,
+            "content_verified": true,
+            "payload_multiset_sha256": "22be35c0c3e069a32a889a51d768858edf718e1f203d8b2790b63b8d03481e0a"
+          }
+        }
+      },
+      "mart_rows": {
+        "product_daily_stats": 200,
+        "brand_daily_stats": 10,
+        "category_daily_stats": 8,
+        "price_daily_stats": 100
+      },
+      "anomaly_events": 0,
+      "serving_review_count": 9200,
+      "wall_sec": 63.2694,
+      "resources": {
+        "wall_sec": 63.2872,
+        "cpu_percent": 157.4,
+        "python_cpu_percent": 19.8,
+        "peak_ram_mb": 1586.21,
+        "peak_tree_ram_mb": 1586.21,
+        "peak_python_ram_mb": 313.9,
+        "peak_children_ram_mb": 1296.0,
+        "sample_count": 1079
+      },
+      "boundary": "JSONL load/PII -> actual Kafka -> MinIO Bronze -> Spark Silver/DQ/quarantine/dedup -> Gold/anomalies -> PostgreSQL -> scoped DashboardDB",
+      "excluded": [
+        "input generation",
+        "namespace setup",
+        "JVM startup/warmup",
+        "browser rendering",
+        "separately running service daemon resources"
+      ],
+      "resource_boundary": "Python driver and local child process tree; no cluster-wide resource claim",
+      "real_source_serving_modified": false
+    }
+  ],
+  "verified_after_broker_restart": {
+    "original_end_offsets": {
+      "prices": [
+        460,
+        540
+      ],
+      "products": [
+        46,
+        54
+      ],
+      "reviews": [
+        3100,
+        3400,
+        3500
+      ]
+    },
+    "retained_total": 11100
+  },
+  "boundary": "Pilot only. Campaign iterations are measured separately."
+}

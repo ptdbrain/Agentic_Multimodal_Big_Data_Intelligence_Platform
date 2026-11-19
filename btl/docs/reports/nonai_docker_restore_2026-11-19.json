@@ -1,0 +1,45 @@
+{
+  "verified": true,
+  "checked_at": "2026-11-19T08:02:47.717515+00:00",
+  "backup_snapshot_at": "2026-11-19T07:44:44.391514+00:00",
+  "backup_manifest_sha256": "77781f64329dd0234fa31c5e08e8735ecdc4d180aa9e315ae715bd41ac7a0385",
+  "components_verified": [
+    "warehouse",
+    "airflow",
+    "lake_tiki",
+    "lake_web",
+    "lake_simulation",
+    "checkpoint_inventory",
+    "source_registry",
+    "tiki_capture"
+  ],
+  "counts": {
+    "tiki.products": 20,
+    "tiki.reviews": 262,
+    "web.articles": 260,
+    "simulation.products": 10,
+    "simulation.reviews": 160
+  },
+  "restored_dags_paused": 3,
+  "derived_current_search_jobs_queued": 5,
+  "legacy_airflow_fingerprint_timezone": "Asia/Ho_Chi_Minh",
+  "native_retained": true,
+  "writers_resumed": false,
+  "boundary": "Fenced native snapshot restored and verified in Docker PostgreSQL/MinIO/app_state archives. Native Kafka checkpoints and operational journals are retained as history; fresh Docker runtime generations are required. No cutover or 72h certification.",
+  "directory_archives_restored_to_app_state": {
+    "verified": true,
+    "files": 1668,
+    "inventory_sha256": "b93bf69f18db912c0cecb6b95d79fc48934deca8b2c3678ae6f799960e517c8a"
+  },
+  "historical_web_registry": {
+    "source_kafka_cluster": "yjjcRnqgQKKAemXoIVsiIg",
+    "target_kafka_cluster": "Some(5L6g3nShT-eMCtK--X86sw)",
+    "manifest_sha256": "77781f64329dd0234fa31c5e08e8735ecdc4d180aa9e315ae715bd41ac7a0385",
+    "registry_sha256": "ef87493a1edfd322adf7c4d9558b1185a55aaf0b0dd1fdf6a6e3ae3be042df67",
+    "retained_topics": 8,
+    "history_table": "source_web.ops_topic_registry_native_77781f64329dd023",
+    "checked_at": "2026-11-19T09:41:21.924310+00:00",
+    "active_target_registry_rows": 0,
+    "boundary": "Target-only transactional table rename. Original source broker, offsets and database retained."
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "checked_at": "2026-11-19T08:25:32.681515+00:00",
+  "datasets": {
+    "tiki": {
+      "source_group": "marketplace",
+      "counts": {
+        "products": 20,
+        "reviews": 262
+      },
+      "search_counts": {
+        "products": 20,
+        "reviews": 262
+      },
+      "generation": "tiki-e14bb773b265009d10c595f3cc413099"
+    },
+    "web": {
+      "source_group": "web_content",
+      "counts": {
+        "articles": 260
+      },
+      "search_counts": {
+        "articles": 260
+      },
+      "generation": "web-b05e07d505f94401bd0ead5749eb8e0b"
+    },
+    "simulation": {
+      "source_group": "simulation",
+      "counts": {
+        "products": 10,
+        "reviews": 160
+      },
+      "search_counts": {
+        "products": 10,
+        "reviews": 160
+      },
+      "generation": "simulation-6cba2f7d72665118f14111f1b2606577"
+    }
+  },
+  "lineage": {
+    "status": "verified_winner",
+    "product_id": "tiki_135410778"
+  },
+  "dependencies_healthy": true,
+  "prometheus_targets": {
+    "sentinel-datasets": "up",
+    "sentinel-dependencies": "up",
+    "sentinel-metrics": "up",
+    "sentinel-operations": "up"
+  },
+  "remote_spark": {
+    "worker_hosts": [
+      "6b70386678f9",
+      "ce18f639687d"
+    ],
+    "partitions": 8,
+    "sum": 499500,
+    "python_versions": [
+      "3.11.18"
+    ],
+    "spark_version": "3.5.0"
+  },
+  "passed": true
+}

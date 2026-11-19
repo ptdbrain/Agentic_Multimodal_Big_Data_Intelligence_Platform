@@ -46,14 +46,22 @@ docker compose --env-file ../.runtime/nonai-docker-private/compose.env \
 
 Dashboard staging: `http://127.0.0.1:18502`; Grafana staging: `http://127.0.0.1:13000`. Thư mục cấu hình có quyền 0700, tệp có quyền 0600. Không commit, sao chép vào báo cáo hoặc in nội dung các tệp bí mật. Streaming chỉ chạy khi bật profile `streaming`; DAG thu thập vẫn paused đến khi xác nhận quyền sở hữu nguồn và kế hoạch chuyển đổi.
 
+## Kiểm chứng Docker ngày 19/11
+
+Staging đã khôi phục hai cơ sở dữ liệu, ba bucket và ba thư mục từ cùng bản sao lưu. PostgreSQL và Elasticsearch khớp số lượng ở từng nguồn. Tiki có 20 sản phẩm và 262 đánh giá, nguồn web có 260 bài, nguồn giả lập có 10 sản phẩm và 160 đánh giá. Bốn target Prometheus phản hồi và Spark đã thực thi trên cả hai worker. [Báo cáo khôi phục](reports/nonai_docker_restore_2026-11-19.json) · [Đối soát dịch vụ](reports/nonai_docker_functional_2026-11-19.json)
+
+Trong lượt thử batch đầu, producer nhận 11.100 ACK nhưng consumer hết thời gian lúc chờ Kafka cấp phân vùng. Sau khi tách thời hạn cấp phân vùng và thời hạn đọc, lượt chạy lại hoàn tất trong 63,3 giây đo. PostgreSQL có 9.200 đánh giá sau khi loại 300 bản trùng và cách ly 500 bản lỗi. [Hai lượt thử 10.000 đánh giá giả lập](reports/nonai_docker_batch_pilot_2026-11-19.json)
+
+Cấu hình mới tạo mã Kafka riêng cho mỗi triển khai. Với volume của image `apache/kafka:3.7.0` đã có sẵn, giữ nguyên mã bootstrap khi nâng cấp. Nếu metadata ghi `Some(<id>)`, biến `KAFKA_CLUSTER_ID` cần giá trị bên trong ngoặc. Sau khi khởi động lại, đối chiếu mã giao thức và offset từng phân vùng với trước khi nâng cấp.
+
 ## Điều kiện còn thiếu trước nghiệm thu
 
-1. Docker socket hiện vẫn từ chối truy cập trong phiên agent. Cần build/start thật, kiểm tra init, restart, tài nguyên thực tế và cấu hình monitoring theo từng dataset.
+1. Docker staging đã khởi động. Cần đo tài nguyên khi chạy tải chuẩn và kiểm tra cảnh báo khi nguồn ngừng cập nhật.
 2. Chứng nhận chi phí/quy mô truy vết trên chiến dịch lớn và xác định chính sách giữ snapshot. Winner, recipe, phân trang và đối chiếu Bronze thật đã có bằng chứng; cấu hình lịch sử không được ghi nhận vẫn để chưa xác định. Snapshot bất biến tăng dung lượng lưu trữ theo số generation.
 3. Mở rộng thử crash cảnh báo sang PostgreSQL/Docker; kiểm tra bảo trì/khôi phục khi worker đang ghi và lặp lại late-update toàn tuyến trong Docker. Thử outage ES native và crash worker với SQLite đã đạt, cần lặp lại trong staging Docker.
 4. Chạy lại chiến dịch batch 10k/100k/1m × 3; streaming 50/200/500 × 3 với warmup 30 giây, đo 120 giây, drain và đối soát. Tách độ trễ SQL khỏi độ trễ browser; ghi cả lần thất bại.
 5. Diễn tập drain/fence → backup → restore Docker → resume, một owner duy nhất và rollback có đối soát dữ liệu sau cutover. Không chép offset/checkpoint qua cluster Kafka khác.
-6. Hoàn tất các gate Docker còn lại. Lượt kiểm tra native sau sửa lỗi review đã đạt. Review độc lập đã nêu 5 lỗi Important (đã sửa và có regression) cùng 1 Minor về type annotation (còn thiếu ở một số interface). Sau cutover mới đo **72 giờ và 3 chu kỳ lịch thực**, không thay bằng chạy ép hoặc chỉnh thời gian.
+6. Hoàn tất các gate Docker còn lại. Lượt kiểm tra native sau sửa lỗi review đã đạt. Review độc lập đã nêu 5 lỗi Important (đã sửa và có regression) cùng 1 Minor về type annotation (đã bổ sung hợp đồng kiểu cho các interface serving). Sau cutover mới đo **72 giờ và 3 chu kỳ lịch thực**, không thay bằng chạy ép hoặc chỉnh thời gian.
 
 Backup ngoài máy và HA nhiều máy cần tài nguyên riêng; chưa được chứng nhận bởi stack một máy này.
 
@@ -72,6 +80,6 @@ Chạy trong môi trường ứng dụng có cấu hình private và giới hạ
 
 [Review và phản hồi](reports/nonai_code_review_2026-11-19.md) ghi rõ phạm vi và giới hạn. Đã sửa: snapshot streaming hiển thị sớm/bỏ sót cảnh báo, thay đổi đường dẫn quarantine trong cùng generation, truy vết nhầm bản ghi thiếu giá trị/sai tiền tệ, journal receiver bị ghi dở và endpoint Elasticsearch sai trong Compose. Gate native còn phát hiện cache batch number sau restart khiến bỏ qua xác nhận SQL, cùng mã run Airflow chứa `+` bị từ chối; cả hai có kiểm thử hồi quy.
 
-CLI hiện pin `serving_protocol=2`, mọi đường dẫn sink, output mode, ngưỡng và cấu hình nguồn/audit. Generation đăng ký theo cấu hình cũ phải được drain/retire và migration/replay có kiểm chứng sang generation mới; không tự sửa checkpoint hoặc coi những phiên bản đã bị ghi đè trước đây là có thể khôi phục. Giao diện lọc theo frontier cả với dữ liệu legacy. Không xóa checkpoint gốc để vượt qua lỗi cấu hình.
+CLI hiện pin `serving_protocol=3`, mã cụm do Kafka trả về, mọi đường dẫn sink, output mode, ngưỡng và cấu hình nguồn/audit. Generation đăng ký theo cấu hình cũ phải được drain/retire và migration/replay có kiểm chứng sang generation mới; không tự sửa checkpoint hoặc coi những phiên bản đã bị ghi đè trước đây là có thể khôi phục. Giao diện lọc theo frontier cả với dữ liệu legacy. Không xóa checkpoint gốc để vượt qua lỗi cấu hình.
 
 Các test Kafka lifecycle/E2E đã đọc tên topic từ cấu hình thay cho `raw.articles`/`raw.products`. Đây là sửa tính độc lập môi trường của kiểm thử; không thay đầu vào hoặc điều kiện đạt nghiệp vụ. Lượt bare pytest ban đầu có 937 đạt/8 lỗi; kết quả đó không được coi là xanh. Lượt cuối được tách theo hai môi trường Python của ứng dụng và Airflow, phù hợp cách đóng gói Docker.
