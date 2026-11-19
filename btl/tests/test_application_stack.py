@@ -90,3 +90,11 @@ def test_continuous_stream_leaves_capacity_for_scheduled_batch():
     options = dict(token.split("=", 1) for token in args if token.startswith("spark."))
     executor = int(options["spark.executor.cores"])
     assert executor <= int(options["spark.cores.max"]) <= capacity - executor
+
+
+def test_operations_exporter_reads_the_stream_schema_and_managed_source_journals():
+    services = yaml.safe_load((ROOT / "docker-compose.yml").read_text())["services"]
+    env = services["operations"]["environment"]
+    assert env.get("PGOPTIONS") == "-c search_path=source_simulation"
+    assert env.get("OPS_SOURCE_JOBS_CONFIG") == services["airflow"]["environment"]["SOURCE_JOBS_CONFIG"]
+    assert env.get("OPS_DISK_PATH") == "/var/lib/sentinel"

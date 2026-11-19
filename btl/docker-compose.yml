@@ -510,7 +510,12 @@ services:
     build: *id001
     init: false
     restart: unless-stopped
-    environment: *id005
+    environment:
+      <<: *id005
+      PGOPTIONS: -c search_path=source_simulation
+      OPS_DISK_PATH: /var/lib/sentinel
+      OPS_SOURCE_JOBS_CONFIG: /private/source-jobs.yml
+      OPS_EXPECTED_PIPELINES: ${OPS_EXPECTED_PIPELINES:-commerce:simulation}
     volumes: *id002
     networks: *id003
     mem_limit: 128m

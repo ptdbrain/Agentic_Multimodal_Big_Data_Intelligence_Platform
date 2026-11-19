@@ -564,3 +564,19 @@ tests:
   - eval_time: 3m
     alertname: SentinelStreamFailed
     exp_alerts: []
+- name: Registered stream with no first heartbeat
+  interval: 1m
+  input_series:
+  - series: sentinel_ops_expected_since_timestamp{pipeline="streaming",source="system"}
+    values: 0+0x8
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: SentinelStreamStalled
+    exp_alerts:
+    - exp_labels:
+        pipeline: streaming
+        source: system
+        severity: critical
+      exp_annotations:
+        summary: Enabled stream has no committed progress heartbeat
+        runbook: docs/operations-monitoring.md#streaming

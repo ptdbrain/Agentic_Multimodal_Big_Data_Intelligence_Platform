@@ -96,8 +96,10 @@ groups:
       summary: Operational probe measurement is stale
       runbook: docs/operations-monitoring.md#exporter
   - alert: SentinelStreamStalled
-    expr: (time() - sentinel_ops_stream_heartbeat_timestamp > 120) and on(pipeline,source)
-      sentinel_ops_expected_since_timestamp
+    expr: |
+      (time() - sentinel_ops_expected_since_timestamp{pipeline="streaming"} > 120)
+      unless on(job, instance, pipeline, source)
+      (time() - sentinel_ops_stream_heartbeat_timestamp <= 120)
     for: 2m
     labels:
       severity: critical
