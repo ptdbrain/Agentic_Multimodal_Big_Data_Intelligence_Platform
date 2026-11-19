@@ -69,11 +69,24 @@ def test_executor_python_can_import_project_modules_outside_app_working_director
     assert "PYTHONPATH=/app" in dockerfile
 
 
-def test_dependency_exporter_probes_the_elasticsearch_service_endpoint():
+@pytest.mark.parametrize("service", ["dependencies", "airflow", "airflow-init"])
+def test_dependency_exporter_probes_the_elasticsearch_service_endpoint(service):
     from urllib.parse import urlsplit
 
     services = yaml.safe_load((ROOT/'docker-compose.yml').read_text())['services']
-    env = services['dependencies']['environment']
+    env = services[service]['environment']
     endpoint = env.get('ES_URL') or f"http://{env.get('ES_HOST','localhost')}:{env.get('ES_PORT','9200')}"
     assert urlsplit(endpoint).hostname == 'elasticsearch'
     assert urlsplit(endpoint).port == 9200
+
+
+def test_continuous_stream_leaves_capacity_for_scheduled_batch():
+    import shlex
+
+    services = yaml.safe_load((ROOT / "docker-compose.yml").read_text())["services"]
+    workers = [services[name]["command"] for name in ("spark-worker1", "spark-worker2")]
+    capacity = sum(int(command[command.index("--cores") + 1]) for command in workers)
+    args = shlex.split(services["streaming"]["environment"]["PYSPARK_SUBMIT_ARGS"])
+    options = dict(token.split("=", 1) for token in args if token.startswith("spark."))
+    executor = int(options["spark.executor.cores"])
+    assert executor <= int(options["spark.cores.max"]) <= capacity - executor

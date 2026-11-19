@@ -7,6 +7,7 @@ markers = [
     "unit: Unit tests verifying isolated component logic without external service dependencies",
     "spark: Tests requiring a working Spark JVM",
     "airflow: Requires the real Airflow scheduler and executor",
+    "docker: Requires the built application image and Docker daemon access",
     "live: Tests requiring a public network source",
     "integration: End-to-end and external infrastructure integration tests",
 ]

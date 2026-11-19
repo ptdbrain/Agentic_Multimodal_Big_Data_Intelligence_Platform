@@ -35,3 +35,20 @@ def test_bootstrap_creates_private_docker_bound_files_without_overwriting(tmp_pa
     with pytest.raises(FileExistsError):
         prepare(root)
     assert (root / "compose.env").read_bytes() == before
+
+
+def test_each_fresh_deployment_receives_a_unique_kafka_cluster_identity(tmp_path):
+    import re
+    from scripts.prepare_application import prepare
+    from scripts.run_scheduled_backup import environment
+
+    identities=[]
+    for name in ('one','two'):
+        root=tmp_path/name
+        prepare(root)
+        identity=environment(root/'compose.env')['KAFKA_CLUSTER_ID']
+        assert re.fullmatch(r'[A-Za-z0-9_-]{22}',identity)
+        identities.append(identity)
+    assert identities[0]!=identities[1]
+    services=yaml.safe_load((Path(__file__).resolve().parents[1]/'docker-compose.yml').read_text())['services']
+    assert 'KAFKA_CLUSTER_ID' in services['kafka']['environment']['CLUSTER_ID']

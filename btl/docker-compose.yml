@@ -6,6 +6,7 @@ services:
     networks:
     - sentinel-network
     environment:
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:?persistent Kafka cluster identity required}
       KAFKA_NODE_ID: '1'
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
@@ -122,7 +123,7 @@ services:
       SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
       AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
       PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
-        --executor-memory 1g pyspark-shell
+        --conf spark.jars.ivy=/var/lib/sentinel/ivy --executor-memory 1g pyspark-shell
       DASHBOARD_DATA_SCOPE: real
       SPARK_DAEMON_MEMORY: 128m
     volumes: &id002
@@ -171,7 +172,7 @@ services:
       SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
       AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
       PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
-        --executor-memory 1g pyspark-shell
+        --conf spark.jars.ivy=/var/lib/sentinel/ivy --executor-memory 1g pyspark-shell
       DASHBOARD_DATA_SCOPE: real
       SPARK_DAEMON_MEMORY: 128m
     volumes: *id002
@@ -214,7 +215,7 @@ services:
       SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
       AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
       PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
-        --executor-memory 1g pyspark-shell
+        --conf spark.jars.ivy=/var/lib/sentinel/ivy --executor-memory 1g pyspark-shell
       DASHBOARD_DATA_SCOPE: real
       SPARK_DAEMON_MEMORY: 128m
     volumes: *id002
@@ -237,6 +238,9 @@ services:
     init: false
     restart: 'no'
     environment: &id004
+      ES_URL: http://elasticsearch:9200
+      ES_HOST: elasticsearch
+      ES_PORT: '9200'
       RUNTIME_MODE: integration
       POSTGRES_HOST: postgres
       POSTGRES_PORT: '5432'
@@ -257,7 +261,7 @@ services:
       SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
       AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
       PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
-        --executor-memory 1g pyspark-shell
+        --conf spark.jars.ivy=/var/lib/sentinel/ivy --executor-memory 1g pyspark-shell
       DASHBOARD_DATA_SCOPE: real
       PATH: /opt/airflow-venv/bin:/opt/project-venv/bin:/opt/spark/bin:/usr/local/bin:/usr/bin:/bin
       AIRFLOW_HOME: /var/lib/sentinel/airflow
@@ -345,7 +349,7 @@ services:
       SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
       AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
       PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
-        --executor-memory 1g pyspark-shell
+        --conf spark.jars.ivy=/var/lib/sentinel/ivy --executor-memory 1g pyspark-shell
       DASHBOARD_DATA_SCOPE: real
     volumes: *id002
     networks: *id003
@@ -371,7 +375,11 @@ services:
     build: *id001
     init: false
     restart: unless-stopped
-    environment: *id005
+    environment:
+      <<: *id005
+      # One executor runs the continuous queries. The other worker can admit batch jobs.
+      PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=2
+        --conf spark.jars.ivy=/var/lib/sentinel/ivy --executor-memory 1g pyspark-shell
     volumes: *id002
     networks: *id003
     mem_limit: 2g
@@ -416,7 +424,7 @@ services:
       SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
       AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
       PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
-        --executor-memory 1g pyspark-shell
+        --conf spark.jars.ivy=/var/lib/sentinel/ivy --executor-memory 1g pyspark-shell
       DASHBOARD_DATA_SCOPE: real
       ES_URL: http://elasticsearch:9200
     volumes: *id002
@@ -608,7 +616,7 @@ services:
       SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
       AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
       PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
-        --executor-memory 1g pyspark-shell
+        --conf spark.jars.ivy=/var/lib/sentinel/ivy --executor-memory 1g pyspark-shell
       DASHBOARD_DATA_SCOPE: real
       ES_URL: http://elasticsearch:9200
     volumes:
@@ -653,7 +661,7 @@ services:
       SOURCE_JOB_PYTHON: /opt/project-venv/bin/python
       AIRFLOW_METADATA_PYTHON: /opt/airflow-venv/bin/python
       PYSPARK_SUBMIT_ARGS: --conf spark.executor.cores=2 --conf spark.cores.max=4
-        --executor-memory 1g pyspark-shell
+        --conf spark.jars.ivy=/var/lib/sentinel/ivy --executor-memory 1g pyspark-shell
       DASHBOARD_DATA_SCOPE: real
     volumes:
     - ${SENTINEL_PRIVATE_DIR:?private directory required}:/private:ro

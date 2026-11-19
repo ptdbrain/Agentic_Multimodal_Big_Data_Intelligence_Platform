@@ -104,6 +104,7 @@ def prepare(directory: Path) -> None:
                 "POSTGRES_PASSWORD": password,
                 "MINIO_ACCESS_KEY": access,
                 "MINIO_SECRET_KEY": secret,
+                "KAFKA_CLUSTER_ID": base64.urlsafe_b64encode(secrets.token_bytes(16)).decode().rstrip("="),
                 "GRAFANA_ADMIN_PASSWORD": secrets.token_urlsafe(36),
                 "AIRFLOW_SQL_ALCHEMY_CONN": f"postgresql+psycopg2://sentinel:{password}@postgres:5432/sentinel_dw?options=-csearch_path%3Dairflow",
                 "AIRFLOW_FERNET_KEY": base64.urlsafe_b64encode(secrets.token_bytes(32)).decode(),

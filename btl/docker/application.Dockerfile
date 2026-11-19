@@ -9,6 +9,9 @@ WORKDIR /app
 COPY requirements.txt requirements-airflow.txt ./
 RUN python -m venv /opt/project-venv && /opt/project-venv/bin/pip install --no-cache-dir -r requirements.txt
 RUN python -m venv /opt/airflow-venv && /opt/airflow-venv/bin/pip install --no-cache-dir -r requirements-airflow.txt psycopg2-binary
+# Airflow keeps its own dependency versions; missing project imports resolve
+# from the project environment, as in the verified native dual-venv runtime.
+RUN /opt/airflow-venv/bin/python -c 'import pathlib,site; (pathlib.Path(site.getsitepackages()[0]) / "sentinel-project-runtime.pth").write_text("/opt/project-venv/lib/python3.11/site-packages\n")'
 ENV PATH=/opt/project-venv/bin:/opt/spark/bin:/usr/local/bin:/usr/bin:/bin
 COPY . /app
 ENTRYPOINT ["/usr/bin/tini", "--"]
