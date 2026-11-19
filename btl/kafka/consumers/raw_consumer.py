@@ -119,17 +119,19 @@ class RawConsumer:
     def _resolve_schema_name(self, topic: str) -> Optional[str]:
         """Maps Kafka topic to corresponding data contract JSON schema."""
         topic_lower = topic.lower()
-        if topic_lower == settings.kafka.topic_products.lower() or "product" in topic_lower:
-            return "product"
-        if topic_lower == settings.kafka.topic_reviews.lower() or "review" in topic_lower:
-            return "review"
-        if topic_lower == settings.kafka.topic_prices.lower() or "price" in topic_lower:
-            return "price"
-        if topic_lower == settings.kafka.topic_articles.lower() or "article" in topic_lower:
-            return "article"
-        if topic_lower == settings.kafka.topic_events.lower() or "event" in topic_lower:
-            return "event"
-        return None
+        configured = {
+            name: getattr(settings.kafka, "topic_" + field).lower()
+            for name, field in (("product", "products"), ("review", "reviews"),
+                                ("price", "prices"), ("article", "articles"), ("event", "events"))
+        }
+        for name, root in configured.items():
+            if topic_lower == root:
+                return name
+        for name, root in sorted(configured.items(), key=lambda item: len(item[1]), reverse=True):
+            if topic_lower.startswith(root + "."):
+                return name
+        # Legacy unbound topics retain their historical keyword convention.
+        return next((name for name in configured if name in topic_lower), None)
 
     def validate_message(self, topic: str, message: Any) -> Tuple[bool, List[str], Optional[Dict[str, Any]]]:
         """Validates envelope structure and payload contract.
@@ -299,6 +301,7 @@ class RawConsumer:
         offline_records: Optional[List[Dict[str, Any]]] = None,
         live_stream: bool = False,
         stop_event: Optional[Any] = None,
+        startup_timeout_ms: int = 30000,
     ) -> Dict[str, Any]:
         """Finite batch consumer polling up to max_records once.
         Validates canonical envelopes and payload schemas.
@@ -307,6 +310,8 @@ class RawConsumer:
         Commits offsets strictly for successfully persisted partitions.
         Records individual message completion timestamp and per-message latency L_i = t_processed - t_sent.
         """
+        if type(startup_timeout_ms) is not int or startup_timeout_ms < 1:
+            raise ValueError("Consumer startup timeout must be positive integer milliseconds")
         target_topics = topics or [
             settings.kafka.topic_products,
             settings.kafka.topic_reviews,
@@ -339,14 +344,28 @@ class RawConsumer:
             polled: Dict[Any, List[Any]] = {}
             fetched_total = 0
             empty_polls = 0
-            deadline = time.time() + max(timeout_ms / 1000.0, 4.0)
-            while fetched_total < max_records and time.time() < deadline:
+            fetch_seconds = max(timeout_ms / 1000.0, 4.0)
+            startup_deadline = time.monotonic() + startup_timeout_ms / 1000.0
+            deadline = time.monotonic() + fetch_seconds if self.consumer.assignment() else None
+            while fetched_total < max_records:
                 if stop_event is not None and stop_event.is_set():
+                    break
+                now = time.monotonic()
+                if deadline is None:
+                    if self.consumer.assignment():
+                        # Joining a cold/rebalancing group is not fetch time.
+                        # Keep records returned by the assigning poll below.
+                        deadline = now + fetch_seconds
+                    elif now >= startup_deadline:
+                        break
+                elif now >= deadline:
                     break
                 remaining = max(1, max_records - fetched_total)
                 poll_timeout = min(timeout_ms, 200 if live_stream else 800)
                 batch = self.consumer.poll(timeout_ms=poll_timeout, max_records=remaining)
                 if batch:
+                    if deadline is None:
+                        deadline = time.monotonic() + fetch_seconds
                     empty_polls = 0
                     for tp, recs in batch.items():
                         polled.setdefault(tp, []).extend(recs)
