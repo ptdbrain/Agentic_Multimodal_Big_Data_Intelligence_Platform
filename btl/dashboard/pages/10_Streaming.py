@@ -28,6 +28,9 @@ def render():
         return
     deployment = current.iloc[0]
     windows = windows.loc[windows["generation"].eq(deployment["generation"])] if not windows.empty else windows
+    if not windows.empty:
+        frontier = deployment.get("last_batch")
+        windows = windows.iloc[0:0] if pd.isna(frontier) else windows.loc[windows["batch_id"].le(frontier)]
     a, b, c = st.columns(3)
     with a:
         ui.metric("Generation", str(deployment["generation"]), str(deployment["state"]))

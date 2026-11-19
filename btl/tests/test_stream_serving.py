@@ -30,10 +30,12 @@ def row(count=3):
 
 def test_sql_window_replay_is_idempotent_and_old_batch_cannot_regress(tmp_path):
     s = store(tmp_path)
+    s.register_stream("generation-one", {"window_seconds": 60})
     assert s.write_windows("generation-one", 1, [row()], window_seconds=60) == 1
     assert s.write_windows("generation-one", 1, [row()], window_seconds=60) == 0
     s.write_windows("generation-one", 3, [row(5)], window_seconds=60)
     s.write_windows("generation-one", 2, [row(4)], window_seconds=60)
+    assert s.stream_progress("generation-one", {"batchId": 3, "timestamp": "2026-11-13T10:03:00Z"})
     assert s.conn.execute("SELECT review_count FROM stream_windows").fetchone()[0] == 5
     with pytest.raises(ValueError, match="identity|changed"):
         s.write_windows("generation-one", 1, [row(99)], window_seconds=60)
@@ -226,4 +228,92 @@ def test_stream_registration_respects_the_actual_dataset_maintenance_fence(tmp_p
         with pytest.raises(RuntimeError, match="maintenance"):
             s.register_stream("g", {"window_seconds": 60, "watermark_seconds": 600})
         assert s.conn.execute("SELECT COUNT(*) FROM stream_deployments").fetchone()[0] == 0
+    s.conn.close()
+
+
+def test_pending_same_window_cannot_replace_confirmed_view_or_hide_alert(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    s = store(tmp_path)
+    s.register_stream('g', {'window_seconds': 60, 'watermark_seconds': 600, 'topic': 'reviews'})
+    start = datetime(2026, 11, 13, tzinfo=timezone.utc)
+    baseline = [dict(row(), window_start=(start+timedelta(minutes=i)).isoformat(),
+                     window_end=(start+timedelta(minutes=i+1)).isoformat()) for i in range(12)]
+    progress = {'batchId': 0, 'timestamp': '2026-11-13T00:24:00Z',
+                'eventTime': {'watermark': '2026-11-13T00:12:00Z'}}
+    s.write_windows('g', 0, baseline, window_seconds=60)
+    assert s.conn.execute('SELECT COUNT(*) FROM stream_windows').fetchone()[0] == 0
+    assert s.stream_progress('g', progress)
+    candidate = dict(row(20), window_start='2026-11-13T00:22:00Z', window_end='2026-11-13T00:23:00Z')
+    s.write_windows('g', 1, [candidate], window_seconds=60)
+    s.write_windows('g', 2, [dict(candidate, review_count=21)], window_seconds=60)
+    assert s.conn.execute('SELECT COUNT(*) FROM stream_windows').fetchone()[0] == 12
+    assert s.stream_progress('g', dict(progress, batchId=1))
+    assert s.conn.execute('SELECT review_count,batch_id FROM stream_windows WHERE window_start=?',
+                          ('2026-11-13T00:22:00+00:00',)).fetchone() == (20, 1)
+    assert s.conn.execute("SELECT COUNT(*) FROM alert_notifications WHERE state='firing'").fetchone()[0] == 1
+    assert s.conn.execute('SELECT DISTINCT batch_id FROM stream_pending_windows').fetchall() == [(2,)]
+    assert s.stream_progress('g', dict(progress, batchId=2))
+    assert s.conn.execute('SELECT review_count FROM stream_windows WHERE batch_id=2').fetchone() == (21,)
+    assert s.conn.execute('SELECT COUNT(*) FROM stream_pending_windows').fetchone()[0] == 0
+    s.conn.close()
+
+
+def test_airflow_run_identity_with_timezone_survives_transactional_publication(tmp_path):
+    s = store(tmp_path)
+    run = 'manual__2026-11-19T05:00:00+00:00'
+    with s.conn:
+        s.stage_publication(run, run, 'commerce')
+    assert s.conn.execute('SELECT generation,run_id FROM serving_generation').fetchone() == (run, run)
+    assert s.conn.execute('SELECT COUNT(*) FROM search_jobs').fetchone()[0] == 2
+    s.conn.close()
+
+
+def test_cached_query_batch_numbers_cannot_suppress_serving_confirmation_after_restart(tmp_path):
+    from types import SimpleNamespace
+    from serving.registry import DatasetRegistry
+    from serving.store import connect_dataset, ServingStore
+    from spark.streaming.spark_streaming_job import SparkStreamingJob
+    from tests.test_serving_registry import registry_file
+
+    binding = DatasetRegistry.load(registry_file(tmp_path)).datasets['tiki']
+    conn = connect_dataset(binding)
+    s = ServingStore(conn, binding.id, binding.source_group)
+    with conn:
+        s.initialize()
+    s.register_stream('g', {'window_seconds':60})
+    s.write_windows('g', 2, [row()], window_seconds=60)
+    window = {'batchId':2, 'timestamp':'2026-11-13T10:02:00Z',
+              'sources':[{'description':'KafkaV2', 'endOffset':{'reviews':{'0':5}}}]}
+    job = object.__new__(SparkStreamingJob)
+    job.serving_binding, job.serving_generation = binding, 'g'
+    job._active_query = SimpleNamespace(lastProgress=window)
+    job._quarantine_query = SimpleNamespace(lastProgress=dict(window, batchId=1))
+    job._audit_query = None
+    job._reported_progress = {'window':2, 'quarantine':1}
+    job.observe_progress()
+    assert conn.execute('SELECT last_batch FROM stream_deployments').fetchone() == (2,)
+    assert conn.execute('SELECT review_count FROM stream_windows').fetchone() == (3,)
+    conn.close()
+
+
+def test_visible_promotion_and_progress_roll_back_together_when_evaluation_fails(tmp_path, monkeypatch):
+    s = store(tmp_path)
+    s.register_stream('g', {'window_seconds':60})
+    p = {'batchId':0, 'timestamp':'2026-11-13T10:02:00Z',
+         'eventTime':{'watermark':'2026-11-13T09:50:00Z'}}
+    s.write_windows('g', 0, [row()], window_seconds=60)
+    s.stream_progress('g', p)
+    s.write_windows('g', 1, [row(5)], window_seconds=60)
+    def unavailable(*args):
+        raise RuntimeError('injected evaluation interruption')
+    with monkeypatch.context() as patch:
+        patch.setattr(s, '_stage_stream_alerts', unavailable)
+        with pytest.raises(RuntimeError, match='interruption'):
+            s.stream_progress('g', dict(p, batchId=1))
+    assert s.conn.execute('SELECT review_count FROM stream_windows').fetchone() == (3,)
+    assert s.conn.execute('SELECT last_batch FROM stream_deployments').fetchone() == (0,)
+    assert s.conn.execute('SELECT COUNT(*) FROM stream_pending_windows').fetchone() == (1,)
+    assert s.stream_progress('g', dict(p, batchId=1))
+    assert s.conn.execute('SELECT review_count FROM stream_windows').fetchone() == (5,)
     s.conn.close()

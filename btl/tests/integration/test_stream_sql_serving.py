@@ -30,7 +30,7 @@ def cleanup_owned_test_scope(control, schema, topic):
 
 
 def test_actual_kafka_parquet_sql_progress_and_replay(tmp_path, spark_session):
-    import psycopg2
+    import psycopg2, json
     from config.settings import settings
     from serving.registry import DatasetRef
     from serving.store import ServingStore, connect_dataset
@@ -146,7 +146,12 @@ def test_actual_kafka_parquet_sql_progress_and_replay(tmp_path, spark_session):
         # replaying an already seen review_id must not increase it.
         conn.commit()
         publish_more([("r3", 3, "2026-11-13T10:00:00Z"), ("r1", 5, "2026-11-13T10:00:00Z")])
-        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (1, 3)
+        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (1, 3), json.dumps({
+            "deployment": store.execute("SELECT last_batch FROM stream_deployments").fetchall(),
+            "pending": store.execute("SELECT batch_id,review_count FROM stream_pending_windows").fetchall(),
+            "queries": [{key: (q.lastProgress or {}).get(key) for key in ("batchId", "sources")}
+                        for q in job.queries if q is not None],
+        })
         conn.commit()
         publish_more([("future-frontier", 4, "2026-11-13T10:20:00Z")])
         assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (2, 4)

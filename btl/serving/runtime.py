@@ -50,3 +50,22 @@ def validate_stream_binding(binding, env: dict, paths: dict) -> None:
             uri = urlsplit(value)
             if uri.scheme not in ("s3", "s3a") or uri.netloc != binding.bucket or ".." in uri.path.split("/"):
                 raise ValueError("Stream path escapes dataset bucket")
+
+
+def stream_configuration(
+    *, window_seconds: int, watermark_seconds: int, topic: str, paths: dict[str, str],
+    output_mode: str, negative_threshold: float, kafka_source: dict | None = None,
+    audit_path: str | None = None,
+) -> dict:
+    """Pin every output and checkpoint-affecting setting before constructing Spark."""
+    return {
+        "serving_protocol": 2,
+        "window_seconds": window_seconds,
+        "watermark_seconds": watermark_seconds,
+        "topic": topic,
+        **{key: paths[key] for key in ("checkpoint_dir", "output_path", "quarantine_path")},
+        "output_mode": output_mode,
+        "negative_threshold": negative_threshold,
+        "kafka_source": kafka_source,
+        "audit_path": audit_path,
+    }

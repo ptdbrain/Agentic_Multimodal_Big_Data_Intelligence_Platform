@@ -49,11 +49,17 @@ CREATE TABLE IF NOT EXISTS stream_windows (
  review_count BIGINT NOT NULL,avg_rating DOUBLE PRECISION NOT NULL,negative_count BIGINT NOT NULL,
  batch_id BIGINT NOT NULL,updated_at TEXT NOT NULL,
  PRIMARY KEY(dataset_id,generation,window_seconds,product_id,window_start));
+CREATE TABLE IF NOT EXISTS stream_pending_windows (
+ dataset_id TEXT NOT NULL,generation TEXT NOT NULL,window_seconds BIGINT NOT NULL,
+ product_id TEXT NOT NULL,source_group TEXT NOT NULL,window_start TEXT NOT NULL,window_end TEXT NOT NULL,
+ review_count BIGINT NOT NULL,avg_rating DOUBLE PRECISION NOT NULL,negative_count BIGINT NOT NULL,
+ batch_id BIGINT NOT NULL,updated_at TEXT NOT NULL,
+ PRIMARY KEY(dataset_id,generation,batch_id,window_seconds,product_id,window_start));
 """
 
 
 def identifier(value: str) -> str:
-    if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}", value):
+    if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:+-]{0,159}", value):
         raise ValueError("Explicit safe serving identity required")
     return value
 
@@ -293,6 +299,9 @@ class ServingStore:
         if watermark:
             watermark = instant(watermark).isoformat()
         with writer_transaction(self.conn):
+            if not self.sqlite:
+                self.execute("SELECT pg_advisory_xact_lock(hashtext(?))",
+                             ("stream:" + self.dataset_id + ":" + generation,))
             receipt = self.execute(
                 "SELECT 1 FROM stream_batches WHERE dataset_id=? AND generation=? AND batch_id=?",
                 (self.dataset_id, generation, batch),
@@ -310,6 +319,23 @@ class ServingStore:
                 (clock, watermark, batch, self.dataset_id, generation, batch),
             )
             accepted = cursor.rowcount == 1
+            if accepted:
+                self.execute(
+                    """INSERT INTO stream_windows
+                    SELECT p.* FROM stream_pending_windows p
+                    WHERE p.dataset_id=? AND p.generation=? AND p.batch_id<=?
+                    AND NOT EXISTS (SELECT 1 FROM stream_pending_windows n
+                      WHERE n.dataset_id=p.dataset_id AND n.generation=p.generation
+                        AND n.window_seconds=p.window_seconds AND n.product_id=p.product_id
+                        AND n.window_start=p.window_start AND n.batch_id>p.batch_id AND n.batch_id<=?)
+                    ON CONFLICT(dataset_id,generation,window_seconds,product_id,window_start) DO UPDATE SET
+                    window_end=excluded.window_end,review_count=excluded.review_count,avg_rating=excluded.avg_rating,
+                    negative_count=excluded.negative_count,batch_id=excluded.batch_id,updated_at=excluded.updated_at
+                    WHERE stream_windows.batch_id < excluded.batch_id""",
+                    (self.dataset_id, generation, batch, batch),
+                )
+                self.execute("DELETE FROM stream_pending_windows WHERE dataset_id=? AND generation=? AND batch_id<=?",
+                             (self.dataset_id, generation, batch))
             if accepted and watermark:
                 self._stage_stream_alerts(
                     generation,
@@ -396,11 +422,7 @@ class ServingStore:
                 if previous:
                     continue
                 self.execute(
-                    """INSERT INTO stream_windows VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
-                    ON CONFLICT(dataset_id,generation,window_seconds,product_id,window_start) DO UPDATE SET
-                    window_end=excluded.window_end,review_count=excluded.review_count,avg_rating=excluded.avg_rating,
-                    negative_count=excluded.negative_count,batch_id=excluded.batch_id,updated_at=excluded.updated_at
-                    WHERE stream_windows.batch_id < excluded.batch_id""",
+                    "INSERT INTO stream_pending_windows VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
                     (
                         self.dataset_id,
                         generation,

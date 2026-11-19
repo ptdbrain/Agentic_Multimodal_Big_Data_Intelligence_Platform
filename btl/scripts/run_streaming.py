@@ -182,15 +182,20 @@ def main():
                 runtime_args["negative_threshold"] = resolved["configuration"]["negative_threshold"]
             if owner is not None:
                 validate_stream_binding(binding, dict(os.environ), runtime_args)
+                from serving.runtime import stream_configuration
+
                 store.register_stream(
                     args.generation,
-                    {
-                        "window_seconds": simulator_duration(args.window),
-                        "watermark_seconds": simulator_duration(args.watermark, allow_zero=True),
-                        "topic": args.topic or settings.kafka.topic_reviews,
-                        "checkpoint_dir": runtime_args.get("checkpoint_dir"),
-                        "output_path": runtime_args.get("output_path"),
-                    },
+                    stream_configuration(
+                        window_seconds=simulator_duration(args.window),
+                        watermark_seconds=simulator_duration(args.watermark, allow_zero=True),
+                        topic=args.topic or settings.kafka.topic_reviews,
+                        paths=runtime_args,
+                        output_mode=runtime_args.get("output_mode", "update"),
+                        negative_threshold=runtime_args.get(
+                            "negative_threshold", settings.analytics.sentiment_negative_threshold),
+                        **source_args,
+                    ),
                 )
                 stream_registered = True
             job = SparkStreamingJob(**runtime_args)

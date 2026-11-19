@@ -557,6 +557,8 @@ class SparkStreamingJob:
         if eff_mode not in self.VALID_OUTPUT_MODES:
             raise ValueError(f"Unsupported output_mode '{eff_mode}'.")
 
+        # Spark may report an idle batch number that is reused after restart.
+        self._reported_progress = {}
         self._last_stream_args = {
             "output_path": self.output_path,
             "window_duration": window_duration,
@@ -663,11 +665,12 @@ class SparkStreamingJob:
         previous=getattr(self,'_reported_progress',{})
         pending={name:query.lastProgress for name,query in queries.items() if query is not None
                  and query.lastProgress and query.lastProgress.get('batchId')!=previous.get(name)}
-        if not pending:return
-        with OperationStatus(mode=settings.runtime_mode) as status:
-            for name,progress in pending.items():
-                status.stream_progress(self.checkpoint_dir,name,progress,required_sinks=required)
-                previous[name]=progress['batchId']
+        if not pending and self.serving_binding is None:return
+        if pending:
+            with OperationStatus(mode=settings.runtime_mode) as status:
+                for name,progress in pending.items():
+                    status.stream_progress(self.checkpoint_dir,name,progress,required_sinks=required)
+                    previous[name]=progress['batchId']
         self._reported_progress=previous
         if self.serving_binding is not None:
             from serving.progress import committed_serving_progress
