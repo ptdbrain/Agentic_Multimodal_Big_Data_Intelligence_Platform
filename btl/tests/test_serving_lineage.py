@@ -594,3 +594,21 @@ def test_publication_refuses_canonical_parquet_that_differs_from_run_checkpoint(
         )
     with pytest.raises(ValueError, match="checkpoint|publication"):
         commerce_receipt("pinned", tables=["reviews"], marts=[])
+
+
+@pytest.mark.parametrize('entity,numeric', [('products','price'), ('prices','price'), ('reviews','rating')])
+def test_reused_event_requires_present_business_values_and_original_currency(entity, numeric):
+    from serving.lineage import _winner_matches
+
+    silver = {'event_id':'shared', 'product_id':'p', numeric: 4}
+    if numeric == 'price':
+        silver['currency'] = 'VND'
+    assert _winner_matches(dict(silver), {}, silver, entity)
+    assert not _winner_matches({k:v for k,v in silver.items() if k != numeric}, {}, silver, entity)
+    assert not _winner_matches({k:v for k,v in silver.items() if k != 'product_id'}, {}, silver, entity)
+    if numeric == 'price':
+        assert not _winner_matches(dict(silver, currency='USD'), {}, silver, entity)
+        assert not _winner_matches({k:v for k,v in silver.items() if k != 'currency'}, {}, silver, entity)
+        assert _winner_matches(dict(silver, currency='vnđ'), {}, silver, entity)
+    named = dict(silver, **({'review_text':'Observed text'} if entity=='reviews' else {'product_name':'Observed phone'}))
+    assert not _winner_matches(silver, {}, named, entity)

@@ -276,10 +276,13 @@ def _winner_matches(payload: dict, envelope: dict, silver: dict, entity: str) ->
     if not silver.get("event_id") or event != silver["event_id"]:
         return False
     for key in ("product_id", "review_id", "price_id", "article_id"):
-        if key in silver and key in payload and str(silver[key]).strip() != str(payload[key]).strip():
-            return False
+        if silver.get(key) is not None:
+            if payload.get(key) is None or str(silver[key]).strip() != str(payload[key]).strip():
+                return False
     numeric = "rating" if entity == "reviews" else "price" if entity in {"products", "prices"} else None
-    if numeric and numeric in silver and numeric in payload:
+    if numeric:
+        if numeric not in silver or payload.get(numeric) is None:
+            return False
         raw = silver.get(numeric + "_raw")
         if raw is not None:
             if str(raw).strip() != str(payload[numeric]).strip():
@@ -296,6 +299,12 @@ def _winner_matches(payload: dict, envelope: dict, silver: dict, entity: str) ->
                     return False
             except (TypeError, ValueError):
                 return False
+    if entity in {"products", "prices"}:
+        from spark.etl.normalizer import EntityNormalizer
+
+        currency = EntityNormalizer.normalize_currency(payload.get("currency_raw", payload.get("currency")))
+        if currency is None or currency != silver.get("currency"):
+            return False
     for key in ("review_date", "timestamp", "created_at", "ingested_at"):
         expected = silver.get(key + "_raw")
         if expected is None:
@@ -321,8 +330,8 @@ def _winner_matches(payload: dict, envelope: dict, silver: dict, entity: str) ->
         if not equal:
             return False
     for key in ("review_text", "review_title", "product_name"):
-        if silver.get(key) is not None and payload.get(key) is not None:
-            if str(silver[key]).strip() != str(payload[key]).strip():
+        if silver.get(key) is not None:
+            if payload.get(key) is None or str(silver[key]).strip() != str(payload[key]).strip():
                 return False
     return True
 
