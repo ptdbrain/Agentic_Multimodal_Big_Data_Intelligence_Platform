@@ -109,6 +109,9 @@ def _pg_fingerprint(component):
     import psycopg2
     from psycopg2 import sql
 
+    version = component.get("sql_fingerprint_version", 2)
+    if version not in (1, 2):
+        raise ValueError("Unsupported SQL fingerprint version")
     result = {}
 
     def encode(value):
@@ -121,6 +124,9 @@ def _pg_fingerprint(component):
     with psycopg2.connect(**_pg(component)) as connection:
         connection.set_session(readonly=True, isolation_level="REPEATABLE READ")
         cursor = connection.cursor()
+        timezone = "UTC" if version == 2 else component.get("sql_fingerprint_timezone")
+        if timezone is not None:
+            cursor.execute("SELECT set_config('TimeZone',%s,true)", (timezone,))
         cursor.execute(
             "SELECT table_schema,table_name FROM information_schema.tables WHERE table_type='BASE TABLE' AND table_schema NOT IN ('pg_catalog','information_schema') ORDER BY 1,2"
         )
@@ -332,7 +338,7 @@ def create_backup(target, components, guard=None, inventory=None):
                         client.fget_object(component["bucket"], obj.object_name, str(path))
                 else:
                     raise ValueError("Unknown component kind")
-            fingerprint = _pg_fingerprint(component) if kind == "postgres" else None
+            fingerprint = _pg_fingerprint(dict(component, sql_fingerprint_version=2)) if kind == "postgres" else None
             files = [
                 {"path": str(path.relative_to(stage).as_posix()), "size": path.stat().st_size, "sha256": _hash(path)}
                 for path in sorted(destination.rglob("*"))
@@ -348,6 +354,7 @@ def create_backup(target, components, guard=None, inventory=None):
                     "role": component["role"],
                     "source": _identity(component),
                     "sql_fingerprint": fingerprint,
+                    "sql_fingerprint_version": 2 if kind == "postgres" else None,
                     "files": files,
                     "directories": directories,
                 }
@@ -549,7 +556,8 @@ def restore_verify(backup, targets):
                 if digest.hexdigest() != expected[obj.object_name]:
                     raise ValueError("Restored object checksum mismatch")
         else:
-            if _pg_fingerprint(target) != component.get("sql_fingerprint"):
+            fingerprint_target = dict(target, sql_fingerprint_version=component.get("sql_fingerprint_version", 1))
+            if _pg_fingerprint(fingerprint_target) != component.get("sql_fingerprint"):
                 raise ValueError("Restored PostgreSQL business fingerprint mismatch")
     return {"verified": True, "backup_id": manifest["backup_id"], "components": len(manifest["components"])}
 
