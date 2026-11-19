@@ -155,3 +155,58 @@ def test_killed_worker_after_receiver_fsync_recovers_without_duplicate_receipt(t
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
+
+
+@pytest.mark.parametrize('tail', [b'{"interrupted', b'{"valid_json":"missing delimiter"}', b'\xf0\x9f'])
+def test_receiver_recovers_only_uncommitted_final_append(tmp_path, tail):
+    from scripts.verify_operations_stack import webhook_server
+
+    path = tmp_path/'receipts.jsonl'
+    payload = {'status':'firing', 'alerts':[]}
+    server = webhook_server(path, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    url = f'http://127.0.0.1:{server.server_port}/alerts'
+    try:
+        assert requests.post(url, json=payload, headers={'Idempotency-Key':'first'}, timeout=5).status_code == 200
+        original = path.read_bytes()
+        with path.open('ab') as output:
+            output.write(tail)
+        assert requests.post(url, json=payload, headers={'Idempotency-Key':'second'}, timeout=5).status_code == 200
+        assert requests.post(url, json=payload, headers={'Idempotency-Key':'first'}, timeout=5).status_code == 200
+        assert path.read_bytes().startswith(original)
+        assert [json.loads(line)['idempotency_key'] for line in path.read_bytes().splitlines()] == ['first','second']
+        committed = path.read_bytes()
+        path.write_bytes(b'broken committed record\n'+committed)
+        assert requests.post(url, json=payload, headers={'Idempotency-Key':'third'}, timeout=5).status_code == 400
+        assert path.read_bytes() == b'broken committed record\n'+committed
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_duplicate_receipt_is_synced_before_acknowledgement(tmp_path, monkeypatch):
+    import os
+    from scripts.verify_operations_stack import webhook_server
+
+    calls = []
+    real_sync = os.fsync
+    def sync(fd):
+        calls.append(fd)
+        return real_sync(fd)
+    monkeypatch.setattr(os, 'fsync', sync)
+    server = webhook_server(tmp_path/'receipts.jsonl', port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        url = f'http://127.0.0.1:{server.server_port}/alerts'
+        kwargs = dict(json={'status':'firing','alerts':[]}, headers={'Idempotency-Key':'retry'}, timeout=5)
+        assert requests.post(url, **kwargs).status_code == 200
+        before = len(calls)
+        assert requests.post(url, **kwargs).status_code == 200
+        assert len(calls) > before
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)

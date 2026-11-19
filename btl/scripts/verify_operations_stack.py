@@ -56,23 +56,36 @@ def webhook_server(path, host="127.0.0.1", port=18093):
                 if key:
                     record.update(idempotency_key=key, payload_sha256=digest)
                 fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_NOFOLLOW, 0o600)
-                with os.fdopen(fd, "a+") as stream:
+                with os.fdopen(fd, "a+b") as stream:
                     fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
                     duplicate = False
-                    if key:
-                        stream.seek(0)
-                        for line in stream:
-                            previous = json.loads(line)
-                            if previous.get("idempotency_key") == key:
-                                if previous.get("payload_sha256") != digest:
-                                    raise ValueError("Notification identity changed")
-                                duplicate = True
-                                break
+                    stream.seek(0)
+                    while True:
+                        offset = stream.tell()
+                        line = stream.readline()
+                        if not line:
+                            break
+                        # The newline commits a whole JSONL record. An interrupted
+                        # final append was never acknowledged and can be retried.
+                        if not line.endswith(b"\n"):
+                            stream.truncate(offset)
+                            stream.flush()
+                            os.fsync(stream.fileno())
+                            break
+                        previous = json.loads(line)
+                        if not isinstance(previous, dict):
+                            raise ValueError("Corrupt committed notification receipt")
+                        if key and previous.get("idempotency_key") == key:
+                            if previous.get("payload_sha256") != digest:
+                                raise ValueError("Notification identity changed")
+                            duplicate = True
                     if not duplicate:
                         stream.seek(0, os.SEEK_END)
-                        stream.write(json.dumps(record, ensure_ascii=False) + "\n")
-                        stream.flush()
-                        os.fsync(stream.fileno())
+                        stream.write((json.dumps(record, ensure_ascii=False) + "\n").encode())
+                    # A complete duplicate may itself have survived a process
+                    # interruption before its original fsync/HTTP response.
+                    stream.flush()
+                    os.fsync(stream.fileno())
             except (ValueError, OSError):
                 self.send_error(400)
                 return
