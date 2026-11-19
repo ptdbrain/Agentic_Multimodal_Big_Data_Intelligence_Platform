@@ -1,15 +1,19 @@
 """Read-only per-dataset lake access. Never creates buckets or changes global settings."""
 
-from pathlib import Path, PurePosixPath
-import json
 import hashlib
+import json
 import tempfile
+from collections.abc import Iterator
 from contextlib import contextmanager
+from pathlib import Path, PurePosixPath
+from typing import BinaryIO
+
 from scripts.run_scheduled_backup import environment
+from serving.registry import DatasetRef
 
 
 class DatasetLake:
-    def __init__(self, binding):
+    def __init__(self, binding: DatasetRef) -> None:
         self.binding = binding
         self.env = environment(binding.environment_file)
         self.root = None
@@ -19,9 +23,8 @@ class DatasetLake:
                 raise ConnectionError("Dataset has no explicit local lake")
             self.root = Path(self.env["LOCAL_DATA_DIR"]).resolve()
         else:
-            from minio import Minio
-
             import urllib3
+            from minio import Minio
 
             self.client = Minio(
                 self.env["MINIO_ENDPOINT"],
@@ -33,7 +36,7 @@ class DatasetLake:
                 ),
             )
 
-    def _key(self, key):
+    def _key(self, key: str) -> str:
         path = PurePosixPath(key)
         if not key or path.is_absolute() or ".." in path.parts or "\\" in key:
             raise ValueError("Unsafe dataset object reference")
@@ -43,7 +46,7 @@ class DatasetLake:
                 raise ValueError("Dataset object escapes lake")
         return str(path)
 
-    def objects(self, prefix):
+    def objects(self, prefix: str) -> Iterator[tuple[str, int]]:
         trailing = prefix.endswith("/")
         prefix = self._key(prefix) + ("/" if trailing else "")
         if self.root:
@@ -54,7 +57,7 @@ class DatasetLake:
             for item in self.client.list_objects(self.binding.bucket, prefix=prefix, recursive=True):
                 yield item.object_name, item.size
 
-    def read_bytes(self, key, max_bytes=20 * 1024 * 1024):
+    def read_bytes(self, key: str, max_bytes: int = 20 * 1024 * 1024) -> bytes:
         key = self._key(key)
         if self.root:
             path = self.root / key
@@ -72,7 +75,7 @@ class DatasetLake:
             response.release_conn()
 
     @contextmanager
-    def verified_file(self, reference: dict, *, max_bytes: int = 512 * 1024 * 1024):
+    def verified_file(self, reference: dict, *, max_bytes: int = 512 * 1024 * 1024) -> Iterator[BinaryIO]:
         """Freeze verified evidence into a bounded private temporary file for Parquet reads."""
         key = self._key(reference["path"])
         if type(reference["size"]) is not int or not 0 <= reference["size"] <= max_bytes:
@@ -99,7 +102,7 @@ class DatasetLake:
             if not self.root:
                 stream.release_conn()
 
-    def metrics(self):
+    def metrics(self) -> dict[str, dict[str, int]]:
         result = {}
         for layer in ("bronze", "silver", "gold"):
             count = size = 0
@@ -109,7 +112,7 @@ class DatasetLake:
             result[layer] = {"files": count, "size_bytes": size}
         return result
 
-    def bronze_reviews(self, limit=1000):
+    def bronze_reviews(self, limit: int = 1000) -> list[dict[str, object]]:
         topic = self.env.get("KAFKA_TOPIC_REVIEWS")
         if not topic:
             raise ValueError("Dataset review topic is not configured")

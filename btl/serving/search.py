@@ -1,17 +1,34 @@
 """Generation-verified PostgreSQL/SQLite snapshot to real Elasticsearch publication."""
 
+import hashlib
+import json
+import os
+import uuid
 from datetime import date, datetime
 from decimal import Decimal
-import hashlib, json, os, uuid
+from typing import Protocol, TypedDict, Unpack
+
 import requests
-from serving.store import ServingStore, connect_dataset, now
-from serving.ownership import acquire_stream_owner
+
 from serving.admission import writer_transaction
+from serving.ownership import acquire_stream_owner
+from serving.registry import DatasetRef
+from serving.store import ServingStore, connect_dataset, now
 
 ENTITIES = {"products": "product_id", "reviews": "review_id", "articles": "article_id"}
 
 
-def encode(value):
+class RequestOptions(TypedDict, total=False):
+    json: dict
+    data: str
+    headers: dict[str, str]
+
+
+class SearchRequest(Protocol):
+    def __call__(self, method: str, path: str, **kwargs: Unpack[RequestOptions]) -> dict: ...
+
+
+def encode(value: object) -> str:
     if isinstance(value, (date, datetime)):
         return value.isoformat()
     if isinstance(value, Decimal):
@@ -21,16 +38,16 @@ def encode(value):
     raise TypeError("Unsupported SQL search value")
 
 
-def canonical(value):
+def canonical(value: object) -> str:
     return json.dumps(value, default=encode, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
 
 
 class Elasticsearch:
-    def __init__(self, endpoint: str | None = None):
+    def __init__(self, endpoint: str | None = None) -> None:
         self.endpoint = (endpoint or os.environ.get("ES_URL", "http://elasticsearch:9200")).rstrip("/")
         self.session = requests.Session()
 
-    def request(self, method, path, **kwargs):
+    def request(self, method: str, path: str, **kwargs: Unpack[RequestOptions]) -> dict:
         response = self.session.request(method, self.endpoint + path, timeout=30, **kwargs)
         if response.status_code == 404 and path.startswith("/_alias/"):
             return {}
@@ -42,7 +59,7 @@ class Elasticsearch:
 
 
 class SearchWorker:
-    def __init__(self, binding, request=None, *, page_size: int = 1000):
+    def __init__(self, binding: DatasetRef, request: SearchRequest | None = None, *, page_size: int = 1000) -> None:
         if type(page_size) is not int or not 1 <= page_size <= 5000:
             raise ValueError("Bounded page size required")
         self.binding = binding
@@ -97,7 +114,7 @@ class SearchWorker:
         finally:
             connection.close()
 
-    def _publish(self, store, generation, entity):
+    def _publish(self, store: ServingStore, generation: str, entity: str) -> bool:
         read = connect_dataset(self.binding)
         index = "sentinel-" + self.binding.id + "-" + entity + "-" + uuid.uuid4().hex
         alias = "sentinel-" + self.binding.id + "-" + entity + "-read"
@@ -236,19 +253,20 @@ class SearchWorker:
 
 
 def search_snapshot(
-    binding,
+    binding: DatasetRef,
     entity: str,
     index_name: str,
     generation: str,
     query: str,
     *,
-    request=None,
+    request: SearchRequest | None = None,
     page_size: int = 20,
     after: list | None = None,
     filters: dict | None = None,
     min_rating: float | None = None,
 ) -> dict:
-    import math, re
+    import math
+    import re
 
     if entity not in ENTITIES:
         raise ValueError("Unsupported search entity")

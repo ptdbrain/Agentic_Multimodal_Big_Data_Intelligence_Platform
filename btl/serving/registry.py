@@ -1,12 +1,29 @@
 """Immutable per-session bindings; source secrets never enter process environment."""
 
+from __future__ import annotations
+
+import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Mapping
-import re
+from typing import TYPE_CHECKING, Mapping, TypedDict, Unpack
+
 import yaml
+
 from scripts.run_scheduled_backup import environment
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
+
+    from dashboard.db_connector import DashboardDB
+
+
+class ReadTableOptions(TypedDict, total=False):
+    order_by: str | None
+    descending: bool
+    limit: int | None
+
 
 WEB_TABLES = frozenset({"articles", "article_versions", "article_daily_stats", "article_pipeline_runs"})
 GROUPS = {
@@ -30,7 +47,7 @@ class DatasetRef:
     sqlite_path: Path | None = None
     environment_file: Path | None = field(default=None, repr=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not re.fullmatch(r"[a-z][a-z0-9_-]{0,100}", self.id):
             raise ValueError("Unsafe dataset identity / ID")
         if not re.fullmatch(r"[a-z_][a-z0-9_]{0,62}", self.schema):
@@ -43,7 +60,7 @@ class DatasetRef:
 
 
 class DatasetRegistry:
-    def __init__(self, datasets: list[DatasetRef]):
+    def __init__(self, datasets: list[DatasetRef]) -> None:
         self.datasets = MappingProxyType({item.id: item for item in datasets})
         if len(self.datasets) != len(datasets):
             raise ValueError("Duplicate dataset ID")
@@ -121,7 +138,7 @@ class ServingContext:
     articles: str | None
     scope: str = "real"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.scope not in GROUPS:
             raise ValueError("Unknown data scope")
         for kind, key in [("commerce", self.commerce), ("web", self.articles)]:
@@ -139,23 +156,23 @@ class ServingContext:
 class DashboardSources:
     """One repeatable-read connection per selected dataset, never a global cross-DB snapshot."""
 
-    def __init__(self, context: ServingContext):
+    def __init__(self, context: ServingContext) -> None:
         self.context = context
-        self.connections = {}
+        self.connections: dict[str, DashboardDB] = {}
 
     @property
-    def data_scope(self):
+    def data_scope(self) -> str:
         return self.context.scope
 
     @property
-    def is_integration(self):
+    def is_integration(self) -> bool:
         return all(
             ref.sqlite_path is None
             for ref in self.context.registry.datasets.values()
             if ref.id in (self.context.commerce, self.context.articles)
         )
 
-    def _db(self, table):
+    def _db(self, table: str) -> DashboardDB | None:
         from dashboard.db_connector import DashboardDB
 
         ref = self.context.resolve(table)
@@ -165,7 +182,7 @@ class DashboardSources:
             self.connections[ref.id] = DashboardDB(binding=ref, data_scope=self.data_scope)
         return self.connections[ref.id]
 
-    def read_table(self, table, **kwargs):
+    def read_table(self, table: str, **kwargs: Unpack[ReadTableOptions]) -> DataFrame:
         import pandas as pd
 
         db = self._db(table)
@@ -175,7 +192,7 @@ class DashboardSources:
         result.attrs.update(dataset_id=db.binding.id, data_source=db.get_active_source_label())
         return result
 
-    def publication_metadata(self):
+    def publication_metadata(self) -> list[dict[str, object]]:
         records = []
         for table in ("products", "articles"):
             ref = self.context.resolve(table)
@@ -195,14 +212,14 @@ class DashboardSources:
             records.append(record)
         return records
 
-    def get_active_source_label(self):
+    def get_active_source_label(self) -> str:
         return " | ".join(
             self.context.registry.datasets[key].label + " · " + self.context.registry.datasets[key].schema
             for key in (self.context.commerce, self.context.articles)
             if key
         )
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Callable[..., object]:
         if not name.startswith("get_"):
             raise AttributeError(name)
         db = self._db("products")
@@ -210,6 +227,6 @@ class DashboardSources:
             raise ConnectionError("No commerce dataset selected for this scope")
         return getattr(db, name)
 
-    def close(self):
+    def close(self) -> None:
         for db in self.connections.values():
             db.close()

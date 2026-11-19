@@ -1,12 +1,23 @@
 """Session/process-scoped stream ownership; stale age never grants a second driver."""
 
+from __future__ import annotations
+
+import fcntl
+import hashlib
+import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-import fcntl, hashlib
+from typing import TYPE_CHECKING
+
+from serving.registry import DatasetRef
+
+if TYPE_CHECKING:
+    from psycopg2.extensions import connection as PgConnection
 
 
 @contextmanager
-def acquire_stream_owner(connection, binding):
+def acquire_stream_owner(connection: sqlite3.Connection | PgConnection, binding: DatasetRef) -> Iterator[None]:
     handle = None
     if binding.sqlite_path is not None:
         path = Path(str(binding.sqlite_path) + ".owner-" + hashlib.sha256(binding.id.encode()).hexdigest()[:24])

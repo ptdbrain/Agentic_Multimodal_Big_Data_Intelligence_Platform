@@ -1,15 +1,19 @@
 """Durable business-alert deliveries to the explicitly owned local receiver only."""
 
+import json
+import os
 from dataclasses import replace
 from urllib.parse import urlsplit
-import json, os
+
 import requests
-from serving.store import ServingStore, connect_dataset, now
+
 from serving.admission import writer_transaction
 from serving.ownership import acquire_stream_owner
+from serving.registry import DatasetRef
+from serving.store import ServingStore, connect_dataset, now
 
 
-def deliver_notifications(binding, *, url: str | None = None, session=None) -> int:
+def deliver_notifications(binding: DatasetRef, *, url: str | None = None, session: requests.Session | None = None) -> int:
     destination = url or os.environ.get("ALERT_WEBHOOK_URL", "http://127.0.0.1:18093/alerts")
     parsed = urlsplit(destination)
     if (

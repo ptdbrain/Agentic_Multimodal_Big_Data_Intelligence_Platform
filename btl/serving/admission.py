@@ -1,13 +1,22 @@
 """Bind metadata writers to the existing maintenance fence on their actual database."""
 
+from __future__ import annotations
+
+import fcntl
+import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-import fcntl
+from typing import TYPE_CHECKING
+
 from operations.backup import LOCK_KEY
+
+if TYPE_CHECKING:
+    from psycopg2.extensions import connection as PgConnection
 
 
 @contextmanager
-def writer_transaction(connection):
+def writer_transaction(connection: sqlite3.Connection | PgConnection) -> Iterator[None]:
     handle = None
     try:
         if connection.__class__.__module__.startswith("sqlite3"):

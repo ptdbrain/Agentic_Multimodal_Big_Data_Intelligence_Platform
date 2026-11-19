@@ -1,12 +1,15 @@
 """Checksum-pinned publication snapshots with explicit winner and legacy-partial evidence."""
 
-from pathlib import PurePosixPath
 import hashlib
 import json
-import re
 import math
-from serving.store import ServingStore, identifier, now, instant
+import re
+from collections.abc import Iterator, Sequence
+from pathlib import PurePosixPath
+
 from ingestion.privacy import sanitize_record_pii
+from serving.lake import DatasetLake
+from serving.store import ServingStore, identifier, instant, now
 
 ENTITY_KEYS = {"products": "product_id", "reviews": "review_id", "prices": "price_id", "articles": "article_id"}
 
@@ -92,11 +95,14 @@ def stage_lineage(store: ServingStore, generation: str, receipt: dict) -> None:
 
 def _archive_reference(run_id: str, source: dict, layer: str) -> dict:
     """Copy into a generation-owned immutable object before SQL publication."""
-    from storage.storage_manager import storage
+    import os
+    import shutil
+    import tempfile
+
+    from orchestration.run_manifest import reference_output
     from storage.local_backend import LocalBackend
     from storage.minio_backend import MinIOBackend
-    from orchestration.run_manifest import reference_output
-    import os, shutil, tempfile
+    from storage.storage_manager import storage
 
     source = _reference(source, layer)
     relative = PurePosixPath(source["path"]).relative_to(layer)
@@ -164,7 +170,7 @@ def _inherit_bronze(store: ServingStore | None, bronze: list[dict]) -> list[dict
     return bronze
 
 
-def commerce_receipt(run_id: str, *, tables=None, marts=None, store: ServingStore | None = None) -> dict:
+def commerce_receipt(run_id: str, *, tables: Sequence[str] | None = None, marts: Sequence[str] | None = None, store: ServingStore | None = None) -> dict:
     """Pin raw checkpoints and immutable Silver/Gold versions; never infer missing raw ancestry."""
     from orchestration.run_manifest import manifest_path, reference_output
     from storage.storage_manager import storage
@@ -236,7 +242,9 @@ def article_receipt(
     }
 
 
-def pinned_rows(receipt: dict, lake, table: str, *, layer: str = "silver", columns=None):
+def pinned_rows(
+    receipt: dict, lake: DatasetLake, table: str, *, layer: str = "silver", columns: Sequence[str] | None = None
+) -> Iterator[dict]:
     """Stream verified Parquet batches; missing snapshots yield no fabricated rows."""
     import pyarrow.parquet as pq
 
@@ -338,7 +346,7 @@ def _winner_matches(payload: dict, envelope: dict, silver: dict, entity: str) ->
 
 def trace_record(
     store: ServingStore,
-    lake,
+    lake: DatasetLake,
     generation: str,
     entity: str,
     record_id: str,
@@ -453,7 +461,7 @@ def _day(value):
 
 
 def trace_aggregate(
-    store: ServingStore, lake, generation: str, mart: str, grain: dict, *, offset: int = 0, limit: int = 100
+    store: ServingStore, lake: DatasetLake, generation: str, mart: str, grain: dict, *, offset: int = 0, limit: int = 100
 ) -> dict:
     """Verify complete normalized input membership, returning a bounded page of contributing IDs."""
     from datetime import date

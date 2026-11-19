@@ -1,9 +1,23 @@
 """Transactional serving windows with durable, content-verified micro-batch receipts."""
 
-from datetime import datetime, timezone, timedelta
-from collections.abc import Iterable, Mapping
-import hashlib, json, math, re, sqlite3
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+import re
+import sqlite3
+from collections.abc import Iterable, Mapping, Sequence
+from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
+
 from serving.admission import writer_transaction
+from serving.registry import DatasetRef
+
+if TYPE_CHECKING:
+    from psycopg2.extensions import connection as PgConnection
+    from psycopg2.extensions import cursor as PgCursor
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS publication_lineage (
@@ -64,7 +78,7 @@ def identifier(value: str) -> str:
     return value
 
 
-def instant(value) -> datetime:
+def instant(value: str | datetime) -> datetime:
     point = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     if point.tzinfo is None:
         raise ValueError("Serving clock requires explicit timezone")
@@ -75,7 +89,7 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def connect_dataset(binding):
+def connect_dataset(binding: DatasetRef) -> sqlite3.Connection | PgConnection:
     if binding.sqlite_path is not None:
         connection = sqlite3.connect(binding.sqlite_path, timeout=10)
         connection.execute("PRAGMA journal_mode=WAL")
@@ -86,7 +100,7 @@ def connect_dataset(binding):
 
 
 class ServingStore:
-    def __init__(self, connection, dataset_id: str, source_group: str):
+    def __init__(self, connection: sqlite3.Connection | PgConnection, dataset_id: str, source_group: str) -> None:
         self.conn = connection
         self.dataset_id = identifier(dataset_id)
         self.source_group = source_group
@@ -95,7 +109,7 @@ class ServingStore:
         self.sqlite = connection.__class__.__module__.startswith("sqlite3")
         self.param = "?" if self.sqlite else "%s"
 
-    def execute(self, sql: str, values=()):
+    def execute(self, sql: str, values: Sequence[object] = ()) -> sqlite3.Cursor | PgCursor:
         cursor = self.conn.cursor()
         cursor.execute(sql.replace("?", self.param), values)
         return cursor
