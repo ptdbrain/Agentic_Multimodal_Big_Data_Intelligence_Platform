@@ -1,0 +1,101 @@
+{
+  "passed": true,
+  "checked_at": "2026-11-19T05:30:09.250707+00:00",
+  "origin": "Existing observed Tiki snapshot, copied byte-for-byte into isolated MinIO/PostgreSQL namespace; no new collection or generated observations.",
+  "copied_objects": 24,
+  "publication_run_id": "tiki-e14bb773b265009d10c595f3cc413099",
+  "record_entity": "products",
+  "record_status": "verified_winner",
+  "bronze_object": "bronze/de.d9c663f0dd.tiki.products/year=2026/month=11/day=19/hour=02/batch_1795056932798_3d5dcf.json",
+  "bronze_sha256": "ed5a7578695582248269de2acedc181a25495f22d0e98462f1df1424556fb6ba",
+  "record_index": 0,
+  "record_sha256": "21f49e760b6499b2307c0957c8444b300a5703967f3dfde0763d25f5613db872",
+  "silver_event_id": "evt_27c17c000cf614a3da98717cdcce377c",
+  "numeric_field_verified_against_original_sql": "price",
+  "numeric_value_verified": 30500000.0,
+  "aggregate_status": "verified_aggregate",
+  "aggregate_total_members": 1,
+  "independent_original_sql_count": 1,
+  "checks": {
+    "review_count": {
+      "expected": "1",
+      "actual": 1,
+      "passed": true
+    },
+    "avg_rating": {
+      "expected": "5.00",
+      "actual": "5.0",
+      "passed": true
+    },
+    "rating_std": {
+      "expected": null,
+      "actual": null,
+      "passed": true
+    },
+    "rating_sample_size": {
+      "expected": "1",
+      "actual": "1",
+      "passed": true
+    },
+    "weighted_avg_rating": {
+      "expected": "5.00",
+      "actual": "5.0",
+      "passed": true
+    },
+    "time_available": {
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    "positive_ratio": {
+      "expected": "1.0000",
+      "actual": "1",
+      "passed": true
+    },
+    "high_rating_ratio": {
+      "expected": "1.0000",
+      "actual": "1",
+      "passed": true
+    },
+    "negative_ratio": {
+      "expected": "0.0000",
+      "actual": "0",
+      "passed": true
+    },
+    "low_rating_ratio": {
+      "expected": "0.0000",
+      "actual": "0",
+      "passed": true
+    },
+    "avg_price": {
+      "expected": "30500000.00",
+      "actual": "30500000.0",
+      "passed": true
+    },
+    "min_price": {
+      "expected": "30500000.00",
+      "actual": "30500000.0",
+      "passed": true
+    },
+    "max_price": {
+      "expected": "30500000.00",
+      "actual": "30500000.0",
+      "passed": true
+    },
+    "price_source": {
+      "expected": "catalog_fallback",
+      "actual": "catalog_fallback",
+      "passed": true
+    },
+    "currency": {
+      "expected": "VND",
+      "actual": [
+        "VND"
+      ],
+      "passed": true
+    }
+  },
+  "unchecked_fields": [],
+  "legacy_policy": "Historical reviews without a pinned raw ancestor remain partial; no legacy source links were inferred.",
+  "boundary": "Actual observed bytes -> isolated SQL export -> immutable archived Silver/Gold -> verified raw record and aggregate membership. Not a new live collection, scheduled cycle, browser performance, or Docker certification."
+}

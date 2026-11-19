@@ -1,0 +1,54 @@
+{
+  "passed": true,
+  "checked_at": "2026-11-19T05:57:27.787726+00:00",
+  "reviewed_base": "5d665b60be77b6312f27ad6ca58b6c3460f00622",
+  "verified_file_sha256": {
+    "dashboard/pages/10_Streaming.py": "6cd04125bc1869e75e625b3bd22d19fa09949add7bbc4cd6694e7ae1c17408b7",
+    "docker-compose.yml": "ffe0ce7efcd841783d98653c4bb821c8fb5ab181b4e06a24dd1ee7ed4b6ad658",
+    "scripts/run_streaming.py": "dac833c32a2329017b6a4a2d0094efe609307739a2092bdd76d146e7db803d35",
+    "scripts/verify_operations_stack.py": "e0800b3cf38a1133791bb39e3b9775c30cd49a1a5c623865d6a11f8dd80c4b62",
+    "serving/lineage.py": "39aae3ec8b56d4a3741f907a0f1510d7f1c90dd77b7da4dde173b70c05b4c00a",
+    "serving/runtime.py": "aed370494ae8c9a4c928198afa70fca7912a2aae71ff0fcfbbbd9c40502451ff",
+    "serving/store.py": "4618e76ed794c99050706c6fa927327fe817a8c7269c3381c6ae17f9dc23dff5",
+    "spark/streaming/spark_streaming_job.py": "a89d08e8935fba4aafa5e0d5b371201cd7987342a9e602c6140f75fc382caa3c",
+    "tests/integration/test_stream_sql_serving.py": "3b40cee9116f68d57bdb0a89dc23842e5f3c05859f88856801af9a2a5db6e3b7",
+    "tests/test_application_stack.py": "41d65c1822c1cd8f2aa51e06bc95520818d8e563cf52f5e94357ca10b1ff8527",
+    "tests/test_business_notifications.py": "64a423dffa147756f51085f774519abce5dd47c5ec71147ffdd6144bcdd397e1",
+    "tests/test_e2e.py": "c9a47820bb581c096cfc69ac26c32ac19bd67876107c45f1054f70765b4f59c5",
+    "tests/test_ops_kafka.py": "4b2261005fa946c0d852818a24a3272ac6a7f3e5e2d11ef2a0aeb4b2777102db",
+    "tests/test_serving_lineage.py": "88af6511fb07568b9d3546f9f682434adf2c8a828b0688530641b75564a133e4",
+    "tests/test_stream_binding.py": "d7d16ee485d790a4c4bc2e578e5f2e4336d4d05d3605d23a8d93161fca45e340",
+    "tests/test_stream_serving.py": "224bd55d2a83e5e47372c9e8c6ec1f678343720d262f7e76391149d244774663",
+    "tests/test_stream_sql_sink.py": "d1c2c58eaf6513aebe9d3fc425c496df73514e1315ab94ce91bdfee0f1080e23"
+  },
+  "project_suite": {
+    "command": "python -m pytest -q -m 'not airflow'",
+    "passed": 957,
+    "deselected": 1,
+    "warnings": 716,
+    "duration_seconds": 493.99,
+    "log_sha256": "37e0f83b6856a5ef5b487455cab200372eecd3b04b171d4331fac5269bc902eb",
+    "services": "Native Kafka, MinIO, PostgreSQL, owned Elasticsearch; fresh isolated test namespaces; local Spark/JVM"
+  },
+  "airflow_gate": {
+    "report": "nonai_airflow_2026-11-19.json",
+    "passed": 1,
+    "boundary": "Separate Airflow Python environment; manual diagnostic LocalExecutor run; generated task input in test mode"
+  },
+  "review": {
+    "original_assessment": "changes requested",
+    "important_findings_addressed": 5,
+    "minor_api_typing_gap": "Documented and deferred",
+    "post_fix_independent_review": false,
+    "regression_verification": true
+  },
+  "additional_runtime_fixes": [
+    "Retry SQL frontier confirmation after idle batch number reuse on restart",
+    "Accept valid timezone-bearing Airflow run IDs"
+  ],
+  "previous_runs": {
+    "initial_bare_suite": "937 passed, 8 failed; environment and configured-topic issues subsequently investigated",
+    "pre_final_sink_test_update": "956 passed, 1 failed, 1 deselected; sink test expected unconfirmed data to be visible; updated to check pending and promoted states, then rerun full suite"
+  },
+  "boundary": "Native code and integration verification. Not Docker build/start, canonical performance campaign, cutover/restore, 72h or scheduled-cycle certification."
+}

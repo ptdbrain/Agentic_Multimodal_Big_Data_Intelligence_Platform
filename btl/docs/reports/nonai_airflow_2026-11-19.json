@@ -1,0 +1,50 @@
+{
+  "passed": true,
+  "checked_at": "2026-11-19T05:44:24.329235+00:00",
+  "dag_run_id": "manual__2026-11-19T05:35:18.019319+00:00",
+  "dag_state": "success",
+  "executor": "LocalExecutor",
+  "metadata_backend": "Owned disposable native PostgreSQL database",
+  "task_mode": "test",
+  "task_input": "Explicit generated acceptance fixture files; local task Parquet/SQLite outputs",
+  "tasks": [
+    {
+      "task_id": "collect_and_publish",
+      "state": "success",
+      "attempts": 1
+    },
+    {
+      "task_id": "data_quality",
+      "state": "success",
+      "attempts": 1
+    },
+    {
+      "task_id": "finish",
+      "state": "success",
+      "attempts": 1
+    },
+    {
+      "task_id": "gold_analytics",
+      "state": "success",
+      "attempts": 1
+    },
+    {
+      "task_id": "spark_batch",
+      "state": "success",
+      "attempts": 1
+    },
+    {
+      "task_id": "start",
+      "state": "success",
+      "attempts": 1
+    },
+    {
+      "task_id": "warehouse_upsert",
+      "state": "success",
+      "attempts": 1
+    }
+  ],
+  "test_result": "1 passed in 58.85s",
+  "log_sha256": "35196a695a443fe1b6565fadcff819afe1279cdadc880a5300e1f1ec3efe00b6",
+  "boundary": "Real Airflow processes and PostgreSQL metadata; manual diagnostic execution. Not a production source DAG, Docker acceptance or a genuine scheduled cycle."
+}
