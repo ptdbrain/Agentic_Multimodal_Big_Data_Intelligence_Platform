@@ -67,3 +67,13 @@ def test_fresh_application_initializes_namespaces_before_scheduler_and_dashboard
 def test_executor_python_can_import_project_modules_outside_app_working_directory():
     dockerfile = (ROOT / "docker/application.Dockerfile").read_text()
     assert "PYTHONPATH=/app" in dockerfile
+
+
+def test_dependency_exporter_probes_the_elasticsearch_service_endpoint():
+    from urllib.parse import urlsplit
+
+    services = yaml.safe_load((ROOT/'docker-compose.yml').read_text())['services']
+    env = services['dependencies']['environment']
+    endpoint = env.get('ES_URL') or f"http://{env.get('ES_HOST','localhost')}:{env.get('ES_PORT','9200')}"
+    assert urlsplit(endpoint).hostname == 'elasticsearch'
+    assert urlsplit(endpoint).port == 9200

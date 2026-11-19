@@ -322,6 +322,9 @@ services:
     init: false
     restart: unless-stopped
     environment: &id005
+      ES_URL: http://elasticsearch:9200
+      ES_HOST: elasticsearch
+      ES_PORT: '9200'
       RUNTIME_MODE: integration
       POSTGRES_HOST: postgres
       POSTGRES_PORT: '5432'
