@@ -1,0 +1,393 @@
+{
+  "completed": true,
+  "checked_at": "2026-11-19T14:59:54.922304+00:00",
+  "source": "labelled simulation",
+  "configuration": {
+    "warmup": 30,
+    "measurement": 120,
+    "drain_timeout": 120,
+    "trigger_seconds": 30
+  },
+  "latency_boundary": "Producer enqueue to first poll showing the record in the confirmed SQL window. Warmup excluded from latency samples; counted in ACK/SQL totals.",
+  "resource_measurement": {
+    "first_sample": "2026-11-19T14:31:51.801368+00:00",
+    "last_sample": "2026-11-19T14:59:06.976688+00:00",
+    "samples": 324,
+    "distinct_container_names": 20,
+    "peak_observed_sum_memory_bytes": 8329703424,
+    "peak_observed_sum_memory_gib": 7.757640838623047,
+    "max_oom_kill_counter_observed": 0,
+    "boundary": "Sampled Linux memory.current including page cache. New containers become visible on sampler discovery. Operations exporter recreated mid-campaign; per-name CPU counters span different lifetimes, so CPU totals are omitted."
+  },
+  "runs": [
+    {
+      "checked_at": "2026-11-19T14:31:52.785792+00:00",
+      "finished_at": "2026-11-19T14:35:04.411290+00:00",
+      "source_fingerprint": {
+        "sha256": "0c3aa9b1ff353868bb5f72eed4439922c2c66eb00475f61fd7ec5bddf8517416",
+        "files": 418,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "namespace": {
+        "dataset_id": "stream-bench-16d87f002cb7",
+        "schema": "stream_bench_16d87f002cb7",
+        "bucket": "stream-bench-16d87f002cb7",
+        "topic": "stream-bench-16d87f002cb7-reviews"
+      },
+      "generation": "benchmark-f6221e087f3d",
+      "warmup_dispatched": 1500,
+      "measured_dispatched": 6000,
+      "measured_actual_sec": 120.00006689899965,
+      "actual_dispatch_rate_mps": 49.99997212543235,
+      "target_rate_mps": 50,
+      "drain_sec": 30.29444286799844,
+      "total_acknowledged": 7500,
+      "total_confirmed_sql": 7500,
+      "kafka_end_offsets": {
+        "0": 3675,
+        "1": 3825
+      },
+      "all_sink_offsets_reconciled": true,
+      "sql_visibility_upper_bound_ms": {
+        "samples": 1197,
+        "pending_samples": 0,
+        "p50_ms": 19046.104259999993,
+        "p95_ms": 32506.533838000905,
+        "p99_ms": 33637.31140499818,
+        "max_ms": 34114.41960599768
+      },
+      "browser_latency_status": "not_measured",
+      "iteration": 1
+    },
+    {
+      "checked_at": "2026-11-19T14:35:05.494623+00:00",
+      "finished_at": "2026-11-19T14:38:04.605116+00:00",
+      "source_fingerprint": {
+        "sha256": "0c3aa9b1ff353868bb5f72eed4439922c2c66eb00475f61fd7ec5bddf8517416",
+        "files": 418,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "namespace": {
+        "dataset_id": "stream-bench-bff84342c5e9",
+        "schema": "stream_bench_bff84342c5e9",
+        "bucket": "stream-bench-bff84342c5e9",
+        "topic": "stream-bench-bff84342c5e9-reviews"
+      },
+      "generation": "benchmark-e04dec3bc902",
+      "warmup_dispatched": 1500,
+      "measured_dispatched": 6000,
+      "measured_actual_sec": 120.00007784799891,
+      "actual_dispatch_rate_mps": 49.99996756335483,
+      "target_rate_mps": 50,
+      "drain_sec": 17.826311789998726,
+      "total_acknowledged": 7500,
+      "total_confirmed_sql": 7500,
+      "kafka_end_offsets": {
+        "0": 3675,
+        "1": 3825
+      },
+      "all_sink_offsets_reconciled": true,
+      "sql_visibility_upper_bound_ms": {
+        "samples": 1197,
+        "pending_samples": 0,
+        "p50_ms": 19132.59504999951,
+        "p95_ms": 32319.353224999213,
+        "p99_ms": 33526.658707918396,
+        "max_ms": 34107.45699399922
+      },
+      "browser_latency_status": "not_measured",
+      "iteration": 2
+    },
+    {
+      "checked_at": "2026-11-19T14:38:05.458599+00:00",
+      "finished_at": "2026-11-19T14:41:04.780299+00:00",
+      "source_fingerprint": {
+        "sha256": "0c3aa9b1ff353868bb5f72eed4439922c2c66eb00475f61fd7ec5bddf8517416",
+        "files": 418,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "namespace": {
+        "dataset_id": "stream-bench-bd6b3b876c3f",
+        "schema": "stream_bench_bd6b3b876c3f",
+        "bucket": "stream-bench-bd6b3b876c3f",
+        "topic": "stream-bench-bd6b3b876c3f-reviews"
+      },
+      "generation": "benchmark-d2d55069a80c",
+      "warmup_dispatched": 1500,
+      "measured_dispatched": 6000,
+      "measured_actual_sec": 120.00012046799748,
+      "actual_dispatch_rate_mps": 49.99994980505144,
+      "target_rate_mps": 50,
+      "drain_sec": 18.41810034900118,
+      "total_acknowledged": 7500,
+      "total_confirmed_sql": 7500,
+      "kafka_end_offsets": {
+        "0": 3675,
+        "1": 3825
+      },
+      "all_sink_offsets_reconciled": true,
+      "sql_visibility_upper_bound_ms": {
+        "samples": 1197,
+        "pending_samples": 0,
+        "p50_ms": 19297.233782002877,
+        "p95_ms": 32525.531825200596,
+        "p99_ms": 33737.518418199325,
+        "max_ms": 34635.79204599955
+      },
+      "browser_latency_status": "not_measured",
+      "iteration": 3
+    },
+    {
+      "checked_at": "2026-11-19T14:41:05.775037+00:00",
+      "finished_at": "2026-11-19T14:44:04.650421+00:00",
+      "source_fingerprint": {
+        "sha256": "0c3aa9b1ff353868bb5f72eed4439922c2c66eb00475f61fd7ec5bddf8517416",
+        "files": 418,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "namespace": {
+        "dataset_id": "stream-bench-b77c592b9f04",
+        "schema": "stream_bench_b77c592b9f04",
+        "bucket": "stream-bench-b77c592b9f04",
+        "topic": "stream-bench-b77c592b9f04-reviews"
+      },
+      "generation": "benchmark-dfb2e4d210f0",
+      "warmup_dispatched": 5992,
+      "measured_dispatched": 24000,
+      "measured_actual_sec": 120.00007606500003,
+      "actual_dispatch_rate_mps": 199.9998732250803,
+      "target_rate_mps": 200,
+      "drain_sec": 17.812300305999088,
+      "total_acknowledged": 29992,
+      "total_confirmed_sql": 29992,
+      "kafka_end_offsets": {
+        "0": 14695,
+        "1": 15297
+      },
+      "all_sink_offsets_reconciled": true,
+      "sql_visibility_upper_bound_ms": {
+        "samples": 1185,
+        "pending_samples": 0,
+        "p50_ms": 19774.81231799902,
+        "p95_ms": 32829.78640999936,
+        "p99_ms": 33928.63639503994,
+        "max_ms": 34568.57483099884
+      },
+      "browser_latency_status": "not_measured",
+      "iteration": 1
+    },
+    {
+      "checked_at": "2026-11-19T14:44:05.743575+00:00",
+      "finished_at": "2026-11-19T14:47:05.142011+00:00",
+      "source_fingerprint": {
+        "sha256": "0c3aa9b1ff353868bb5f72eed4439922c2c66eb00475f61fd7ec5bddf8517416",
+        "files": 418,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "namespace": {
+        "dataset_id": "stream-bench-3c2090ec3842",
+        "schema": "stream_bench_3c2090ec3842",
+        "bucket": "stream-bench-3c2090ec3842",
+        "topic": "stream-bench-3c2090ec3842-reviews"
+      },
+      "generation": "benchmark-3fe8d009abfd",
+      "warmup_dispatched": 5992,
+      "measured_dispatched": 24000,
+      "measured_actual_sec": 120.00007525899855,
+      "actual_dispatch_rate_mps": 199.9998745684144,
+      "target_rate_mps": 200,
+      "drain_sec": 17.816821881999203,
+      "total_acknowledged": 29992,
+      "total_confirmed_sql": 29992,
+      "kafka_end_offsets": {
+        "0": 14695,
+        "1": 15297
+      },
+      "all_sink_offsets_reconciled": true,
+      "sql_visibility_upper_bound_ms": {
+        "samples": 1185,
+        "pending_samples": 0,
+        "p50_ms": 20422.67887900016,
+        "p95_ms": 33140.24498940125,
+        "p99_ms": 34203.59936923938,
+        "max_ms": 34808.2507149993
+      },
+      "browser_latency_status": "not_measured",
+      "iteration": 2
+    },
+    {
+      "checked_at": "2026-11-19T14:47:05.937709+00:00",
+      "finished_at": "2026-11-19T14:50:04.986699+00:00",
+      "source_fingerprint": {
+        "sha256": "0c3aa9b1ff353868bb5f72eed4439922c2c66eb00475f61fd7ec5bddf8517416",
+        "files": 418,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "namespace": {
+        "dataset_id": "stream-bench-2f8f30ada16b",
+        "schema": "stream_bench_2f8f30ada16b",
+        "bucket": "stream-bench-2f8f30ada16b",
+        "topic": "stream-bench-2f8f30ada16b-reviews"
+      },
+      "generation": "benchmark-3f695b84f85a",
+      "warmup_dispatched": 5993,
+      "measured_dispatched": 24000,
+      "measured_actual_sec": 120.00005983099618,
+      "actual_dispatch_rate_mps": 199.99990028172274,
+      "target_rate_mps": 200,
+      "drain_sec": 17.8157399720003,
+      "total_acknowledged": 29993,
+      "total_confirmed_sql": 29993,
+      "kafka_end_offsets": {
+        "0": 14696,
+        "1": 15297
+      },
+      "all_sink_offsets_reconciled": true,
+      "sql_visibility_upper_bound_ms": {
+        "samples": 1185,
+        "pending_samples": 0,
+        "p50_ms": 20389.602724004362,
+        "p95_ms": 33174.42485719729,
+        "p99_ms": 34180.55171999789,
+        "max_ms": 34914.25123400404
+      },
+      "browser_latency_status": "not_measured",
+      "iteration": 3
+    },
+    {
+      "checked_at": "2026-11-19T14:50:06.004679+00:00",
+      "finished_at": "2026-11-19T14:53:05.412661+00:00",
+      "source_fingerprint": {
+        "sha256": "0c3aa9b1ff353868bb5f72eed4439922c2c66eb00475f61fd7ec5bddf8517416",
+        "files": 418,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "namespace": {
+        "dataset_id": "stream-bench-545672cb9b57",
+        "schema": "stream_bench_545672cb9b57",
+        "bucket": "stream-bench-545672cb9b57",
+        "topic": "stream-bench-545672cb9b57-reviews"
+      },
+      "generation": "benchmark-168bb26a92cd",
+      "warmup_dispatched": 14966,
+      "measured_dispatched": 59964,
+      "measured_actual_sec": 120.00006048200157,
+      "actual_dispatch_rate_mps": 499.69974814299206,
+      "target_rate_mps": 500,
+      "drain_sec": 19.227977793998434,
+      "total_acknowledged": 74930,
+      "total_confirmed_sql": 74930,
+      "kafka_end_offsets": {
+        "0": 36715,
+        "1": 38215
+      },
+      "all_sink_offsets_reconciled": true,
+      "sql_visibility_upper_bound_ms": {
+        "samples": 1185,
+        "pending_samples": 0,
+        "p50_ms": 19482.03119700338,
+        "p95_ms": 33440.46113299701,
+        "p99_ms": 34536.05853831803,
+        "max_ms": 35275.138866003545
+      },
+      "browser_latency_status": "not_measured",
+      "iteration": 1
+    },
+    {
+      "checked_at": "2026-11-19T14:53:06.463012+00:00",
+      "finished_at": "2026-11-19T14:56:05.539424+00:00",
+      "source_fingerprint": {
+        "sha256": "0c3aa9b1ff353868bb5f72eed4439922c2c66eb00475f61fd7ec5bddf8517416",
+        "files": 418,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "namespace": {
+        "dataset_id": "stream-bench-1568f113f65c",
+        "schema": "stream_bench_1568f113f65c",
+        "bucket": "stream-bench-1568f113f65c",
+        "topic": "stream-bench-1568f113f65c-reviews"
+      },
+      "generation": "benchmark-4fd30e4facd0",
+      "warmup_dispatched": 14967,
+      "measured_dispatched": 59979,
+      "measured_actual_sec": 120.0001565729981,
+      "actual_dispatch_rate_mps": 499.8243478416945,
+      "target_rate_mps": 500,
+      "drain_sec": 17.412629992999427,
+      "total_acknowledged": 74946,
+      "total_confirmed_sql": 74946,
+      "kafka_end_offsets": {
+        "0": 36724,
+        "1": 38222
+      },
+      "all_sink_offsets_reconciled": true,
+      "sql_visibility_upper_bound_ms": {
+        "samples": 1186,
+        "pending_samples": 0,
+        "p50_ms": 19920.262717998412,
+        "p95_ms": 33414.09148824823,
+        "p99_ms": 34544.17920270316,
+        "max_ms": 35220.292809994135
+      },
+      "browser_latency_status": "not_measured",
+      "iteration": 2
+    },
+    {
+      "checked_at": "2026-11-19T14:56:06.439982+00:00",
+      "finished_at": "2026-11-19T14:59:05.215717+00:00",
+      "source_fingerprint": {
+        "sha256": "0c3aa9b1ff353868bb5f72eed4439922c2c66eb00475f61fd7ec5bddf8517416",
+        "files": 418,
+        "scope": "sorted source/config/schema/dependency files; excludes reports/caches/lake/git/workspace"
+      },
+      "namespace": {
+        "dataset_id": "stream-bench-1ee1080b111a",
+        "schema": "stream_bench_1ee1080b111a",
+        "bucket": "stream-bench-1ee1080b111a",
+        "topic": "stream-bench-1ee1080b111a-reviews"
+      },
+      "generation": "benchmark-03578fe87e6a",
+      "warmup_dispatched": 14959,
+      "measured_dispatched": 59977,
+      "measured_actual_sec": 120.00009995599976,
+      "actual_dispatch_rate_mps": 499.80791700999976,
+      "target_rate_mps": 500,
+      "drain_sec": 17.20910374000232,
+      "total_acknowledged": 74936,
+      "total_confirmed_sql": 74936,
+      "kafka_end_offsets": {
+        "0": 36718,
+        "1": 38218
+      },
+      "all_sink_offsets_reconciled": true,
+      "sql_visibility_upper_bound_ms": {
+        "samples": 1186,
+        "pending_samples": 0,
+        "p50_ms": 19836.100338503456,
+        "p95_ms": 33410.15031999996,
+        "p99_ms": 34492.12091725494,
+        "max_ms": 35068.557550999685
+      },
+      "browser_latency_status": "not_measured",
+      "iteration": 3
+    }
+  ],
+  "by_target": {
+    "50": {
+      "median_actual_dispatch_per_sec": 49.99996756335483,
+      "median_of_trial_p95_sql_visibility_ms": 32506.533838000905,
+      "total_ack_and_sql": 22500
+    },
+    "200": {
+      "median_actual_dispatch_per_sec": 199.9998745684144,
+      "median_of_trial_p95_sql_visibility_ms": 33140.24498940125,
+      "total_ack_and_sql": 89977
+    },
+    "500": {
+      "median_actual_dispatch_per_sec": 499.80791700999976,
+      "median_of_trial_p95_sql_visibility_ms": 33414.09148824823,
+      "total_ack_and_sql": 224812
+    }
+  },
+  "total_ack_and_sql": 337289
+}
