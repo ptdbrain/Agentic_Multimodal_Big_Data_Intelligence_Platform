@@ -1,6 +1,6 @@
 """Read genuine scheduled Airflow cycles, hashed receipts and sampled monitoring history."""
 
-import argparse, hashlib, json, math, sys
+import argparse, hashlib, json, math, os, sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlencode
@@ -13,19 +13,18 @@ sys.path.insert(0, str(ROOT))
 def assess(jobs, start, now, runs, monitoring_coverage):
     elapsed = (now - start).total_seconds()
     counts = {
-        job: sum(
-            row["job"] == job
-            and row["run_type"] == "scheduled"
-            and row["state"] == "success"
-            and row["receipt_verified"]
-            for row in runs
-        )
+        job: len({
+            row["run_id"] for row in runs
+            if row["job"] == job and row["run_type"] == "scheduled" and row.get("run_id")
+            and row["state"] == "success" and row["receipt_verified"]
+        })
         for job in jobs
     }
     failures = [row for row in runs if row["run_type"] == "scheduled" and row["state"] == "failed"]
     partial = [row for row in runs if row["run_type"] == "scheduled" and row.get("coverage") == "partial"]
     operational = (
         elapsed >= 72 * 3600
+        and bool(counts)
         and all(count >= 3 for count in counts.values())
         and not failures
         and monitoring_coverage >= 0.99
@@ -44,12 +43,33 @@ def assess(jobs, start, now, runs, monitoring_coverage):
     }
 
 
+def expected_jobs(config_path: Path) -> list[str]:
+    import yaml
+
+    jobs = [entry["job_name"] for entry in yaml.safe_load(config_path.read_text())["scrape_configs"]]
+    if not jobs or len(set(jobs)) != len(jobs):
+        raise ValueError("Monitoring configuration requires distinct scrape jobs")
+    return jobs
+
+
+def monitoring_coverage(jobs: list[str], series: list[dict], expected: int) -> dict[str, float]:
+    observed = {job: set() for job in jobs}
+    for item in series:
+        job = item["metric"]["job"]
+        if job in observed:
+            observed[job].update(t for t, value in item["values"] if float(value) == 1)
+    return {job: len(times) / expected for job, times in observed.items()}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--window", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--prometheus", default="http://127.0.0.1:9090")
+    default_config = "prometheus-application.yml" if os.environ.get("RUNNING_IN_DOCKER") == "true" else "prometheus-operations.yml"
+    parser.add_argument("--prometheus-config", type=Path, default=ROOT / "monitoring" / default_config,
+                        help="Scrape configuration defining every required monitoring job")
     args = parser.parse_args()
     import yaml
     from airflow.models import DagRun, TaskInstance
@@ -82,7 +102,11 @@ def main():
                 }
                 payload = folder / "capture.json"
                 verified = (
-                    receipt.get("job_id") == job["id"]
+                    receipt.get("run_id") == identity
+                    and receipt.get("scheduler") == "airflow"
+                    and receipt.get("source_group") == job["source_group"]
+                    and receipt.get("state") in {"complete", "partial"}
+                    and receipt.get("job_id") == job["id"]
                     and receipt.get("namespace") == job["namespace"]
                     and receipt.get("processing_state") == "complete"
                     and receipt.get("processed_at") is not None
@@ -104,26 +128,16 @@ def main():
     end = now.timestamp()
     begin = start.timestamp()
     step = 60
-    query = urlencode(
-        {"query": 'up{job=~"sentinel-(platform|dependencies|operations)"}', "start": begin, "end": end, "step": step}
-    )
+    required = expected_jobs(args.prometheus_config)
+    # Limit lookback to one sample interval. A lost exporter must not keep
+    # earning availability from Prometheus's default five-minute lookback.
+    query = urlencode({"query": "min by (job) (min_over_time(up[60s]))", "start": begin, "end": end, "step": step})
     with urlopen(args.prometheus + "/api/v1/query_range?" + query, timeout=20) as response:
         series = json.load(response)["data"]["result"]
     expected = math.floor((end - begin) / step) + 1
-    # Missing targets and missing time samples reduce coverage rather than vanishing.
-    by_job = {}
-    for item in series:
-        by_job.setdefault(item["metric"]["job"], set()).update(
-            int(float(t)) for t, v in item["values"] if float(v) == 1
-        )
-    coverage = min(
-        (
-            len(by_job.get(name, set())) / expected
-            for name in ("sentinel-platform", "sentinel-dependencies", "sentinel-operations")
-        ),
-        default=0,
-    )
-    report = assess([job["id"] for job in jobs], start, now, runs, min(1, coverage))
+    coverage = monitoring_coverage(required, series, expected)
+    report = assess([job["id"] for job in jobs], start, now, runs, min(coverage.values()))
+    report["monitoring_coverage_by_job"] = coverage
     report["checked_at"] = now.isoformat()
     report["runs"] = runs
     write_atomic(args.output, report)
