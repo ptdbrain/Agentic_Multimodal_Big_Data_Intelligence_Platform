@@ -54,12 +54,22 @@ Trong lượt thử batch đầu, producer nhận 11.100 ACK nhưng consumer h�
 
 Cấu hình mới tạo mã Kafka riêng cho mỗi triển khai. Với volume của image `apache/kafka:3.7.0` đã có sẵn, giữ nguyên mã bootstrap khi nâng cấp. Nếu metadata ghi `Some(<id>)`, biến `KAFKA_CLUSTER_ID` cần giá trị bên trong ngoặc. Sau khi khởi động lại, đối chiếu mã giao thức và offset từng phân vùng với trước khi nâng cấp.
 
+### Hiệu năng batch trên Docker
+
+| Đánh giá đầu vào mỗi lượt | Số lượt đạt | Đánh giá đã lưu mỗi lượt | Thời gian trung vị |
+|---:|---:|---:|---:|
+| 10.000 | 3/3 | 9.200 | 66,1 giây |
+| 100.000 | 3/3 | 92.000 | 176,1 giây |
+| 1.000.000 | 3/3 | 920.000 | 1.167,6 giây |
+
+Mỗi lượt sử dụng nguồn giả lập có checksum, database, topic và bucket riêng. Từng lượt đối soát nội dung Kafka/Bronze, 3% bản trùng, 5% bản cách ly, số đánh giá ở Silver, các mart Gold và số bản ghi dashboard đọc từ SQL. Thời gian tính từ đọc nguồn đến đối soát SQL, sau khi khởi tạo JVM. Tổng bộ nhớ cao nhất quan sát được trên 19 container là 10,76 GiB, tính cả cache tệp. Trong 896 mẫu cgroup, bộ đếm tiến trình bị hệ điều hành dừng do thiếu RAM tăng 0. [Chín lượt đo và tài nguyên Docker](reports/nonai_docker_batch_matrix_2026-11-19.json)
+
 ## Điều kiện còn thiếu trước nghiệm thu
 
 1. Docker staging đã khởi động. Cần đo tài nguyên khi chạy tải chuẩn và kiểm tra cảnh báo khi nguồn ngừng cập nhật.
 2. Chứng nhận chi phí/quy mô truy vết trên chiến dịch lớn và xác định chính sách giữ snapshot. Winner, recipe, phân trang và đối chiếu Bronze thật đã có bằng chứng; cấu hình lịch sử không được ghi nhận vẫn để chưa xác định. Snapshot bất biến tăng dung lượng lưu trữ theo số generation.
 3. Mở rộng thử crash cảnh báo sang PostgreSQL/Docker; kiểm tra bảo trì/khôi phục khi worker đang ghi và lặp lại late-update toàn tuyến trong Docker. Thử outage ES native và crash worker với SQLite đã đạt, cần lặp lại trong staging Docker.
-4. Chạy lại chiến dịch batch 10k/100k/1m × 3; streaming 50/200/500 × 3 với warmup 30 giây, đo 120 giây, drain và đối soát. Tách độ trễ SQL khỏi độ trễ browser; ghi cả lần thất bại.
+4. Batch 10k/100k/1m × 3 đã đạt trên bản build xác định bởi fingerprint mã nguồn của từng lượt. Tiếp tục nghiệm thu streaming 50/200/500 × 3 với warmup 30 giây, đo 120 giây, drain và đối soát. Tách độ trễ SQL khỏi độ trễ browser; ghi cả lần thất bại.
 5. Diễn tập drain/fence → backup → restore Docker → resume, một owner duy nhất và rollback có đối soát dữ liệu sau cutover. Không chép offset/checkpoint qua cluster Kafka khác.
 6. Hoàn tất các gate Docker còn lại. Lượt kiểm tra native sau sửa lỗi review đã đạt. Review độc lập đã nêu 5 lỗi Important (đã sửa và có regression) cùng 1 Minor về type annotation (đã bổ sung hợp đồng kiểu cho các interface serving). Sau cutover mới đo **72 giờ và 3 chu kỳ lịch thực**, không thay bằng chạy ép hoặc chỉnh thời gian.
 
