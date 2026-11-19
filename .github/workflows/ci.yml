@@ -157,6 +157,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Build the application image for the DAG import integration test
+        run: docker build -f docker/application.Dockerfile -t sentinel-application:local .
+
       - name: Start real MinIO and Elasticsearch
         run: |
           docker build -f docker/minio.Dockerfile -t sentinel-minio-source:20240330 docker
