@@ -32,6 +32,12 @@ def validate_stream_binding(binding: DatasetRef, env: dict[str, str], paths: dic
         if not expected.get(key) or env.get(key) != expected[key]:
             raise ValueError("Stream process runtime differs from private dataset; use --deployment")
     if not binding.sqlite_path:
+        if expected.get("MINIO_SECURE", "false").lower() != env.get("MINIO_SECURE", "false").lower():
+            raise ValueError("Stream TLS settings differ from the private dataset")
+        if Path("/.dockerenv").exists() or env.get("RUNNING_IN_DOCKER", "false").lower() == "true":
+            endpoint = expected.get("MINIO_ENDPOINT_DOCKER", expected["MINIO_ENDPOINT"])
+            if env.get("MINIO_ENDPOINT_DOCKER", "minio:9000") != endpoint:
+                raise ValueError("Spark object store endpoint differs from the private dataset")
         match = re.fullmatch(r"-c\s*search_path=([a-z_][a-z0-9_]*)", expected.get("PGOPTIONS", ""))
         if match is None or match.group(1) != binding.schema:
             raise ValueError("Stream runtime schema differs from SQL sink schema")

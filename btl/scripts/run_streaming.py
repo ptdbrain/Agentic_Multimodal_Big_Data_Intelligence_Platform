@@ -53,7 +53,11 @@ def main():
             parser.error("Private stream deployment required")
         deployment = json.loads(args.deployment.read_text())
         binding = DatasetRegistry.load(deployment["registry"]).datasets[deployment["dataset_id"]]
-        env = dict(os.environ, **environment(binding.environment_file))
+        private_env = environment(binding.environment_file)
+        env = dict(os.environ, **private_env)
+        if binding.sqlite_path is None:
+            env["MINIO_ENDPOINT_DOCKER"] = private_env.get("MINIO_ENDPOINT_DOCKER", private_env["MINIO_ENDPOINT"])
+            env["MINIO_SECURE"] = private_env.get("MINIO_SECURE", "false")
         env["SERVING_DATASET_ID"] = binding.id
         command = [
             sys.executable,

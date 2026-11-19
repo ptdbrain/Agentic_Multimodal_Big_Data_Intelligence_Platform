@@ -61,7 +61,8 @@ def test_stream_runtime_schema_must_equal_sql_sink_schema(tmp_path):
         "KAFKA_BOOTSTRAP_SERVERS",
     )
     env = dict.fromkeys(keys, "explicit-test-value")
-    env.update(RUNTIME_MODE="integration", DATA_LAKE_BUCKET=binding.bucket, PGOPTIONS="-c search_path=other_schema")
+    env.update(RUNTIME_MODE="integration", DATA_LAKE_BUCKET=binding.bucket, PGOPTIONS="-c search_path=other_schema",
+               MINIO_ENDPOINT_DOCKER=env["MINIO_ENDPOINT"])
     binding.environment_file.write_text(_env(env))
     paths = {
         name: f"s3a://{binding.bucket}/fixture/{name}" for name in ("checkpoint_dir", "output_path", "quarantine_path")
@@ -71,6 +72,13 @@ def test_stream_runtime_schema_must_equal_sql_sink_schema(tmp_path):
     env["PGOPTIONS"] = "-c search_path=" + binding.schema
     binding.environment_file.write_text(_env(env))
     validate_stream_binding(binding, env, paths)
+    docker_env = dict(env, RUNNING_IN_DOCKER="true", MINIO_ENDPOINT_DOCKER="restored-lake:9000")
+    binding.environment_file.write_text(_env(docker_env))
+    validate_stream_binding(binding, docker_env, paths)
+    with pytest.raises(ValueError, match="dataset|runtime"):
+        validate_stream_binding(binding, dict(docker_env, MINIO_ENDPOINT_DOCKER="original-lake:9000"), paths)
+    with pytest.raises(ValueError, match="dataset|runtime"):
+        validate_stream_binding(binding, dict(docker_env, MINIO_SECURE="true"), paths)
 
 
 def test_generation_pins_every_sink_and_semantic_setting_before_restart(tmp_path):
