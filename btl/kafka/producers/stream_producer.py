@@ -10,6 +10,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
+from collections import deque
 from config.settings import settings
 from ingestion.identity import make_event_id
 
@@ -161,7 +162,14 @@ class StreamProducer:
         sent = 0
         self.current_batch_sent = 0
         t0 = time.perf_counter()
-        pending_futures = []
+        pending_futures = deque()
+
+        def confirm_oldest():
+            future = pending_futures.popleft()
+            try:
+                future.get(timeout=timeout_sec)
+            except Exception as error:
+                raise RuntimeError(f"Batch delivery verification failed on topic '{topic}': {error}") from error
 
         for rec in records:
             message_started = time.perf_counter()
@@ -185,6 +193,8 @@ class StreamProducer:
             )
             if not wait_now and hasattr(delivery_result, "get"):
                 pending_futures.append(delivery_result)
+                if len(pending_futures) >= 4096:
+                    confirm_oldest()
 
             sent += 1
             self.current_batch_sent = sent
@@ -200,11 +210,8 @@ class StreamProducer:
         # Flush and verify delivery of all asynchronously dispatched messages
         if self.producer and pending_futures:
             self.producer.flush()
-            for fut in pending_futures:
-                try:
-                    fut.get(timeout=timeout_sec)
-                except Exception as e:
-                    raise RuntimeError(f"Batch delivery verification failed on topic '{topic}': {e}")
+            while pending_futures:
+                confirm_oldest()
 
         duration = max(time.perf_counter() - t0, 0.001)
         actual_rate = sent / duration

@@ -230,18 +230,20 @@ def stage_2_kafka_produce_and_consume(
     TopicManager.ensure_topics(mode=effective_mode)
 
     producer = StreamProducer(enable_offline_buffer=is_local)
-    p_sent, _ = producer.produce_batch(
-        settings.kafka.topic_products, products_raw, rate=0, event_type="NEW_PRODUCT"
-    )
-    r_sent, _ = producer.produce_batch(
-        settings.kafka.topic_reviews, reviews_raw, rate=0, event_type="NEW_REVIEW"
-    )
-    pr_sent = 0
-    if prices_raw:
-        pr_sent, _ = producer.produce_batch(
-            settings.kafka.topic_prices, prices_raw, rate=0, event_type="PRICE_UPDATE"
+    try:
+        p_sent, _ = producer.produce_batch(
+            settings.kafka.topic_products, products_raw, rate=0, event_type="NEW_PRODUCT"
         )
-    producer.close()
+        r_sent, _ = producer.produce_batch(
+            settings.kafka.topic_reviews, reviews_raw, rate=0, event_type="NEW_REVIEW"
+        )
+        pr_sent = 0
+        if prices_raw:
+            pr_sent, _ = producer.produce_batch(
+                settings.kafka.topic_prices, prices_raw, rate=0, event_type="PRICE_UPDATE"
+            )
+    finally:
+        producer.close()
 
     total_sent = p_sent + r_sent + pr_sent
     expected_sent = len(products_raw) + len(reviews_raw) + len(prices_raw)

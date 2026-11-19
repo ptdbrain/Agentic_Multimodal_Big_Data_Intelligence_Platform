@@ -97,3 +97,30 @@ def test_velocity_failure_stops_consumer_and_lag_monitor_threads(monkeypatch):
             break
         time.sleep(.01)
     assert remaining == []
+
+
+def test_unpaced_producer_verifies_acks_in_bounded_ordered_batches(monkeypatch):
+    producer = StreamProducer(enable_offline_buffer=True)
+    producer.enable_offline_buffer = False
+    producer.producer = SimpleNamespace(flush=lambda: None)
+    pending = set()
+    verified = []
+    peak = 0
+
+    def send(topic, *, key, value, **kwargs):
+        nonlocal peak
+        index = value['index']
+        pending.add(index)
+        peak = max(peak, len(pending))
+
+        def ack(timeout):
+            pending.remove(index)
+            verified.append(index)
+
+        return {}, SimpleNamespace(get=ack)
+
+    monkeypatch.setattr(producer, 'send_message', send)
+    rows = [{'index': i} for i in range(10000)]
+    sent, _ = producer.produce_batch('reviews', rows, rate=0)
+    assert sent == len(rows) and verified == list(range(len(rows)))
+    assert not pending and peak <= 4096
