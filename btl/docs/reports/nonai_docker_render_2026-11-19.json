@@ -1,0 +1,42 @@
+{
+  "checked_at": "2026-11-19T14:44:52.146953+00:00",
+  "passed": true,
+  "browser": "Headless Google Chrome on the Docker staging URLs",
+  "checks": [
+    {
+      "view": "commerce",
+      "rendered_markers": [
+        "20",
+        "262"
+      ],
+      "kpi_cards": {
+        "Sản phẩm": "20",
+        "Đánh giá": "262",
+        "Điểm trung bình": "4.74",
+        "Chất lượng dữ liệu": "100.0%"
+      }
+    },
+    {
+      "view": "web",
+      "rendered_markers": [
+        "260",
+        "Thư viện bài viết"
+      ],
+      "kpi_cards": {
+        "Bài viết phù hợp": "260",
+        "Nguồn nội dung": "1",
+        "Có thời gian xuất bản": "260"
+      }
+    },
+    {
+      "view": "grafana",
+      "rendered_markers": [
+        "Kết nối SQL từng nguồn",
+        "Bản ghi theo nguồn và loại",
+        "262",
+        "260"
+      ]
+    }
+  ],
+  "boundary": "Checks served UI text and actual counts for selected views. No browser latency measurement."
+}
