@@ -281,7 +281,9 @@ def worker(output: Path) -> None:
     from serving.store import ServingStore, connect_dataset, instant
     from serving.admission import writer_transaction
     from serving.ownership import acquire_stream_owner
-    from serving.runtime import validate_stream_binding
+    from operations.migration import read_kafka_cluster_id
+    from config.settings import settings
+    from serving.runtime import stream_configuration, validate_stream_binding
     from spark.spark_session import SparkSessionFactory
     from spark.streaming.spark_streaming_job import SparkStreamingJob
     from kafka.producers.stream_producer import StreamProducer
@@ -314,13 +316,11 @@ def worker(output: Path) -> None:
         owned = True
         store.register_stream(
             generation,
-            {
-                "window_seconds": 60,
-                "watermark_seconds": 600,
-                "topic": report["namespace"]["topic"],
-                "trigger_seconds": report["trigger_seconds"],
-                **paths,
-            },
+            stream_configuration(
+                window_seconds=60, watermark_seconds=600, paths=paths, topic=report["namespace"]["topic"],
+                output_mode="update", negative_threshold=settings.analytics.sentiment_negative_threshold,
+                kafka_cluster_id=read_kafka_cluster_id(settings.kafka.bootstrap_servers),
+            ),
         )
         spark = SparkSessionFactory.get_spark_session(master=report["master"])
         spark.range(1).count()

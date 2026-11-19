@@ -3,10 +3,12 @@
 import re
 from pathlib import Path
 from urllib.parse import urlsplit
+
 from scripts.run_scheduled_backup import environment
+from serving.registry import DatasetRef
 
 
-def validate_stream_binding(binding, env: dict, paths: dict) -> None:
+def validate_stream_binding(binding: DatasetRef, env: dict[str, str], paths: dict[str, str]) -> None:
     expected = environment(binding.environment_file)
     keys = (
         ("RUNTIME_MODE", "SQLITE_DB_PATH")
@@ -54,12 +56,15 @@ def validate_stream_binding(binding, env: dict, paths: dict) -> None:
 
 def stream_configuration(
     *, window_seconds: int, watermark_seconds: int, topic: str, paths: dict[str, str],
-    output_mode: str, negative_threshold: float, kafka_source: dict | None = None,
+    output_mode: str, negative_threshold: float, kafka_cluster_id: str, kafka_source: dict | None = None,
     audit_path: str | None = None,
 ) -> dict:
     """Pin every output and checkpoint-affecting setting before constructing Spark."""
+    if not kafka_cluster_id or (kafka_source and kafka_source.get("cluster_id", kafka_cluster_id) != kafka_cluster_id):
+        raise ValueError("Kafka cluster identity differs from the stream source")
     return {
-        "serving_protocol": 2,
+        "serving_protocol": 3,
+        "kafka_cluster_id": kafka_cluster_id,
         "window_seconds": window_seconds,
         "watermark_seconds": watermark_seconds,
         "topic": topic,

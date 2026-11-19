@@ -477,6 +477,20 @@ def validate_kafka_source(source):
     return source
 
 
+def read_kafka_cluster_id(bootstrap_servers: str) -> str:
+    """Resolve the broker's persistent ID before accepting a checkpoint generation."""
+    from kafka.admin import KafkaAdminClient
+
+    admin = KafkaAdminClient(bootstrap_servers=bootstrap_servers)
+    try:
+        identity = admin.describe_cluster().get("cluster_id")
+        if not isinstance(identity, str) or not identity.strip():
+            raise ValueError("Kafka cluster identity unavailable")
+        return identity
+    finally:
+        admin.close()
+
+
 def read_kafka_bounds(source):
     """Ask the broker for every partition; missing brokers/topics fail closed."""
     from kafka import KafkaConsumer
@@ -497,12 +511,7 @@ def read_kafka_bounds(source):
             for part, offset in offsets.items():
                 result.setdefault(part.topic, {})[str(part.partition)] = offset
             return result
-        from kafka.admin import KafkaAdminClient
-        admin = KafkaAdminClient(bootstrap_servers=source['bootstrap_servers'])
-        try:
-            cluster_id = admin.describe_cluster()['cluster_id']
-        finally:
-            admin.close()
+        cluster_id = read_kafka_cluster_id(source['bootstrap_servers'])
         return {'beginning_offsets': convert(consumer.beginning_offsets(partitions)),
                 'ending_offsets': convert(consumer.end_offsets(partitions)), 'cluster_id': cluster_id}
     finally:

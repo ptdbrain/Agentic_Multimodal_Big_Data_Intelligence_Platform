@@ -79,13 +79,13 @@ def test_generation_pins_every_sink_and_semantic_setting_before_restart(tmp_path
 
     paths = {name: f's3a://fixture/{name}' for name in ('checkpoint_dir', 'output_path', 'quarantine_path')}
     base = dict(window_seconds=60, watermark_seconds=600, topic='reviews', paths=paths,
-                output_mode='update', negative_threshold=2.0)
+                output_mode='update', negative_threshold=2.0, kafka_cluster_id='original-cluster')
     s = store(tmp_path)
     s.register_stream('g', stream_configuration(**base))
     for changed in [dict(base, paths=dict(paths, quarantine_path='s3a://fixture/other')),
                     dict(base, negative_threshold=1.0), dict(base, output_mode='complete'),
-                    dict(base, audit_path='/tmp/new-audit')]:
+                    dict(base, kafka_cluster_id='replacement-cluster'), dict(base, audit_path='/tmp/new-audit')]:
         with pytest.raises(ValueError, match='configuration'):
             s.register_stream('g', stream_configuration(**changed))
-    assert stream_configuration(**base)['serving_protocol'] == 2
+    assert stream_configuration(**base)['serving_protocol'] == 3
     s.conn.close()

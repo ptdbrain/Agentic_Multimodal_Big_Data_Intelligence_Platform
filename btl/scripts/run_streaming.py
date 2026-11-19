@@ -182,6 +182,7 @@ def main():
                 runtime_args["negative_threshold"] = resolved["configuration"]["negative_threshold"]
             if owner is not None:
                 validate_stream_binding(binding, dict(os.environ), runtime_args)
+                from operations.migration import read_kafka_cluster_id
                 from serving.runtime import stream_configuration
 
                 store.register_stream(
@@ -191,6 +192,9 @@ def main():
                         watermark_seconds=simulator_duration(args.watermark, allow_zero=True),
                         topic=args.topic or settings.kafka.topic_reviews,
                         paths=runtime_args,
+                        kafka_cluster_id=read_kafka_cluster_id(
+                            resolved["kafka_source"]["bootstrap_servers"] if resolved else settings.kafka.bootstrap_servers
+                        ),
                         output_mode=runtime_args.get("output_mode", "update"),
                         negative_threshold=runtime_args.get(
                             "negative_threshold", settings.analytics.sentiment_negative_threshold),
