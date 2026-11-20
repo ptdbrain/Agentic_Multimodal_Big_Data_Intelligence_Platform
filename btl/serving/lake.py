@@ -1,6 +1,7 @@
 """Read-only per-dataset lake access. Never creates buckets or changes global settings."""
 
 import hashlib
+import io
 import json
 import tempfile
 from collections.abc import Iterator
@@ -10,6 +11,62 @@ from typing import BinaryIO
 
 from scripts.run_scheduled_backup import environment
 from serving.registry import DatasetRef
+
+
+def bronze_records(stream: BinaryIO) -> Iterator[object]:
+    """Decode a UTF-8 JSON array one record at a time, preserving JSON numeric types."""
+    text = io.TextIOWrapper(stream, encoding="utf-8")
+    decoder = json.JSONDecoder()
+    buffer = ""
+    eof = False
+
+    def read_more() -> None:
+        nonlocal buffer, eof
+        chunk = text.read(65536)
+        buffer += chunk
+        eof = not chunk
+
+    def token() -> str:
+        nonlocal buffer
+        buffer = buffer.lstrip(" \t\n\r")
+        while not buffer and not eof:
+            read_more()
+            buffer = buffer.lstrip(" \t\n\r")
+        return buffer[:1]
+
+    try:
+        if token() != "[":
+            raise ValueError("Expected Bronze record array")
+        buffer = buffer[1:]
+        if token() != "]":
+            while True:
+                while True:
+                    try:
+                        record, end = decoder.raw_decode(buffer)
+                        if end < len(buffer) and buffer[end] in ",] \t\n\r":
+                            break
+                        if eof:
+                            break
+                    except json.JSONDecodeError:
+                        if eof:
+                            raise ValueError("Invalid Bronze record") from None
+                    if len(buffer) > 20 * 1024 * 1024:
+                        raise ValueError("Oversized or invalid Bronze record")
+                    read_more()
+                buffer = buffer[end:]
+                separator = token()
+                if separator not in (",", "]"):
+                    raise ValueError("Missing Bronze record separator")
+                yield record
+                if separator == "]":
+                    break
+                buffer = buffer[1:]
+                token()
+        buffer = buffer[1:]
+        if token():
+            raise ValueError("Unexpected content after Bronze array")
+    finally:
+        text.detach()
 
 
 class DatasetLake:
@@ -57,31 +114,31 @@ class DatasetLake:
             for item in self.client.list_objects(self.binding.bucket, prefix=prefix, recursive=True):
                 yield item.object_name, item.size
 
-    def read_bytes(self, key: str, max_bytes: int = 20 * 1024 * 1024) -> bytes:
+    @contextmanager
+    def _open_object(self, key: str) -> Iterator[BinaryIO]:
         key = self._key(key)
-        if self.root:
-            path = self.root / key
-            if path.stat().st_size > max_bytes:
-                raise ValueError("Evidence object exceeds read limit")
-            return path.read_bytes()
-        response = self.client.get_object(self.binding.bucket, key)
+        stream = (self.root / key).open("rb") if self.root else self.client.get_object(self.binding.bucket, key)
         try:
-            raw = response.read(max_bytes + 1)
+            yield stream
+        finally:
+            stream.close()
+            if not self.root:
+                stream.release_conn()
+
+    def read_bytes(self, key: str, max_bytes: int = 20 * 1024 * 1024) -> bytes:
+        with self._open_object(key) as stream:
+            raw = stream.read(max_bytes + 1)
             if len(raw) > max_bytes:
                 raise ValueError("Evidence object exceeds read limit")
             return raw
-        finally:
-            response.close()
-            response.release_conn()
 
     @contextmanager
     def verified_file(self, reference: dict, *, max_bytes: int = 512 * 1024 * 1024) -> Iterator[BinaryIO]:
-        """Freeze verified evidence into a bounded private temporary file for Parquet reads."""
+        """Freeze verified evidence in a bounded private temporary file before parsing."""
         key = self._key(reference["path"])
         if type(reference["size"]) is not int or not 0 <= reference["size"] <= max_bytes:
             raise ValueError("Evidence object exceeds verified read limit")
-        stream = (self.root / key).open("rb") if self.root else self.client.get_object(self.binding.bucket, key)
-        try:
+        with self._open_object(key) as stream:
             with tempfile.TemporaryFile(mode="w+b") as target:
                 digest, size = hashlib.sha256(), 0
                 while True:
@@ -97,10 +154,6 @@ class DatasetLake:
                     raise ValueError("Evidence bytes/checksum mismatch")
                 target.seek(0)
                 yield target
-        finally:
-            stream.close()
-            if not self.root:
-                stream.release_conn()
 
     def metrics(self) -> dict[str, dict[str, int]]:
         result = {}
@@ -117,11 +170,15 @@ class DatasetLake:
         if not topic:
             raise ValueError("Dataset review topic is not configured")
         rows = []
+        if limit <= 0:
+            return rows
         for key, _ in self.objects("bronze/" + topic + "/"):
             if not key.endswith(".json"):
                 continue
-            for item in json.loads(self.read_bytes(key)):
-                rows.append(item.get("payload", item))
-                if len(rows) >= limit:
-                    return rows
+            with self._open_object(key) as stream:
+                for item in bronze_records(stream):
+                    if isinstance(item, dict):
+                        rows.append(item.get("payload", item))
+                        if len(rows) >= limit:
+                            return rows
         return rows

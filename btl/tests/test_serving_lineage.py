@@ -612,3 +612,53 @@ def test_reused_event_requires_present_business_values_and_original_currency(ent
         assert _winner_matches(dict(silver, currency='vnđ'), {}, silver, entity)
     named = dict(silver, **({'review_text':'Observed text'} if entity=='reviews' else {'product_name':'Observed phone'}))
     assert not _winner_matches(silver, {}, named, entity)
+
+
+def test_trace_large_bronze_array_past_first_twenty_mib(tmp_path):
+    from serving.lineage import stage_lineage, trace_record
+
+    store, lake, path = fixture(tmp_path)
+    padding = json.dumps({"payload": {"review_id": "other", "review_text": "x" * 8192}}).encode()
+    wanted = b'{"payload":{"review_id":"last","rating":4.5}}'
+    with path.open("wb") as stream:
+        stream.write(b"[")
+        for _ in range(2600):
+            stream.write(padding + b",")
+        stream.write(wanted + b"]")
+    with path.open("rb") as stream:
+        digest = hashlib.file_digest(stream, "sha256").hexdigest()
+    ref = {"path": "bronze/reviews/batch.json", "size": path.stat().st_size, "sha256": digest}
+    with store.conn:
+        stage_lineage(store, "large", {"run_id": "large", "bronze": [ref], "silver": [], "gold": []})
+    result = trace_record(store, lake, "large", "reviews", "last")
+    assert result["records"][0]["record_index"] == 2600
+    assert result["records"][0]["payload"]["rating"] == 4.5
+    store.conn.close()
+
+
+def test_bronze_decoder_keeps_indices_and_utf8_across_read_boundaries():
+    from io import BytesIO
+    from serving.lake import bronze_records
+
+    prefix = b"[" + b" " * 65534
+    stream = BytesIO(prefix + '12, null, {"title":"Đánh giá"}, 0.5]'.encode())
+    assert list(bronze_records(stream)) == [12, None, {"title": "Đánh giá"}, 0.5]
+    with pytest.raises(ValueError):
+        list(bronze_records(BytesIO(b'[{},]')))
+
+
+def test_pipeline_preview_reads_a_bounded_sample_from_large_bronze_objects(tmp_path):
+    from serving.lake import DatasetLake
+
+    lake = object.__new__(DatasetLake)
+    lake.root = tmp_path
+    lake.env = {"KAFKA_TOPIC_REVIEWS": "reviews"}
+    directory = tmp_path / "bronze/reviews"
+    directory.mkdir(parents=True)
+    with (directory / "batch.json").open("wb") as out:
+        out.write(b'[{"payload":{"review_id":"first"}}')
+        block = b',{"payload":{"review_id":"other","text":"' + b"x" * 8192 + b'"}}'
+        for _ in range(2600):
+            out.write(block)
+        out.write(b"]")
+    assert lake.bronze_reviews(limit=1) == [{"review_id": "first"}]

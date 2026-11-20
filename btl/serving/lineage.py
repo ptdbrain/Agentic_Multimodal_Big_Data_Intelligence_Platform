@@ -8,7 +8,7 @@ from collections.abc import Iterator, Sequence
 from pathlib import PurePosixPath
 
 from ingestion.privacy import sanitize_record_pii
-from serving.lake import DatasetLake
+from serving.lake import DatasetLake, bronze_records
 from serving.store import ServingStore, identifier, instant, now
 
 ENTITY_KEYS = {"products": "product_id", "reviews": "review_id", "prices": "price_id", "articles": "article_id"}
@@ -387,29 +387,24 @@ def trace_record(
     result = []
     for value in receipt["bronze"][object_offset : object_offset + max_objects]:
         ref = _reference(value, "bronze")
-        raw = lake.read_bytes(ref["path"])
-        if len(raw) != ref["size"] or hashlib.sha256(raw).hexdigest() != ref["sha256"]:
-            raise ValueError("Bronze object bytes/checksum mismatch")
-        records = json.loads(raw)
-        if not isinstance(records, list):
-            raise ValueError("Expected Bronze record array")
-        for index, envelope in enumerate(records):
-            payload = envelope.get("payload", envelope) if isinstance(envelope, dict) else None
-            if not isinstance(payload, dict) or str(payload.get(ENTITY_KEYS[entity], "")).strip() != record_id:
-                continue
-            if winner_ready and not _winner_matches(payload, envelope, winner, entity):
-                continue
-            result.append(
-                {
-                    "object_path": ref["path"],
-                    "object_sha256": ref["sha256"],
-                    "record_index": index,
-                    "record_sha256": hashlib.sha256(
-                        json.dumps(envelope, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
-                    ).hexdigest(),
-                    "payload": sanitize_record_pii(payload),
-                }
-            )
+        with lake.verified_file(ref) as stream:
+            for index, envelope in enumerate(bronze_records(stream)):
+                payload = envelope.get("payload", envelope) if isinstance(envelope, dict) else None
+                if not isinstance(payload, dict) or str(payload.get(ENTITY_KEYS[entity], "")).strip() != record_id:
+                    continue
+                if winner_ready and not _winner_matches(payload, envelope, winner, entity):
+                    continue
+                result.append(
+                    {
+                        "object_path": ref["path"],
+                        "object_sha256": ref["sha256"],
+                        "record_index": index,
+                        "record_sha256": hashlib.sha256(
+                            json.dumps(envelope, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+                        ).hexdigest(),
+                        "payload": sanitize_record_pii(payload),
+                    }
+                )
     truncated = len(receipt["bronze"]) > object_offset + max_objects
     return {
         "status": "verified_winner"
