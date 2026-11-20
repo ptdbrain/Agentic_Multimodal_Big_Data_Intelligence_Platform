@@ -94,6 +94,18 @@ Bộ test toàn dự án chạy tối 19/11 đạt **973 passed, 1 deselected**.
 - Trong thời gian nghiệm thu, giữ toàn bộ manifest, Silver/Gold đã ghim và các đối tượng Bronze được tham chiếu. Một đối tượng có thể phục vụ nhiều generation. Trước khi dọn phải lập danh sách tham chiếu từ mọi generation còn hỗ trợ và xác minh bản sao khôi phục.
 - Trình kiểm tra sao lưu so sánh offset Kafka với cả hai nhật ký commit của Spark và batch SQL đã xác nhận. Chạy trong khoảng bảo trì sau khi dừng driver. `python scripts/verify_stream_drain.py --deployment /private/streaming.json` trả kết quả theo sink và phân vùng.
 
+### Sao lưu chủ lịch Docker
+
+Lệnh sau đọc cấu hình private của triển khai, kiểm tra các DAG đang rảnh, tạm đóng quyền ghi, đối soát offset và xác minh lại bản sao trước khi mở lịch. `--pg-bin` trỏ đến thư mục chứa `pg_dump` và `pg_restore` tương thích PostgreSQL 16. Chạy từ thư mục `btl`.
+
+```bash
+python scripts/backup_docker_owner.py \
+  --compose-env ../.runtime/nonai-docker-private/compose.env --project sentinel-nonai \
+  --target ../.runtime/nonai-live-backups --pg-bin ../.runtime/postgresql16/bin
+```
+
+Nếu máy bị ngắt giữa lần sao lưu, giữ nguyên volume, container và cấu hình. Chạy lại lệnh với `--recover-only` để đối chiếu danh tính chủ lịch và phục hồi đúng trạng thái tạm dừng của từng DAG. Tệp `last-complete.json` trỏ đến bản sao đã xác minh. Lưu riêng cấu hình bí mật và Fernet key để giải mã metadata Airflow khi phục hồi sang máy khác.
+
 ### Theo dõi nghiệm thu
 
 `systemctl --user list-timers 'sentinel-docker-*'` hiển thị lịch sao lưu 02:00, bảo trì Kafka 03:00 và xác minh nghiệm thu ở phút 15 mỗi giờ trên máy đang triển khai. Kiểm tra từng kết quả bằng `journalctl --user -u sentinel-docker-acceptance.service`. Bộ xác minh đối chiếu run Airflow, task, checksum payload, trạng thái bao phủ và lịch sử Prometheus.
