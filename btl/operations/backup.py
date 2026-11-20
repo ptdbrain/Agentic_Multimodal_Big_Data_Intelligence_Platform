@@ -430,9 +430,6 @@ def list_backups(target):
 
 def _check_target(component, target):
     kind = component["kind"]
-    merged = dict(target, kind=kind)
-    if _identity(merged) == component["source"]:
-        raise ValueError("Restore cannot replace the source namespace")
     if kind == "directory":
         path = Path(target["path"])
         if path.exists() or path.is_symlink():
@@ -463,25 +460,31 @@ def restore_plan(backup, targets):
     manifest = verify_backup(backup)
     if set(targets) != {row["name"] for row in manifest["components"]}:
         raise ValueError("Every component requires an explicit restore target")
-    destinations = []
+    target_identities = {}
+    directories = []
+    sources = [row["source"] for row in manifest["components"]]
     for row in manifest["components"]:
-        _check_target(row, targets[row["name"]])
+        name = row["name"]
+        identity = _identity(dict(targets[name], kind=row["kind"]))
+        if identity in sources:
+            raise ValueError("Restore cannot replace a source namespace")
+        if identity in target_identities.values():
+            raise ValueError(f"Duplicate restore destination for {name}")
+        target_identities[name] = identity
         if row["kind"] == "directory":
-            destinations.append(Path(targets[row["name"]]["path"]).resolve())
-    for a in destinations:
-        for b in destinations:
+            directories.append(Path(identity["path"]))
+    for a in directories:
+        for b in directories:
             if a != b and a.is_relative_to(b):
                 raise ValueError("Restore destinations cannot overlap")
-    if len(set(destinations)) != len(destinations):
-        raise ValueError("Duplicate restore destination")
+    for row in manifest["components"]:
+        _check_target(row, targets[row["name"]])
     return {
         "schema_version": 1,
         "backup": str(Path(backup).resolve()),
         "manifest_sha256": _hash(Path(backup) / "manifest.json"),
         "targets": targets,
-        "target_identities": {
-            row["name"]: _identity(dict(targets[row["name"]], kind=row["kind"])) for row in manifest["components"]
-        },
+        "target_identities": target_identities,
     }
 
 

@@ -114,6 +114,8 @@ Nếu máy bị ngắt giữa lần sao lưu, giữ nguyên volume, container v�
 
 Sao lưu và dọn topic yêu cầu offset đã commit khớp với cuối từng partition. Partition mới có offset cuối bằng 0 có thể chưa có commit. Khi gặp `Kafka offset mismatch`, đối chiếu group, topic, partition và lịch sử phục hồi trước khi chạy lại. Kiểm thử trên broker thật bao gồm cả trường hợp Kafka chấp nhận commit vượt cuối log. [Kiểm thử tích hợp Kafka](../tests/test_kafka_drain_integration.py)
 
+Khi lập kế hoạch khôi phục, cấp database riêng cho warehouse và Airflow, cùng bucket riêng cho từng nguồn. Lúc 21:32 ngày 20/11, phép thử trên bản sao lúc 17:12 đã đối chiếu checksum của 4.078 tệp (1.569.884.039 byte). Lệnh lập kế hoạch chấp nhận tám đích riêng và từ chối cả hai cấu hình trùng đích trên PostgreSQL và MinIO. Phép thử dừng trước bước ghi dữ liệu phục hồi.
+
 ### Theo dõi nghiệm thu
 
 `systemctl --user list-timers 'sentinel-docker-*'` hiển thị lịch sao lưu 02:00, bảo trì Kafka 03:00 và xác minh nghiệm thu ở phút 15 mỗi giờ trên máy đang triển khai. Kiểm tra từng kết quả bằng `journalctl --user -u sentinel-docker-acceptance.service`. Bộ xác minh đối chiếu run Airflow, task, checksum payload, trạng thái bao phủ và lịch sử Prometheus.

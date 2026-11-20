@@ -188,3 +188,33 @@ def test_retention_apply_rechecks_inventory_and_keeps_last(tmp_path):
     with pytest.raises(ValueError, match="retention"):
         retention_apply(tmp_path / "backups", plan)
     assert backup.exists()
+
+
+@pytest.mark.parametrize("kind", ["postgres", "minio"])
+def test_restore_plan_rejects_two_components_resolving_to_one_remote_destination(tmp_path, monkeypatch, kind):
+    import operations.backup as backup_ops
+
+    for prefix in ("FIRST_", "SECOND_"):
+        monkeypatch.setenv(prefix + "DB", "restore")
+        monkeypatch.setenv(prefix + "USER", "operator")
+        monkeypatch.setenv(prefix + "ENDPOINT", "localhost:9000")
+    targets = {"a": {"env_prefix": "FIRST_"}, "b": {"env_prefix": "SECOND_"}}
+    if kind == "minio":
+        for target in targets.values():
+            target["bucket"] = "restore"
+    rows = [{"name": name, "kind": kind, "source": {}} for name in targets]
+    monkeypatch.setattr(backup_ops, "verify_backup", lambda _: {"components": rows})
+    monkeypatch.setattr(backup_ops, "_check_target", lambda *_: pytest.fail("Validate identities before accessing targets"))
+    with pytest.raises(ValueError, match="Duplicate restore destination"):
+        backup_ops.restore_plan(tmp_path, targets)
+
+
+def test_restore_cannot_reuse_another_components_source(tmp_path):
+    from operations.backup import create_backup, restore_plan
+
+    source = components(tmp_path)
+    backup = create_backup(tmp_path / "backups", source, quiet)
+    targets = {row["name"]: {"path": str(tmp_path / "restore" / row["name"])} for row in source}
+    targets["lake"]["path"] = source[0]["path"]
+    with pytest.raises(ValueError, match="source namespace"):
+        restore_plan(backup, targets)
