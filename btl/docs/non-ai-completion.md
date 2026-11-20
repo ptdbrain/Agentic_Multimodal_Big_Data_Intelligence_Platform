@@ -4,6 +4,8 @@ Docker Airflow đã nhận lịch Tiki, web và giả lập lúc **11:14:49 ngà
 
 **Chưa nghiệm thu độ ổn định.** Máy ngủ từ 14:35 đến 17:05 ngày 20/11. Hai mẫu Prometheus liên tiếp cách nhau 9.026 giây. Khoảng gián đoạn đã vượt ngân sách 43,2 phút của tiêu chí 99% trong 72 giờ đầu. Báo cáo theo giờ tiếp tục tính từ thời điểm chuyển đổi và giữ lịch sử gián đoạn. [Báo cáo đo ngày 20/11](reports/nonai_stability_interruption_2026-11-20.json)
 
+**Sự cố khởi động lại tối 20/11 (giờ Việt Nam).** Báo cáo lúc 18:15 ghi nhận độ bao phủ thấp nhất 64,13% và 0 chu kỳ theo lịch cho cả ba nguồn. Docker dừng lúc 18:23 và chạy lại lúc 21:19. Sau khi khởi động, API sức khỏe của Grafana và Streamlit trả HTTP 200, nhưng truy vấn `up` qua Grafana trả 502. Kiểm tra nguồn dữ liệu trong Grafana cho thấy Docker DNS không tìm được tên `prometheus`. Tác vụ lập báo cáo lúc 21:19 cũng bị từ chối quyền đọc Docker socket. Sau khi khôi phục, cần kiểm tra đúng volume lịch sử, bốn target `up` và một báo cáo mới tính từ mốc chuyển đổi ban đầu.
+
 ## Những phần đã triển khai
 
 - Registry kết nối trực tiếp từng dataset; lựa chọn thương mại/web độc lập theo phiên người dùng. Mỗi nguồn có snapshot SQL riêng, không đổi biến môi trường dùng chung giữa các phiên.
@@ -109,6 +111,8 @@ python scripts/backup_docker_owner.py \
 ```
 
 Nếu máy bị ngắt giữa lần sao lưu, giữ nguyên volume, container và cấu hình. Chạy lại lệnh với `--recover-only` để đối chiếu danh tính chủ lịch và phục hồi đúng trạng thái tạm dừng của từng DAG. Tệp `last-complete.json` trỏ đến bản sao đã xác minh. Lưu riêng cấu hình bí mật và Fernet key để giải mã metadata Airflow khi phục hồi sang máy khác.
+
+Sao lưu và dọn topic yêu cầu offset đã commit khớp với cuối từng partition. Partition mới có offset cuối bằng 0 có thể chưa có commit. Khi gặp `Kafka offset mismatch`, đối chiếu group, topic, partition và lịch sử phục hồi trước khi chạy lại. Kiểm thử trên broker thật bao gồm cả trường hợp Kafka chấp nhận commit vượt cuối log. [Kiểm thử tích hợp Kafka](../tests/test_kafka_drain_integration.py)
 
 ### Theo dõi nghiệm thu
 
