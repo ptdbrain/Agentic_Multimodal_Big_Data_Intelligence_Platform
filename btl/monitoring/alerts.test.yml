@@ -134,7 +134,7 @@ tests:
         source: system
         severity: critical
       exp_annotations:
-        summary: Enabled stream has no committed progress heartbeat
+        summary: Enabled stream has no recent trigger heartbeat from every sink
         runbook: docs/operations-monitoring.md#streaming
 - name: SentinelStreamNoData
   interval: 1m
@@ -578,5 +578,5 @@ tests:
         source: system
         severity: critical
       exp_annotations:
-        summary: Enabled stream has no committed progress heartbeat
+        summary: Enabled stream has no recent trigger heartbeat from every sink
         runbook: docs/operations-monitoring.md#streaming

@@ -214,6 +214,12 @@ def main():
                 topics=args.topic,
                 **source_args,
             )
+            from operations.status import OperationStatus
+            from spark.streaming.liveness import QueryHeartbeats
+
+            listener = QueryHeartbeats(q.runId for q in job.queries if q is not None)
+            job.spark.streams.addListener(listener)
+            last_heartbeat = None
             print("[Spark Streaming] Query active. Awaiting termination...")
             try:
                 # Monitor every sink; a failed quarantine/audit must stop serving.
@@ -221,6 +227,11 @@ def main():
 
                 while any(q is not None and q.isActive for q in job.queries):
                     job.observe_progress()
+                    heartbeat = listener.frontier()
+                    if heartbeat is not None and heartbeat != last_heartbeat:
+                        with OperationStatus(mode=settings.runtime_mode) as status:
+                            status.set_gauge("stream_heartbeat_timestamp", heartbeat, "streaming", "system")
+                        last_heartbeat = heartbeat
                     for active in job.queries:
                         if active is not None and active.exception():
                             raise RuntimeError(str(active.exception()))
@@ -230,7 +241,10 @@ def main():
                     if active is not None and active.exception():
                         raise RuntimeError(str(active.exception()))
             finally:
-                job.stop()
+                try:
+                    job.stop()
+                finally:
+                    job.spark.streams.removeListener(listener)
         except Exception as e:
             failed = True
             try:

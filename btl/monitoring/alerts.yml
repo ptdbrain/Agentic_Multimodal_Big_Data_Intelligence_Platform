@@ -104,7 +104,7 @@ groups:
     labels:
       severity: critical
     annotations:
-      summary: Enabled stream has no committed progress heartbeat
+      summary: Enabled stream has no recent trigger heartbeat from every sink
       runbook: docs/operations-monitoring.md#streaming
   - alert: SentinelStreamNoData
     expr: (time() - sentinel_ops_stream_progress_timestamp > 900) and on(pipeline,source)
