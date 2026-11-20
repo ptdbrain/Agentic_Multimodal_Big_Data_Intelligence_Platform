@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-11-20T04:22:38.859088+00:00",
+  "source": "generated workload in dedicated native schema/bucket/topic group",
+  "input_reviews": 100000,
+  "confirmed_reviews": 92000,
+  "bronze_pins": 5,
+  "archive_files": 9,
+  "archive_bytes": 6068294,
+  "traced_entity": "reviews",
+  "winner": "verified_winner",
+  "trace_seconds": 1.7740342510001028,
+  "record_sha256": "5571ea88ba7d7ec4c467c3f7141c395289ec5a5c2bc575378e1b0981b710d8f4",
+  "run_id": "lineage-76165ff40e274e70"
+}

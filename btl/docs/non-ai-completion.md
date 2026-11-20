@@ -1,6 +1,8 @@
 # Hoàn thiện hệ thống không dùng AI
 
-Trạng thái ngày 19/11/2026: đang triển khai. Chưa nghiệm thu toàn bộ kế hoạch. Giữ lại dữ liệu và triển khai native đang chạy; cấu hình Docker mới là môi trường staging độc lập.
+Docker Airflow đã nhận lịch Tiki, web và giả lập lúc **11:14:49 ngày 20/11/2026** (giờ Việt Nam). Scheduler native đã dừng. Ba lịch tiếp theo lần lượt là 09:00, 10:00 và 11:00 ngày 21/11. Mỗi lịch cần ba lần chạy thực tế có biên nhận xác minh. [Bằng chứng chuyển đổi](reports/nonai_live_cutover_2026-11-20.json)
+
+**Chưa nghiệm thu độ ổn định.** Máy ngủ từ 14:35 đến 17:05 ngày 20/11. Hai mẫu Prometheus liên tiếp cách nhau 9.026 giây. Khoảng gián đoạn đã vượt ngân sách 43,2 phút của tiêu chí 99% trong 72 giờ đầu. Báo cáo theo giờ tiếp tục tính từ thời điểm chuyển đổi và giữ lịch sử gián đoạn. [Báo cáo đo ngày 20/11](reports/nonai_stability_interruption_2026-11-20.json)
 
 ## Những phần đã triển khai
 
@@ -84,16 +86,19 @@ Khi container Elasticsearch dừng, SQL ghi nhận lỗi lập chỉ mục. Sau 
 
 Bộ test toàn dự án chạy tối 19/11 đạt **973 passed, 1 deselected**. Bài được tách sang môi trường Airflow LocalExecutor đạt **1 passed**. Hai lượt có lần lượt 716 và 1 cảnh báo.
 
-## Điều kiện còn thiếu trước nghiệm thu
+## Kiểm chứng sau chuyển đổi ngày 20/11
 
-1. Hai chiến dịch tải Docker đã có số đo tài nguyên. Cần kiểm tra cảnh báo khi nguồn ngừng cập nhật trên hệ thống sau chuyển đổi.
-2. Chứng nhận chi phí/quy mô truy vết trên chiến dịch lớn và xác định chính sách giữ snapshot. Winner, recipe, phân trang và đối chiếu Bronze thật đã có bằng chứng; cấu hình lịch sử không được ghi nhận vẫn để chưa xác định. Snapshot bất biến tăng dung lượng lưu trữ theo số generation.
-3. Docker đã qua phép thử crash worker gửi HTTP, khôi phục cửa sổ đang mở, xử lý hai sự kiện đến sau và thử outage Elasticsearch. Cần xác nhận sao lưu định kỳ của hệ thống chính sau chuyển đổi.
-4. Batch 10k/100k/1m × 3 đã đạt trên bản build xác định bởi fingerprint mã nguồn của từng lượt. Streaming 50/200/500 × 3 đã hoàn tất với warmup 30 giây, đo 120 giây và đối soát toàn bộ ACK/SQL/offset. Độ trễ trình duyệt đầu cuối còn chưa đo.
-5. Diễn tập drain/fence → backup → restore Docker → resume, một owner duy nhất và rollback có đối soát dữ liệu sau cutover. Không chép offset/checkpoint qua cluster Kafka khác.
-6. Hoàn tất các gate Docker còn lại. Lượt kiểm tra native sau sửa lỗi review đã đạt. Review độc lập đã nêu 5 lỗi Important (đã sửa và có regression) cùng 1 Minor về type annotation (đã bổ sung hợp đồng kiểu cho các interface serving). Sau cutover mới đo **72 giờ và 3 chu kỳ lịch thực**, không thay bằng chạy ép hoặc chỉnh thời gian.
+- Chrome đã mở trang thương mại, trang web và Grafana ba lần mỗi trang. Các thẻ số liệu hiển thị 20 sản phẩm Tiki, 262 đánh giá và 302 bài web. Thời gian từ điều hướng đến khi thấy số liệu là 0,52–1,71 giây với trình duyệt dùng lại qua các lượt. [Chín lần đọc giao diện](reports/nonai_docker_live_render_2026-11-20.json)
+- Bản sao lưu đầu tiên của Docker có tám thành phần, gồm warehouse, metadata Airflow, ba bucket, checkpoint và lịch sử thu thập. Đã phục hồi sang database, bucket và thư mục native riêng rồi xác minh checksum, trạng thái SQL và ba DAG đang tạm dừng. Khi có lần thu mới, cần tạo bản sao mới và đối soát mọi thay đổi phát sinh trước khi trả quyền chạy lịch. [Diễn tập khôi phục về native](reports/nonai_native_handback_backup-20261120T041507-bc6d9f7a59bd.json)
+- Với 100.000 đánh giá đầu vào giả lập qua pipeline có manifest, SQL nhận 92.000 đánh giá. Truy vết một đánh giá đã khớp bản ghi Bronze trong 1,77 giây. Chín snapshot benchmark Docker dùng từ 0,60 đến 57 MiB cho các bản sao Silver/Gold. Đường benchmark cũ thiếu tham chiếu Bronze nên chi phí truy vết đầy đủ được đo riêng. [Truy vết 100.000 đầu vào](reports/nonai_managed_lineage_load_2026-11-20.json) · [Dung lượng thực của chín snapshot](reports/nonai_lineage_storage_2026-11-20.json)
+- Trong thời gian nghiệm thu, giữ toàn bộ manifest, Silver/Gold đã ghim và các đối tượng Bronze được tham chiếu. Một đối tượng có thể phục vụ nhiều generation. Trước khi dọn phải lập danh sách tham chiếu từ mọi generation còn hỗ trợ và xác minh bản sao khôi phục.
+- Trình kiểm tra sao lưu so sánh offset Kafka với cả hai nhật ký commit của Spark và batch SQL đã xác nhận. Chạy trong khoảng bảo trì sau khi dừng driver. `python scripts/verify_stream_drain.py --deployment /private/streaming.json` trả kết quả theo sink và phân vùng.
 
-Backup ngoài máy và HA nhiều máy cần tài nguyên riêng; chưa được chứng nhận bởi stack một máy này.
+### Theo dõi nghiệm thu
+
+`systemctl --user list-timers 'sentinel-docker-*'` hiển thị lịch sao lưu 02:00, bảo trì Kafka 03:00 và xác minh nghiệm thu ở phút 15 mỗi giờ trên máy đang triển khai. Kiểm tra từng kết quả bằng `journalctl --user -u sentinel-docker-acceptance.service`. Bộ xác minh đối chiếu run Airflow, task, checksum payload, trạng thái bao phủ và lịch sử Prometheus.
+
+Cần ghi nhận đủ thời gian giám sát, ba chu kỳ lịch thực của từng nguồn, và đối soát bản khôi phục sau khi có dữ liệu thu mới. Nguồn web còn URL chờ hoặc lỗi sẽ được ghi nhận là thu thập một phần. Bản sao ngoài máy và HA nhiều máy nằm ngoài phạm vi chứng nhận của triển khai một máy.
 
 ## Đo streaming qua SQL
 

@@ -1,0 +1,119 @@
+{
+  "checked_at": "2026-11-20T04:14:59.747553+00:00",
+  "passed": true,
+  "browser": "Headless Google Chrome on the live Docker URLs",
+  "checks": [
+    {
+      "view": "commerce",
+      "rendered_markers": [
+        "20",
+        "262"
+      ],
+      "navigation_to_observed_dom_seconds": 1.708,
+      "kpi_cards": {
+        "Sản phẩm": "20",
+        "Đánh giá": "262",
+        "Điểm trung bình": "4.74",
+        "Chất lượng dữ liệu": "100.0%"
+      }
+    },
+    {
+      "view": "web",
+      "rendered_markers": [
+        "302",
+        "Thư viện bài viết"
+      ],
+      "navigation_to_observed_dom_seconds": 0.55,
+      "kpi_cards": {
+        "Bài viết phù hợp": "302",
+        "Nguồn nội dung": "1",
+        "Có thời gian xuất bản": "302"
+      }
+    },
+    {
+      "view": "grafana",
+      "rendered_markers": [
+        "Kết nối SQL từng nguồn",
+        "Bản ghi theo nguồn và loại",
+        "262",
+        "302"
+      ],
+      "navigation_to_observed_dom_seconds": 1.168
+    },
+    {
+      "view": "commerce",
+      "rendered_markers": [
+        "20",
+        "262"
+      ],
+      "navigation_to_observed_dom_seconds": 0.529,
+      "kpi_cards": {
+        "Sản phẩm": "20",
+        "Đánh giá": "262",
+        "Điểm trung bình": "4.74",
+        "Chất lượng dữ liệu": "100.0%"
+      }
+    },
+    {
+      "view": "web",
+      "rendered_markers": [
+        "302",
+        "Thư viện bài viết"
+      ],
+      "navigation_to_observed_dom_seconds": 1.023,
+      "kpi_cards": {
+        "Bài viết phù hợp": "302",
+        "Nguồn nội dung": "1",
+        "Có thời gian xuất bản": "302"
+      }
+    },
+    {
+      "view": "grafana",
+      "rendered_markers": [
+        "Kết nối SQL từng nguồn",
+        "Bản ghi theo nguồn và loại",
+        "262",
+        "302"
+      ],
+      "navigation_to_observed_dom_seconds": 0.575
+    },
+    {
+      "view": "commerce",
+      "rendered_markers": [
+        "20",
+        "262"
+      ],
+      "navigation_to_observed_dom_seconds": 0.522,
+      "kpi_cards": {
+        "Sản phẩm": "20",
+        "Đánh giá": "262",
+        "Điểm trung bình": "4.74",
+        "Chất lượng dữ liệu": "100.0%"
+      }
+    },
+    {
+      "view": "web",
+      "rendered_markers": [
+        "302",
+        "Thư viện bài viết"
+      ],
+      "navigation_to_observed_dom_seconds": 1.023,
+      "kpi_cards": {
+        "Bài viết phù hợp": "302",
+        "Nguồn nội dung": "1",
+        "Có thời gian xuất bản": "302"
+      }
+    },
+    {
+      "view": "grafana",
+      "rendered_markers": [
+        "Kết nối SQL từng nguồn",
+        "Bản ghi theo nguồn và loại",
+        "262",
+        "302"
+      ],
+      "navigation_to_observed_dom_seconds": 0.592
+    }
+  ],
+  "boundary": "Checks served UI text and actual counts for selected views. Navigation until all expected DOM markers were observed, including up to 0.5 seconds polling delay. Same browser reused across three visits per page. Independent of enqueue-to-SQL latency."
+}

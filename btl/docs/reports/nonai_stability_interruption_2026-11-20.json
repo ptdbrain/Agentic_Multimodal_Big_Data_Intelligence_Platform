@@ -1,0 +1,45 @@
+{
+  "checked_at": "2026-11-20T10:07:36.217100+00:00",
+  "window": {
+    "accepted": false,
+    "operational_acceptance": false,
+    "elapsed_hours": 5.879728971111111,
+    "earliest_review_at": "2026-11-23T04:14:49.192804+00:00",
+    "scheduled_cycles_verified": {
+      "tiki": 0,
+      "web": 0,
+      "simulation": 0
+    },
+    "failed_scheduled_runs": 0,
+    "partial_scheduled_runs": 0,
+    "monitoring_sample_coverage": 0.5750708215297451,
+    "required_monitoring_sample_coverage": 0.99,
+    "boundary": "At least72 real elapsed hours and3successful scheduled cycles per source, verified durable receipts, >=99% observed up samples, no failed runs. Partial collection remains a separate acceptance gap. Manual runs never count; sampled availability is not proof of multi-host HA.",
+    "monitoring_coverage_by_job": {
+      "sentinel-metrics": 0.5779036827195467,
+      "sentinel-dependencies": 0.5779036827195467,
+      "sentinel-operations": 0.5750708215297451,
+      "sentinel-datasets": 0.5779036827195467
+    },
+    "checked_at": "2026-11-20T10:07:36.217100+00:00",
+    "runs": []
+  },
+  "host_suspend": {
+    "suspend_local": "2026-11-20T14:35:12+07:00",
+    "resume_local": "2026-11-20T17:05:24+07:00",
+    "systemd_unit": "systemd-suspend.service",
+    "cause_observed": "systemd-logind recorded Lid closed followed by Suspending"
+  },
+  "permitted_missing_minutes_first_72h": 43.2,
+  "monitoring": {
+    "previous_sample_utc": "2026-11-20T07:35:08.692000+00:00",
+    "next_sample_utc": "2026-11-20T10:05:34.690000+00:00",
+    "interval_seconds": 9025.998000144958,
+    "targets": {
+      "sentinel-datasets": "up",
+      "sentinel-dependencies": "up",
+      "sentinel-metrics": "up",
+      "sentinel-operations": "up"
+    }
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "checked_at": "2026-11-20T04:16:49.241607+00:00",
+  "runs": [
+    {
+      "run_id": "10d582ca-0b62-452b-8d7b-816fc3f37cb5",
+      "input_reviews": 10000,
+      "pinned_silver_gold_files": 7,
+      "verified_archive_bytes": 628773,
+      "read_and_hash_seconds": 0.012,
+      "published_bronze_references": 0,
+      "ancestry_status": "unknown"
+    },
+    {
+      "run_id": "4691c3fc-5d3e-439f-bf4e-57adb69cbce0",
+      "input_reviews": 10000,
+      "pinned_silver_gold_files": 7,
+      "verified_archive_bytes": 628096,
+      "read_and_hash_seconds": 0.01,
+      "published_bronze_references": 0,
+      "ancestry_status": "unknown"
+    },
+    {
+      "run_id": "51b40988-3cd1-4d8d-8d8c-4b21f84a71c6",
+      "input_reviews": 10000,
+      "pinned_silver_gold_files": 7,
+      "verified_archive_bytes": 628970,
+      "read_and_hash_seconds": 0.01,
+      "published_bronze_references": 0,
+      "ancestry_status": "unknown"
+    },
+    {
+      "run_id": "8067b5b1-4b97-4079-bdd3-9656bb3eed24",
+      "input_reviews": 100000,
+      "pinned_silver_gold_files": 10,
+      "verified_archive_bytes": 6085631,
+      "read_and_hash_seconds": 0.03,
+      "published_bronze_references": 0,
+      "ancestry_status": "unknown"
+    },
+    {
+      "run_id": "b2b86bd7-6a0f-4558-a858-8aa9c9335a35",
+      "input_reviews": 100000,
+      "pinned_silver_gold_files": 10,
+      "verified_archive_bytes": 6088777,
+      "read_and_hash_seconds": 0.033,
+      "published_bronze_references": 0,
+      "ancestry_status": "unknown"
+    },
+    {
+      "run_id": "04d84c29-2ff3-45f3-ba3c-d587f0161768",
+      "input_reviews": 100000,
+      "pinned_silver_gold_files": 10,
+      "verified_archive_bytes": 6105954,
+      "read_and_hash_seconds": 0.026,
+      "published_bronze_references": 0,
+      "ancestry_status": "unknown"
+    },
+    {
+      "run_id": "8bcd5407-4a6d-4cdd-ad54-f2e8d386e7e0",
+      "input_reviews": 1000000,
+      "pinned_silver_gold_files": 13,
+      "verified_archive_bytes": 59755582,
+      "read_and_hash_seconds": 0.106,
+      "published_bronze_references": 0,
+      "ancestry_status": "unknown"
+    },
+    {
+      "run_id": "ead48f68-dfbc-4712-a53a-16282e1327d1",
+      "input_reviews": 1000000,
+      "pinned_silver_gold_files": 13,
+      "verified_archive_bytes": 59629490,
+      "read_and_hash_seconds": 0.105,
+      "published_bronze_references": 0,
+      "ancestry_status": "unknown"
+    },
+    {
+      "run_id": "d980056f-9b20-4c02-981d-ce22ab29a424",
+      "input_reviews": 1000000,
+      "pinned_silver_gold_files": 13,
+      "verified_archive_bytes": 59651683,
+      "read_and_hash_seconds": 0.088,
+      "published_bronze_references": 0,
+      "ancestry_status": "unknown"
+    }
+  ],
+  "boundary": "Sequential MinIO read and SHA-256 verification from the host against the nine retained Docker benchmark snapshots. Times include object reads and hashing, exclude publication writes, SQL and UI. The old benchmark bypassed the managed run manifest, so no raw ancestors were pinned in these receipts."
+}
