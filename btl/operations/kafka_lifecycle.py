@@ -8,6 +8,11 @@ from config.settings import settings
 from database.warehouse import WarehouseManager
 
 
+def partition_drained(committed: int | None, end: int) -> bool:
+    """A new partition can be empty before its group has a first commit."""
+    return end == 0 if committed is None else committed == end
+
+
 def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
@@ -193,10 +198,17 @@ class KafkaMaintenance:
         parts = self.consumer.partitions_for_topic(topic)
         if parts is None:
             return topic not in self.admin.list_topics()
+        if not parts:
+            return False
         partitions = [TopicPartition(topic, p) for p in parts]
         ends = self.consumer.end_offsets(partitions)
         offsets = self.admin.list_group_offsets(group)[group]
-        return all(ends[p] == 0 or (p in offsets and offsets[p].offset >= ends[p]) for p in partitions)
+        for partition in partitions:
+            offset = offsets.get(partition)
+            committed = offset.offset if offset is not None else None
+            if partition not in ends or not partition_drained(committed, ends[partition]):
+                return False
+        return True
 
     def delete(self, topic, group):
         if topic in self.admin.list_topics():

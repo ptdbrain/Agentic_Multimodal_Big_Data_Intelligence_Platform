@@ -586,6 +586,7 @@ def kafka_drain_state(bootstrap_servers, groups, topics):
     """Check committed offsets only after admission is fenced and writers stopped."""
     from kafka import KafkaConsumer
     from kafka.structs import TopicPartition
+    from operations.kafka_lifecycle import partition_drained
 
     if not groups or not topics:
         raise ValueError("Explicit Kafka groups and topics are required for drain verification")
@@ -596,14 +597,17 @@ def kafka_drain_state(bootstrap_servers, groups, topics):
             positions = []
             for topic in topics:
                 partitions = consumer.partitions_for_topic(topic)
-                if partitions is None:
-                    raise ValueError("Drain topic does not exist")
+                if not partitions:
+                    raise ValueError(f"No partitions available for drain verification of {topic}")
                 positions.extend(TopicPartition(topic, partition) for partition in partitions)
             ends = consumer.end_offsets(positions)
+            if set(ends) != set(positions):
+                raise ValueError("Kafka did not return every requested partition end")
             for position, end in ends.items():
                 committed = consumer.committed(position)
-                if (committed is None and end != 0) or (committed is not None and committed < end):
-                    raise ValueError("Kafka has unarchived or uncommitted records; drain before backup")
+                if not partition_drained(committed, end):
+                    raise ValueError(f"Kafka offset mismatch for {group}/{position.topic}/{position.partition}: "
+                                     f"committed={committed}, end={end}")
                 offsets[f"{group}/{position.topic}/{position.partition}"] = {"committed": committed, "end": end}
         finally:
             consumer.close()

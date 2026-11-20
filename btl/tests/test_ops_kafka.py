@@ -111,3 +111,28 @@ def test_real_adapter_accepts_empty_partition_and_checks_group_delete_result():
     broker.admin.delete_groups = lambda groups: {"g": "GroupAuthorizationFailedError"}
     with pytest.raises(RuntimeError):
         broker.delete(partition.topic, "g")
+
+
+def test_partial_partition_metadata_cannot_authorize_backup_or_cleanup(monkeypatch):
+    from types import SimpleNamespace
+    from kafka.structs import TopicPartition
+    from operations.backup import kafka_drain_state
+    from operations.kafka_lifecycle import KafkaMaintenance
+
+    topic = article_topic("incomplete-metadata")
+    consumer = SimpleNamespace(
+        partitions_for_topic=lambda _: {0, 1},
+        end_offsets=lambda _: {TopicPartition(topic, 0): 0},
+        committed=lambda _: None,
+        close=lambda: None,
+    )
+    monkeypatch.setattr("kafka.KafkaConsumer", lambda **kwargs: consumer)
+    with pytest.raises(ValueError, match="every requested partition"):
+        kafka_drain_state("broker", ["group"], [topic])
+    broker = KafkaMaintenance.__new__(KafkaMaintenance)
+    broker.consumer = consumer
+    broker.admin = SimpleNamespace(
+        describe_groups=lambda _: {"group": {"group_state": "Empty"}},
+        list_group_offsets=lambda _: {"group": {}},
+    )
+    assert not broker.safe(topic, "group")
