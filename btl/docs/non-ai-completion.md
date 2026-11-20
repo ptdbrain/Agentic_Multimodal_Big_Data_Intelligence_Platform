@@ -94,6 +94,10 @@ Bộ test toàn dự án chạy tối 19/11 đạt **973 passed, 1 deselected**.
 - Trong thời gian nghiệm thu, giữ toàn bộ manifest, Silver/Gold đã ghim và các đối tượng Bronze được tham chiếu. Một đối tượng có thể phục vụ nhiều generation. Trước khi dọn phải lập danh sách tham chiếu từ mọi generation còn hỗ trợ và xác minh bản sao khôi phục.
 - Trình kiểm tra sao lưu so sánh offset Kafka với cả hai nhật ký commit của Spark và batch SQL đã xác nhận. Chạy trong khoảng bảo trì sau khi dừng driver. `python scripts/verify_stream_drain.py --deployment /private/streaming.json` trả kết quả theo sink và phân vùng.
 
+Bộ kiểm thử ngày 20/11 đạt **982 passed, 1 deselected** trong môi trường ứng dụng và **1 passed** trong môi trường Airflow. Lượt đầu có hai lỗi kết nối đến dịch vụ Elasticsearch dành cho kiểm thử. Sau khi khởi động lại đúng cụm kiểm thử, cả bộ đạt. Các kiểm tra mới về tính toàn vẹn biên nhận và phạm vi sao lưu đã chạy riêng. [Kết quả kiểm thử](reports/nonai_validation_2026-11-20.json)
+
+Trong mạng Docker cô lập, Prometheus đọc số liệu từ bản sao lưu chứa thời điểm thu quá 26 giờ. Alertmanager đã chuyển cảnh báo nguồn quá hạn đến webhook cho cả ba nguồn. Khi đọc bản sao mới hơn, cả ba đều gửi thông báo phục hồi. [Thời điểm cảnh báo và phục hồi](reports/nonai_source_stale_delivery_2026-11-20.json)
+
 ### Sao lưu chủ lịch Docker
 
 Lệnh sau đọc cấu hình private của triển khai, kiểm tra các DAG đang rảnh, tạm đóng quyền ghi, đối soát offset và xác minh lại bản sao trước khi mở lịch. `--pg-bin` trỏ đến thư mục chứa `pg_dump` và `pg_restore` tương thích PostgreSQL 16. Chạy từ thư mục `btl`.

@@ -1,0 +1,32 @@
+{
+  "verified": true,
+  "checked_at": "2026-11-20T10:14:14.187333+00:00",
+  "rule": "SentinelSourceStale",
+  "production_threshold_seconds": 93600,
+  "source_capture_utc": {
+    "tiki": {
+      "old": "2026-11-19T02:55:20.606980+00:00",
+      "recent": "2026-11-20T03:56:05.079600+00:00"
+    },
+    "web": {
+      "old": "2026-11-19T03:04:01.314550+00:00",
+      "recent": "2026-11-20T03:58:54.710170+00:00"
+    },
+    "simulation": {
+      "old": "2026-11-19T04:00:02.165440+00:00",
+      "recent": "2026-11-20T04:00:01.499720+00:00"
+    }
+  },
+  "webhook_firing_received_at": {
+    "web": "2026-11-20T10:09:13.076132+00:00",
+    "simulation": "2026-11-20T10:09:13.076569+00:00",
+    "tiki": "2026-11-20T10:09:13.076922+00:00"
+  },
+  "webhook_resolved_received_at": {
+    "web": "2026-11-20T10:14:13.077103+00:00",
+    "tiki": "2026-11-20T10:14:13.077511+00:00",
+    "simulation": "2026-11-20T10:14:13.077843+00:00"
+  },
+  "rule_file_sha256": "6394548be6839dd956a37348f683731744644f8e3006f02f0deadff6e48bcb9f",
+  "boundary": "A separate Docker network replayed exporter metrics from two verified native snapshots. Real capture timestamps, system clock, production rule, scrape/evaluation timers and Alertmanager webhook configuration; live capture jobs continued independently."
+}

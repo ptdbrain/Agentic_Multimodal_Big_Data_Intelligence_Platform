@@ -1,0 +1,39 @@
+{
+  "checked_at": "2026-11-20T10:16:51.809319+00:00",
+  "test_runs": {
+    "initial": "2 failed, 980 passed, 1 deselected, 716 warnings in 546.06s (0:09:06)",
+    "project": "982 passed, 1 deselected, 716 warnings in 566.12s (0:09:26)",
+    "airflow": "1 passed, 1 warning in 59.73s"
+  },
+  "initial_failure": "Native Elasticsearch test listener on 127.0.0.1:29200 was stopped after the host restarted. Restored the same test cluster and data directory before rerunning the project suite.",
+  "additional_targeted_tests": {
+    "source_acceptance": 4,
+    "docker_owner_backup_and_related": 21
+  },
+  "latest_acceptance": {
+    "accepted": false,
+    "operational_acceptance": false,
+    "elapsed_hours": 6.027183408611111,
+    "earliest_review_at": "2026-11-23T04:14:49.192804+00:00",
+    "scheduled_cycles_verified": {
+      "tiki": 0,
+      "web": 0,
+      "simulation": 0
+    },
+    "failed_scheduled_runs": 0,
+    "unverified_successful_scheduled_runs": 0,
+    "partial_scheduled_runs": 0,
+    "monitoring_sample_coverage": 0.5828729281767956,
+    "required_monitoring_sample_coverage": 0.99,
+    "boundary": "At least72 real elapsed hours and3successful scheduled cycles per source, verified durable receipts, >=99% observed up samples, no failed runs. Partial collection remains a separate acceptance gap. Manual runs never count; sampled availability is not proof of multi-host HA.",
+    "monitoring_coverage_by_job": {
+      "sentinel-metrics": 0.5883977900552486,
+      "sentinel-dependencies": 0.5883977900552486,
+      "sentinel-operations": 0.5828729281767956,
+      "sentinel-datasets": 0.5883977900552486
+    },
+    "checked_at": "2026-11-20T10:16:27.053075+00:00",
+    "runs": []
+  },
+  "boundary": "The project suite used its own database schema, Kafka namespace and MinIO bucket. Airflow ran separately in its supported environment. The portable backup and additional receipt checks landed after collection and were tested separately."
+}
