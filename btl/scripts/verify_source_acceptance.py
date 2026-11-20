@@ -22,11 +22,16 @@ def assess(jobs, start, now, runs, monitoring_coverage):
     }
     failures = [row for row in runs if row["run_type"] == "scheduled" and row["state"] == "failed"]
     partial = [row for row in runs if row["run_type"] == "scheduled" and row.get("coverage") == "partial"]
+    unverified = [
+        row for row in runs
+        if row["run_type"] == "scheduled" and row["state"] == "success" and not row["receipt_verified"]
+    ]
     operational = (
         elapsed >= 72 * 3600
         and bool(counts)
         and all(count >= 3 for count in counts.values())
         and not failures
+        and not unverified
         and monitoring_coverage >= 0.99
     )
     return {
@@ -36,6 +41,7 @@ def assess(jobs, start, now, runs, monitoring_coverage):
         "earliest_review_at": (start + timedelta(hours=72)).isoformat(),
         "scheduled_cycles_verified": counts,
         "failed_scheduled_runs": len(failures),
+        "unverified_successful_scheduled_runs": len(unverified),
         "partial_scheduled_runs": len(partial),
         "monitoring_sample_coverage": monitoring_coverage,
         "required_monitoring_sample_coverage": 0.99,

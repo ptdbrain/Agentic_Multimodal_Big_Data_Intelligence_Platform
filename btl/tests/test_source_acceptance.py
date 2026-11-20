@@ -53,3 +53,17 @@ def test_acceptance_requires_distinct_runs_and_a_nonempty_owner_set():
            "state": "success", "receipt_verified": True, "coverage": "complete"}
     assert not assess(["web"], start, end, [run] * 3, 1)["accepted"]
     assert not assess([], start, end, [], 1)["accepted"]
+
+
+def test_three_verified_cycles_cannot_hide_an_additional_corrupt_scheduled_receipt():
+    from scripts.verify_source_acceptance import assess
+
+    start = datetime(2026, 11, 12, tzinfo=timezone.utc)
+    runs = [
+        {"job": "web", "run_type": "scheduled", "run_id": f"scheduled__{i}", "state": "success",
+         "receipt_verified": i < 3, "coverage": "complete"}
+        for i in range(4)
+    ]
+    result = assess(["web"], start, start + timedelta(days=4), runs, 1)
+    assert not result["accepted"]
+    assert result["unverified_successful_scheduled_runs"] == 1
