@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "checked_at": "2026-11-19T15:00:52.849908+00:00",
+  "dataset_id": "es-gate-2c9c9572752a",
+  "source_group": "simulation",
+  "healthy_docker_container_stopped_and_restarted": true,
+  "transport_error": "ConnectionError",
+  "failed_job_persisted": true,
+  "old_alias_survived_restart": true,
+  "products_before_retry": 2,
+  "products_after_retry": 3,
+  "found_recovered_document": "p3",
+  "recovered_projection_jobs": 2,
+  "repeat_jobs": 0
+}

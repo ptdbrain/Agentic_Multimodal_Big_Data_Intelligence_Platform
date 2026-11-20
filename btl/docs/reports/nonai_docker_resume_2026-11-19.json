@@ -1,0 +1,74 @@
+{
+  "checked_at": "2026-11-19T15:00:57.116578+00:00",
+  "fixture_source_group": "simulation",
+  "backup_snapshot_at": "2026-11-19T14:59:34.432579+00:00",
+  "restore": {
+    "verified": true,
+    "components": [
+      "warehouse",
+      "airflow",
+      "docker-tiki",
+      "docker-web",
+      "docker-simulation",
+      "recovery-830f54b3c236",
+      "checkpoint_inventory",
+      "registry",
+      "migrated_native"
+    ],
+    "sql_fingerprint_versions": {
+      "warehouse": 2,
+      "airflow": 2
+    },
+    "manifest_sha256": "b9d40521c0281a640d4ed63ed56a6e0001fb0449b85b8f271807117853c34569",
+    "same_logical_buckets_distinct_endpoint": true
+  },
+  "kafka_cluster_retained": true,
+  "quiescence": {
+    "writers_stopped": true,
+    "drained": true
+  },
+  "source_run": {
+    "broker_cluster": "Some(5L6g3nShT-eMCtK--X86sw)",
+    "acknowledged_total": 45,
+    "sql_reviews": 45,
+    "frontier_window_count": 1,
+    "kafka_end_offsets": {
+      "window": 45,
+      "quarantine": 45
+    },
+    "confirmed_firing_alerts": 2,
+    "dataset_id": "recovery-830f54b3c236",
+    "generation": "docker-830f54b3c236"
+  },
+  "source_crash": {
+    "pending_notifications": 2,
+    "durable_receipts_before_response": 1
+  },
+  "restored_run": {
+    "broker_cluster": "Some(5L6g3nShT-eMCtK--X86sw)",
+    "acknowledged_total": 47,
+    "sql_reviews": 47,
+    "frontier_window_count": 3,
+    "kafka_end_offsets": {
+      "window": 47,
+      "quarantine": 47
+    },
+    "confirmed_firing_alerts": 2,
+    "dataset_id": "recovery-830f54b3c236",
+    "generation": "docker-830f54b3c236"
+  },
+  "restored_deliver": {
+    "unique_receipts": 2,
+    "sql_delivered": 2,
+    "redundant_delivery_attempts_after_ack": 0
+  },
+  "source_after_drill": {
+    "review_count": 45,
+    "pending_notifications": 2
+  },
+  "restored_after_drill": {
+    "review_count": 47,
+    "pending_notifications": 0
+  },
+  "passed": true
+}

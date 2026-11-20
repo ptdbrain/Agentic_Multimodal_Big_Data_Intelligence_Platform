@@ -76,11 +76,19 @@ Mỗi lượt sử dụng nguồn giả lập có checksum, database, topic và 
 
 Cả 9 lượt đã drain đến hết offset của từng phân vùng. Tổng cộng 337.289 đánh giá giả lập được Kafka xác nhận và PostgreSQL ghi nhận, gồm cả thời gian làm nóng. Đỉnh tổng bộ nhớ container quan sát được là 7,76 GiB qua 324 mẫu cgroup. [Kết quả từng lượt và phạm vi đo tài nguyên](reports/nonai_docker_stream_matrix_2026-11-19.json)
 
+### Khôi phục và phát lại trên Docker
+
+Ngày 19/11, nhóm kiểm thử đã dừng tiến trình gửi cảnh báo sau khi receiver ghi bền vững thông báo đầu tiên và trước khi PostgreSQL nhận xác nhận. Bản sao lưu gồm hai database, bốn bucket và ba thư mục. Sau khi khôi phục sang hai database mới và một MinIO riêng, cả hai đầu ra Spark đọc tiếp từ offset 45 lên 47. Kho gốc vẫn có 45 đánh giá và hai thông báo chờ. Bản khôi phục ghi nhận đúng hai khóa thông báo duy nhất, lần gửi lại sau đó xử lý 0 mục. [Bằng chứng khôi phục và chạy tiếp](reports/nonai_docker_resume_2026-11-19.json)
+
+Khi container Elasticsearch dừng, SQL ghi nhận lỗi lập chỉ mục. Sau khi container khởi động lại, alias cũ vẫn trả hai sản phẩm. Worker xử lý lại hai tác vụ, tìm thấy sản phẩm thứ ba và lần chạy tiếp theo xử lý 0 tác vụ. Phép thử dùng dataset giả lập riêng. [Bằng chứng sự cố Elasticsearch](reports/nonai_docker_search_outage_2026-11-19.json)
+
+Bộ test toàn dự án chạy tối 19/11 đạt **973 passed, 1 deselected**. Bài được tách sang môi trường Airflow LocalExecutor đạt **1 passed**. Hai lượt có lần lượt 716 và 1 cảnh báo.
+
 ## Điều kiện còn thiếu trước nghiệm thu
 
 1. Hai chiến dịch tải Docker đã có số đo tài nguyên. Cần kiểm tra cảnh báo khi nguồn ngừng cập nhật trên hệ thống sau chuyển đổi.
 2. Chứng nhận chi phí/quy mô truy vết trên chiến dịch lớn và xác định chính sách giữ snapshot. Winner, recipe, phân trang và đối chiếu Bronze thật đã có bằng chứng; cấu hình lịch sử không được ghi nhận vẫn để chưa xác định. Snapshot bất biến tăng dung lượng lưu trữ theo số generation.
-3. Mở rộng thử crash cảnh báo sang PostgreSQL/Docker; kiểm tra bảo trì/khôi phục khi worker đang ghi và lặp lại late-update toàn tuyến trong Docker. Thử outage ES native và crash worker với SQLite đã đạt, cần lặp lại trong staging Docker.
+3. Docker đã qua phép thử crash worker gửi HTTP, khôi phục cửa sổ đang mở, xử lý hai sự kiện đến sau và thử outage Elasticsearch. Cần xác nhận sao lưu định kỳ của hệ thống chính sau chuyển đổi.
 4. Batch 10k/100k/1m × 3 đã đạt trên bản build xác định bởi fingerprint mã nguồn của từng lượt. Streaming 50/200/500 × 3 đã hoàn tất với warmup 30 giây, đo 120 giây và đối soát toàn bộ ACK/SQL/offset. Độ trễ trình duyệt đầu cuối còn chưa đo.
 5. Diễn tập drain/fence → backup → restore Docker → resume, một owner duy nhất và rollback có đối soát dữ liệu sau cutover. Không chép offset/checkpoint qua cluster Kafka khác.
 6. Hoàn tất các gate Docker còn lại. Lượt kiểm tra native sau sửa lỗi review đã đạt. Review độc lập đã nêu 5 lỗi Important (đã sửa và có regression) cùng 1 Minor về type annotation (đã bổ sung hợp đồng kiểu cho các interface serving). Sau cutover mới đo **72 giờ và 3 chu kỳ lịch thực**, không thay bằng chạy ép hoặc chỉnh thời gian.
