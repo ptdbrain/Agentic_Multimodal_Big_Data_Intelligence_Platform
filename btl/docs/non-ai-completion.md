@@ -4,7 +4,9 @@ Docker Airflow đã nhận lịch Tiki, web và giả lập lúc **11:14:49 ngà
 
 **Chưa nghiệm thu độ ổn định.** Máy ngủ từ 14:35 đến 17:05 ngày 20/11. Hai mẫu Prometheus liên tiếp cách nhau 9.026 giây. Khoảng gián đoạn đã vượt ngân sách 43,2 phút của tiêu chí 99% trong 72 giờ đầu. Báo cáo theo giờ tiếp tục tính từ thời điểm chuyển đổi và giữ lịch sử gián đoạn. [Báo cáo đo ngày 20/11](reports/nonai_stability_interruption_2026-11-20.json)
 
-**Sự cố khởi động lại tối 20/11 (giờ Việt Nam).** Báo cáo lúc 18:15 ghi nhận độ bao phủ thấp nhất 64,13% và 0 chu kỳ theo lịch cho cả ba nguồn. Docker dừng lúc 18:23 và chạy lại lúc 21:19. Sau khi khởi động, API sức khỏe của Grafana và Streamlit trả HTTP 200, nhưng truy vấn `up` qua Grafana trả 502. Kiểm tra nguồn dữ liệu trong Grafana cho thấy Docker DNS không tìm được tên `prometheus`. Tác vụ lập báo cáo lúc 21:19 cũng bị từ chối quyền đọc Docker socket. Sau khi khôi phục, cần kiểm tra đúng volume lịch sử, bốn target `up` và một báo cáo mới tính từ mốc chuyển đổi ban đầu.
+**Sự cố khởi động lại tối 20/11 (giờ Việt Nam).** Báo cáo lúc 18:15 ghi nhận độ bao phủ thấp nhất 64,13% và 0 chu kỳ theo lịch cho cả ba nguồn. Docker dừng lúc 18:23 và chạy lại lúc 21:19. Sau khi khởi động, API sức khỏe của Grafana và Streamlit trả HTTP 200, nhưng truy vấn `up` qua Grafana trả 502. Kiểm tra nguồn dữ liệu trong Grafana cho thấy Docker DNS không tìm được tên `prometheus`. Tác vụ lập báo cáo lúc 21:19 cũng bị từ chối quyền đọc Docker socket. Prometheus hoạt động lại lúc 21:56 trên volume lịch sử. Grafana xác nhận cả bốn target `up`. Hai mẫu liên tiếp của `sentinel-operations` cách nhau 3 giờ 33 phút 19 giây.
+
+Báo cáo lúc 21:59 cho thấy độ bao phủ từ mốc chuyển đổi đạt 43,57%. Một cửa sổ đo bổ sung bắt đầu lúc **21:58:49 ngày 20/11** sau khi hoàn tất sao lưu và kiểm tra hai query Spark đang chạy. Hệ thống lập báo cáo riêng cho cả hai cửa sổ ở phút 15 mỗi giờ. Cửa sổ bổ sung đủ 72 giờ lúc **21:58:49 ngày 23/11** và vẫn cần ba chu kỳ theo lịch có biên nhận hợp lệ cho từng nguồn. [Kết quả khôi phục và sao lưu](reports/nonai_monitoring_recovery_2026-11-20.json)
 
 ## Những phần đã triển khai
 

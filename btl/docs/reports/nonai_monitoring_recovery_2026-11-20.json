@@ -1,0 +1,73 @@
+{
+  "checked_at": "2026-11-20T15:00:37.142986+00:00",
+  "prometheus_volume": "sentinel-nonai_prometheus_data",
+  "live_targets": {
+    "sentinel-datasets": "up",
+    "sentinel-dependencies": "up",
+    "sentinel-metrics": "up",
+    "sentinel-operations": "up"
+  },
+  "reboot_scrape_gap": {
+    "job": "sentinel-operations",
+    "last_before": "2026-11-20T11:23:11.351000+00:00",
+    "first_after": "2026-11-20T14:56:30.351000+00:00",
+    "interval_seconds": 12799.0
+  },
+  "active_service_count": 20,
+  "container_memory_caps_gib": 15.0625,
+  "active_spark_query_ids": [
+    "04c07d7c-c078-4e19-b7df-4dc591d41661",
+    "97df958b-96e7-4e1c-8a89-dd5f21e77175"
+  ],
+  "datasets_image": "sha256:1bc2d3b65317ca6c97e0bfbf3b050901c9c67b886194f04dbd45ab0c8da5ac2e",
+  "datasets_code_sha256": {
+    "operations/backup.py": "2c3fee2f5de36ec591f710acefd51e31a4f6b351600b1af4f5e20e94b258654c",
+    "operations/kafka_lifecycle.py": "6639d3d8977069e0c40c5b840ba4d320827a6e1d94840219bb680f22cd693e4a"
+  },
+  "focused_pytest_in_datasets_container": {
+    "passed": 29,
+    "warnings": 218,
+    "seconds": 2.78,
+    "real_kafka_included": true
+  },
+  "backup": {
+    "id": "20261120T145745-d474ed3feb49",
+    "snapshot_at": "2026-11-20T14:57:45.224295+00:00",
+    "verified_components": 8,
+    "verified_files": 4082,
+    "manifest_sha256": "b1b473785505283766cb02472841dfaca30917d60737e06fb843e70aeb81d82c",
+    "drained": true
+  },
+  "original_start": "2026-11-20T04:14:49.192804+00:00",
+  "post_recovery_start": "2026-11-20T14:58:49.266089+00:00",
+  "observations": {
+    "cutover": {
+      "accepted": false,
+      "checked_at": "2026-11-20T14:59:13.973854+00:00",
+      "elapsed_hours": 10.740216958333333,
+      "scheduled_cycles_verified": {
+        "tiki": 0,
+        "web": 0,
+        "simulation": 0
+      },
+      "monitoring_sample_coverage": 0.4356589147286822,
+      "earliest_review_at": "2026-11-23T04:14:49.192804+00:00",
+      "failed_scheduled_runs": 0,
+      "partial_scheduled_runs": 0
+    },
+    "post_recovery": {
+      "accepted": false,
+      "checked_at": "2026-11-20T14:59:15.116574+00:00",
+      "elapsed_hours": 0.007180690277777777,
+      "scheduled_cycles_verified": {
+        "tiki": 0,
+        "web": 0,
+        "simulation": 0
+      },
+      "monitoring_sample_coverage": 1.0,
+      "earliest_review_at": "2026-11-23T14:58:49.266089+00:00",
+      "failed_scheduled_runs": 0,
+      "partial_scheduled_runs": 0
+    }
+  }
+}
