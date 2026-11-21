@@ -39,6 +39,20 @@ def _dates(values):
     return pd.to_datetime(values, errors="coerce", utc=True, format="mixed").dt.floor("D")
 
 
+def article_source_breakdown(articles: pd.DataFrame) -> pd.DataFrame:
+    """Summarize exactly the library rows selected by the reader."""
+    labels = _column(articles, "source_name").astype("string").str.strip().replace("", pd.NA)
+    rows = pd.DataFrame({
+        "source_name": labels.fillna("Chưa xác định"),
+        "has_date": _dates(_column(articles, "published_at")).notna(),
+    })
+    groups = rows.groupby("source_name", as_index=False).agg(
+        article_count=("has_date", "size"), dated_articles=("has_date", "sum"),
+    )
+    groups.insert(2, "article_share_pct", groups["article_count"].div(len(rows)).mul(100))
+    return groups.sort_values(["article_count", "source_name"], ascending=[False, True]).reset_index(drop=True)
+
+
 def _bounds(start_date, end_date):
     start = pd.to_datetime(start_date, utc=True).floor("D") if start_date is not None else None
     end = pd.to_datetime(end_date, utc=True).floor("D") if end_date is not None else None
@@ -78,6 +92,18 @@ class BasicReport:
     review_daily: pd.DataFrame
     price_daily: pd.DataFrame
     price_changes: pd.DataFrame
+
+    def price_movements(self) -> pd.DataFrame:
+        """Compare the first and last observed daily mean per product and currency."""
+        change = self.price_changes["change_pct"]
+        counts = pd.DataFrame({
+            "currency": self.price_changes["currency"],
+            "price_up": change.gt(0),
+            "price_down": change.lt(0),
+            "same_endpoints": change.eq(0),
+            "one_day_only": change.isna(),
+        })
+        return counts.groupby("currency", as_index=False).sum()
 
     def rankings(self, min_reviews: int = 3) -> pd.DataFrame:
         if type(min_reviews) is not int or min_reviews < 1:
@@ -220,6 +246,9 @@ def build_basic_report(
         ],
     )
     coverage = {
+        "rated_products": len(per_product),
+        "top_three_ratings": int(per_product["rating_sample_size"].nlargest(3).sum()),
+        "price_comparable_products": price_changes.loc[price_changes["status"].eq("available"), "product_id"].nunique(),
         "unmatched_reviews": unmatched_reviews,
         "unmatched_prices": unmatched_prices,
         "undated_reviews": undated_reviews,

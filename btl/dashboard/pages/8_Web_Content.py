@@ -1,6 +1,6 @@
-import pandas as pd
 import plotly.express as px
 import streamlit as st
+from analytics.basic import article_source_breakdown
 from dashboard import ui
 from dashboard.experience import options, search_frame, clear_keys
 
@@ -29,7 +29,8 @@ with st.container(border=True):
 shown = search_frame(articles, query, ["title", "body", "source_name"])
 if sources:
     shown = shown.loc[shown["source_name"].isin(sources)]
-known = int(pd.to_datetime(shown["published_at"], errors="coerce", utc=True).notna().sum())
+by_source = article_source_breakdown(shown)
+known = int(by_source["dated_articles"].sum())
 for col, (title, value, note) in zip(
     st.columns(3),
     [
@@ -41,6 +42,12 @@ for col, (title, value, note) in zip(
     with col:
         ui.metric(title, value, note)
 st.write("")
+if not by_source.empty:
+    with st.container(border=True):
+        st.subheader("Cơ cấu nguồn bài viết")
+        st.caption("Tỷ trọng tính trên các bài khớp bộ lọc trong 1.000 bài thu gần nhất.")
+        ui.table(by_source)
+        ui.download(by_source, "co-cau-nguon-bai-viet.csv")
 with st.container(border=True):
     st.subheader("Thư viện bài viết")
     if shown.empty:

@@ -22,6 +22,10 @@ Thiết kế có quy tắc thích ứng màn hình hẹp. Kiểm chứng chức 
 
 Chọn **Phân tích dữ liệu → Phân tích cơ bản**, hoặc mở `/basic-analytics`.
 
+Mục **Độ bao phủ của mẫu** cho biết bao nhiêu sản phẩm có điểm hợp lệ và có đủ hai ngày giá để so sánh. Khi có hơn ba sản phẩm có điểm, trang hiển thị tỷ trọng lượt chấm của ba sản phẩm nhận nhiều điểm nhất. Trong thẻ **Lịch sử giá**, bảng đầu tiên đếm số sản phẩm tăng, giảm, cùng giá đầu và cuối hoặc chỉ có một ngày quan sát theo từng tiền tệ. Bạn có thể xuất bảng này ra CSV.
+
+Trang `/articles` có bảng **Cơ cấu nguồn bài viết** và CSV tương ứng. Mẫu số là số bài còn lại sau bộ lọc trong tối đa 1.000 bài thu gần nhất. Bài thiếu ngày xuất bản vẫn được tính vào tỷ trọng nguồn. [Kết quả trên Docker ngày 21/11](reports/analytics_dashboard_2026-11-21.md)
+
 - Chọn một nhóm nguồn, thương hiệu và danh mục. Các thống kê, biểu đồ và CSV cùng dùng bộ lọc này. Dữ liệu thật, giả lập và chưa kiểm chứng được tính riêng.
 - Thẻ tổng hợp hiển thị số sản phẩm hiện tại, số đánh giá đã thu, điểm trung bình và tỷ lệ điểm 4–5. Điểm trung bình chỉ dùng mẫu hợp lệ 1–5; số đánh giá trên sàn không thay thế số đánh giá đã thu. Tỷ lệ điểm 1–2 có trong phần phương pháp.
 - **So sánh & thống kê**: số sản phẩm, số mẫu điểm và điểm trung bình theo thương hiệu/danh mục; bảng giá trung bình/trung vị/min/max tách từng tiền tệ. Xếp hạng trong mẫu có ngưỡng số đánh giá tối thiểu do người dùng chọn.

@@ -31,6 +31,10 @@ TABLE_LABELS = {
     "first_daily_avg": "Giá trung bình ngày đầu",
     "last_daily_avg": "Giá trung bình ngày cuối",
     "change_pct": "Thay đổi (%)",
+    "price_up": "Tăng giá",
+    "price_down": "Giảm giá",
+    "same_endpoints": "Cùng giá đầu và cuối",
+    "one_day_only": "Chỉ có một ngày",
     "status": "Trạng thái",
     "rolling_avg_rating": "Điểm trung bình trượt",
     "currency": "Đơn vị",
@@ -51,6 +55,9 @@ TABLE_LABELS = {
     "review_date": "Ngày đánh giá",
     "verified_purchase": "Mua hàng xác minh",
     "article_id": "Mã bài viết",
+    "article_count": "Số bài",
+    "article_share_pct": "Tỷ trọng (%)",
+    "dated_articles": "Bài có ngày xuất bản",
     "title": "Tiêu đề",
     "body": "Nội dung",
     "published_at": "Xuất bản lúc",
@@ -262,6 +269,8 @@ def table(frame, columns=None, height=None):
         config["source_url"] = st.column_config.LinkColumn("Liên kết nguồn", display_text="Mở nguồn")
     if "avg_rating" in frame:
         config["avg_rating"] = st.column_config.NumberColumn("Điểm trung bình", format="%.2f ★")
+    if "article_share_pct" in frame:
+        config["article_share_pct"] = st.column_config.NumberColumn("Tỷ trọng (%)", format="%.1f")
     kwargs = {"height": height} if height else {}
     st.dataframe(frame, width="stretch", hide_index=True, column_config=config, **kwargs)
 

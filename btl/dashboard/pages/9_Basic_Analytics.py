@@ -55,7 +55,7 @@ with st.container(border=True):
             )
     bounded = st.checkbox("Lọc theo khoảng thời gian", key="basic_date_filter", disabled=not dates)
     start = end = None
-    if bounded:
+    if bounded and dates:
         selected = st.date_input("Khoảng ngày quan sát (UTC)", value=(min(dates), max(dates)), key="basic_dates")
         if len(selected) != 2:
             st.info("Chọn đủ ngày bắt đầu và kết thúc.")
@@ -95,6 +95,19 @@ for column, (title, value, note) in zip(
     with column:
         ui.metric(title, value, note)
 st.write("")
+if summary["products"]:
+    with st.container(border=True):
+        st.subheader("Độ bao phủ của mẫu")
+        rated = report.coverage["rated_products"]
+        total = summary["products"]
+        st.write(f"**{rated}/{total} sản phẩm** có đánh giá hợp lệ trong bộ lọc hiện tại.")
+        if rated > 3:
+            top = report.coverage["top_three_ratings"]
+            samples = summary["valid_ratings"]
+            st.write(f"Ba sản phẩm có nhiều điểm nhất đóng góp **{top}/{samples} lượt chấm điểm "
+                     f"({top / samples:.1%})** vào điểm trung bình.")
+        comparable = report.coverage["price_comparable_products"]
+        st.write(f"**{comparable}/{total} sản phẩm** có ít nhất hai ngày quan sát giá trong cùng tiền tệ để so sánh.")
 comparison_tab, reviews_tab, price_tab = st.tabs(["So sánh & thống kê", "Đánh giá & xu hướng", "Lịch sử giá"])
 with comparison_tab:
     with st.container(border=True):
@@ -215,6 +228,13 @@ with reviews_tab:
             )
             ui.download(daily, "xu-huong-danh-gia-co-ban.csv")
 with price_tab:
+    if not report.price_changes.empty:
+        with st.container(border=True):
+            st.subheader("Bao nhiêu sản phẩm tăng hoặc giảm giá?")
+            st.caption("Đếm sản phẩm theo tiền tệ, so giá trung bình ngày đầu với ngày cuối có quan sát trong bộ lọc.")
+            movements = report.price_movements()
+            ui.table(movements)
+            ui.download(movements, "so-san-pham-bien-dong-gia.csv")
     with st.container(border=True):
         st.subheader("Biến động giá trung bình ngày")
         if report.price_daily.empty:

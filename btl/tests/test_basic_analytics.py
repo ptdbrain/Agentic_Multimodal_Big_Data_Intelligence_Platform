@@ -160,3 +160,32 @@ def test_missing_numpy_currency_cannot_become_a_fabricated_nan_unit():
     report = build_basic_report(p, r, prices)
     assert report.catalog_prices.empty and report.price_daily.empty
     assert report.coverage["unknown_currency_prices"] == len(prices)
+
+
+def test_sample_coverage_and_concentration_follow_filtered_catalog():
+    from analytics.basic import build_basic_report
+
+    products, reviews, prices = inputs()
+    report = build_basic_report(products, reviews, prices)
+    assert report.coverage["rated_products"] == 2
+    assert report.coverage["top_three_ratings"] == 4
+    assert report.coverage["price_comparable_products"] == 2
+    movements = report.price_movements().set_index("currency")
+    assert movements.loc["USD"].tolist() == [1, 0, 0, 0]
+    assert movements.loc["VND"].tolist() == [0, 1, 0, 1]
+    filtered = build_basic_report(products, reviews, prices, brands=["B"])
+    assert filtered.coverage["rated_products"] == filtered.coverage["top_three_ratings"] == 0
+    assert filtered.coverage["price_comparable_products"] == 1
+
+
+def test_article_source_breakdown_keeps_unknowns_and_uses_filtered_denominator():
+    from analytics.basic import article_source_breakdown
+
+    articles = pd.DataFrame({"source_name": ["A", "A", "B", None],
+                             "published_at": ["2026-11-01", None, "invalid", "2026-11-03T01:00:00Z"]})
+    result = article_source_breakdown(articles).set_index("source_name")
+    assert result.loc["A"].tolist() == [2, 50.0, 1]
+    assert result.loc["B"].tolist() == [1, 25.0, 0]
+    assert result.loc["Chưa xác định"].tolist() == [1, 25.0, 1]
+    assert article_source_breakdown(articles.iloc[:1]).iloc[0]["article_share_pct"] == 100
+    assert article_source_breakdown(articles.iloc[:0]).empty
