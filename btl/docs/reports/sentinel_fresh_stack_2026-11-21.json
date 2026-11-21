@@ -1,0 +1,37 @@
+{
+  "checked_at": "2026-11-21T16:58:58.869142+00:00",
+  "project": "sentinel-release-check-1121",
+  "independent_private_config": true,
+  "running_services": 20,
+  "monitoring_targets": {
+    "sentinel-datasets": "up",
+    "sentinel-dependencies": "up",
+    "sentinel-metrics": "up",
+    "sentinel-operations": "up"
+  },
+  "dags_paused": {
+    "sentinel_source_simulation": true,
+    "sentinel_source_tiki": true,
+    "sentinel_source_web": true
+  },
+  "live_dashboard_ports_untouched": true,
+  "staging_dashboard_port": 18512,
+  "staging_grafana_port": 13010,
+  "isolated_dag_test": {
+    "dag": "sentinel_source_simulation",
+    "run_type": "manual",
+    "state": "success",
+    "task_states": {
+      "capture": "success",
+      "process": "success"
+    },
+    "capture_checksum_verified": true,
+    "kafka_and_bronze_input": 170,
+    "sql_counts": {
+      "products": 10,
+      "reviews": 160
+    },
+    "counts_from_streamlit_apptest": true,
+    "scope": "simulation"
+  }
+}

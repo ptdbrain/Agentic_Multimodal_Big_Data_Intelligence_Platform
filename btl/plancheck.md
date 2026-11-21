@@ -1,5 +1,7 @@
 # SentinelAI — Kế hoạch hoàn thiện dự án
 
+Trạng thái nghiệm thu hiện tại và các quyết định ngày 21/11 nằm trong [kế hoạch hoàn thiện cập nhật](docs/superpowers/plans/2026-11-21-project-completion.md) và [báo cáo tiến độ](docs/reports/project_completion_progress_2026-11-21.md). Các ô dưới đây ghi lịch sử triển khai. Khi bàn giao, dùng biên nhận vận hành và commit được ghi trong báo cáo mới.
+
 > Tài liệu này là roadmap sống (living document). Cập nhật checkbox và mục "Nhật ký tiến độ" sau mỗi tuần.
 > Quy ước: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong · **(P0)** bắt buộc · **(P1)** nên có · **(P2)** nếu còn thời gian.
 
@@ -16,7 +18,7 @@
 
 ### Định nghĩa "hoàn thành giai đoạn 1" (Definition of Done)
 - [x] `make up && make demo` dựng toàn bộ hạ tầng và chạy pipeline thật (Kafka → Bronze → Silver → Gold → Postgres → Dashboard) trên máy mới, không cần sửa tay.
-- [x] Có dataset **≥ 1 triệu bản ghi** (crawl + dataset công khai) đã chạy qua pipeline.
+- [~] Có **1.033.036 dòng giao dịch lịch sử phân biệt** đã qua kiểm tra MinIO, Spark và SQL. Còn kiểm chứng đường Kafka và dashboard cho nguồn này.
 - [x] Chạy lại bất kỳ job nào **không làm trùng hoặc sai** dữ liệu (idempotent).
 - [x] Có báo cáo benchmark (throughput, latency, thời gian ETL theo kích thước dữ liệu).
 - [x] Có integration test chạy trên Docker và CI xanh.

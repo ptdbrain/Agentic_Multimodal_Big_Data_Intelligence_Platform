@@ -1,5 +1,7 @@
 # SentinelAI — Agentic Multimodal Big Data Intelligence Platform
 
+Kế hoạch bàn giao hiện tại ghi phạm vi Giai đoạn 1, tiêu chí thu web, phép đo hiệu năng và lịch nghiệm thu vận hành. [Kế hoạch hoàn thiện](docs/superpowers/plans/2026-11-21-project-completion.md) · [Bằng chứng triển khai](docs/reports/project_completion_progress_2026-11-21.md)
+
 ## Current scope and status
 
 The current implementation covers non-AI ingestion, processing, statistical analytics and serving. Sources are managed separately: observed marketplace data, observed web articles and explicitly labelled simulation. Currency values retain their source units. Collection cadence and processing latency are separate measurements.

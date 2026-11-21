@@ -37,10 +37,10 @@ lint:
 	ruff check .
 
 test:
-	pytest -v
+	python -m pytest -v
 
 test-unit:
-	pytest -m "unit and not spark and not integration and not live" -v
+	python -m pytest -m "unit and not spark and not integration and not live" -v
 
 acceptance-kafka:
 	python scripts/verify_kafka_bronze_acceptance.py
@@ -63,10 +63,10 @@ reset:
 
 .PHONY: test-spark test-integration test-live
 test-spark:
-	pytest -m "spark and not integration and not live" -v
+	python -m pytest -m "spark and not integration and not live" -v
 
 test-integration:
-	pytest -m "integration and not airflow and not live" -v
+	python -m pytest -m "integration and not airflow and not live" -v
 
 test-live:
-	pytest -m live -v
+	python -m pytest -m live -v

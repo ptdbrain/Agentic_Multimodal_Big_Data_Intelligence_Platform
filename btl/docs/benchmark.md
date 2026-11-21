@@ -1,5 +1,7 @@
 # SentinelAI — Báo Cáo Benchmark "3V" (Big Data Verification)
 
+Số liệu dưới đây ghi phép đo ngày 21/10. Khi bàn giao, dùng báo cáo Docker ngày 19/11 cho hiệu năng batch và độ trễ tới SQL. Bài kiểm tra giao dịch UCI ngày 21/11 bổ sung bằng chứng khối lượng dữ liệu quan sát thật, với phạm vi đo riêng. [Báo cáo Docker](non-ai-completion.md) · [Biên nhận UCI](reports/online_retail_ii_volume_2026-11-21.json)
+
 Tài liệu này được **sinh tự động trực tiếp** từ lệnh chạy `python scripts/benchmark.py` trên đường chạy thực (Kafka -> RawConsumer -> MinIO Bronze -> SparkBatchETLJob -> Silver/Quarantine Parquet). Mọi số liệu dưới đây khớp 100% với `docs/reports/benchmark_3v.json` và `docs/reports/benchmark_report.md`.
 
 - **Thời điểm chạy (Timestamp)**: `2026-10-21 05:19:04 UTC`
