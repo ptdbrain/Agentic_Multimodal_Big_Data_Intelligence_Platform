@@ -149,14 +149,15 @@ def sidebar():
     default = os.environ.get("DASHBOARD_DATA_SCOPE", "real")
     if default not in SCOPES:
         raise ValueError("Unknown DASHBOARD_DATA_SCOPE")
-    st.sidebar.selectbox(
+    scope = st.sidebar.selectbox(
         "Phạm vi dữ liệu",
         list(SCOPES),
-        index=list(SCOPES).index(default),
+        index=list(SCOPES).index(st.session_state.get("_selected_scope", default)),
         format_func=SCOPES.get,
         key="dashboard_data_scope",
         help="Dữ liệu thật gồm bản thu trực tiếp và bản phát lại có nhãn. Dữ liệu sinh được tách riêng.",
     )
+    st.session_state["_selected_scope"] = scope
     registry_path = os.environ.get("SERVING_DATASETS_CONFIG")
     if registry_path:
         from serving.registry import DatasetRegistry
@@ -172,7 +173,11 @@ def sidebar():
             if choices:
                 if st.session_state.get(key) not in labels:
                     st.session_state.pop(key, None)
-                st.sidebar.selectbox(title, list(labels), format_func=labels.get, key=key)
+                remembered = st.session_state.get(f"_selected_{key}")
+                index = list(labels).index(remembered) if remembered in labels else 0
+                st.session_state[f"_selected_{key}"] = st.sidebar.selectbox(
+                    title, list(labels), index=index, format_func=labels.get, key=key,
+                )
             else:
                 st.session_state.pop(key, None)
                 st.sidebar.caption(title + ": chưa có nguồn trong phạm vi này")

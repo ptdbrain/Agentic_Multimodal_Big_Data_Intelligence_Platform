@@ -52,6 +52,9 @@ def test_app_selects_commerce_and_article_sources_independently(tmp_path, monkey
     assert not app.exception
     assert app.selectbox(key="serving_commerce").value == "simulation"
     assert any("simulation" in str(frame.value) for frame in app.dataframe)
+    app.switch_page("pages/5_Trends.py").run(timeout=25)
+    assert not app.exception
+    assert app.selectbox(key="dashboard_data_scope").value == "simulation"
     app.selectbox(key="dashboard_data_scope").set_value("real").run(timeout=25)
     app.switch_page("pages/8_Web_Content.py").run(timeout=25)
     assert not app.exception
