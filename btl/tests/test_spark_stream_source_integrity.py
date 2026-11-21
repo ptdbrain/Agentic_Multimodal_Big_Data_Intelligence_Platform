@@ -162,3 +162,24 @@ def test_quarantine_retry_identity_excludes_kafka_delivery_coordinates(spark_ses
     _,invalid=processor.validate_review_stream(raw)
     processor._write_quarantine_batch(invalid,0)
     assert spark_session.read.parquet(str(tmp_path/'quarantine')).count()==1
+
+
+def test_five_minute_windows_slide_one_minute_without_duplicate_review_counts(spark_session, tmp_path):
+    processor = job(spark_session, tmp_path)
+    input_path = tmp_path / "events"
+    input_path.mkdir()
+    row = dict(payload(), review_date="2026-01-01T00:04:00Z")
+    (input_path / "batch1.json").write_text(json.dumps(row) + "\n" + json.dumps(row) + "\n")
+    query = processor.start_review_stream(
+        source_path=str(input_path), window_duration="5 minutes", slide_duration="1 minute",
+        watermark_delay="10 minutes", trigger_available_now=True,
+    )
+    try:
+        assert query.awaitTermination(90)
+    finally:
+        processor.stop()
+    metrics = spark_session.read.parquet(str(tmp_path / "metrics")).collect()
+    assert len(metrics) == 5
+    assert {row["window_start"].minute for row in metrics} == set(range(5))
+    assert all(row["review_count"] == 1 for row in metrics)
+    assert all((row["window_end"] - row["window_start"]).total_seconds() == 300 for row in metrics)

@@ -30,7 +30,8 @@ def main():
     parser.add_argument(
         "--mode", choices=["spark", "simulator"], default="simulator", help="Streaming execution engine"
     )
-    parser.add_argument("--window", default=None, help="Tumbling window duration")
+    parser.add_argument("--window", default=None, help="Event-time window length")
+    parser.add_argument("--slide", default=None, help="Spark sliding step; omitted for tumbling windows")
     parser.add_argument("--watermark", default=None, help="Event-time watermark delay")
     parser.add_argument("--topic", default=None, help="Kafka input topic")
     parser.add_argument("--seed", type=int, default=None, help="Simulator generator seed (default 42)")
@@ -71,7 +72,7 @@ def main():
             "--generation",
             deployment["generation"],
         ]
-        for name in ("window", "watermark", "topic"):
+        for name in ("window", "slide", "watermark", "topic"):
             if name in deployment:
                 command.extend(["--" + name, str(deployment[name])])
         for key, envkey in [
@@ -101,10 +102,24 @@ def main():
                     raise ValueError(f"{flag} differs from promoted checkpoint configuration")
             args.window = f"{configuration['window_seconds']} seconds"
             args.watermark = f"{configuration['watermark_seconds']} seconds"
+            expected_slide = configuration.get("slide_seconds")
+            if args.slide is not None and simulator_duration(args.slide) != expected_slide:
+                raise ValueError("--slide differs from promoted checkpoint configuration")
+            args.slide = f"{expected_slide} seconds" if expected_slide is not None else None
         except (ValueError, KeyError, OSError) as error:
             parser.error(str(error))
     args.window = args.window or "1 minute"
     args.watermark = args.watermark or "10 minutes"
+    slide_seconds = None
+    if args.slide is not None:
+        if args.mode != "spark":
+            parser.error("--slide requires --mode spark")
+        try:
+            slide_seconds = simulator_duration(args.slide)
+            if slide_seconds > simulator_duration(args.window):
+                parser.error("--slide cannot exceed --window")
+        except ValueError as error:
+            parser.error(str(error))
     if args.mode == "simulator":
         try:
             window_seconds = simulator_duration(args.window)
@@ -193,6 +208,7 @@ def main():
                     args.generation,
                     stream_configuration(
                         window_seconds=simulator_duration(args.window),
+                        slide_seconds=slide_seconds,
                         watermark_seconds=simulator_duration(args.watermark, allow_zero=True),
                         topic=args.topic or settings.kafka.topic_reviews,
                         paths=runtime_args,
@@ -210,6 +226,7 @@ def main():
             print("[Spark Streaming] Initializing streaming query from Kafka...")
             query = job.start_review_stream(
                 window_duration=args.window,
+                slide_duration=args.slide,
                 watermark_delay=args.watermark,
                 topics=args.topic,
                 **source_args,

@@ -364,9 +364,10 @@ class SparkStreamingJob:
         review_stream: "DataFrame",
         window_duration: str = "1 minute",
         watermark_delay: str = "10 minutes",
+        slide_duration: Optional[str] = None,
     ) -> "DataFrame":
         """Apply event-time watermark, stateful primary-key deduplication on review_id,
-        and tumbling window aggregation.
+        and tumbling or sliding window aggregation.
 
         Output schema per window:
         - window_start, window_end
@@ -407,7 +408,7 @@ class SparkStreamingJob:
         return (
             deduped
             .groupBy(
-                F.window("event_time", window_duration),
+                F.window("event_time", window_duration, slideDuration=slide_duration),
                 "product_id",
                 "source_group",
             )
@@ -547,6 +548,7 @@ class SparkStreamingJob:
         topics: Optional[str] = None,
         kafka_source=None,
         audit_path: Optional[str] = None,
+        slide_duration: Optional[str] = None,
     ):
         """Start the full streaming pipeline: Source (Kafka or S3A/File) -> Parse/Cast -> Validate -> Dedup & Window -> Sink.
         Supports clean stop and restart from persistent checkpointLocation.
@@ -563,6 +565,7 @@ class SparkStreamingJob:
             "output_path": self.output_path,
             "window_duration": window_duration,
             "watermark_delay": watermark_delay,
+            "slide_duration": slide_duration,
             "output_mode": eff_mode,
             "source_path": source_path,
             "trigger_available_now": trigger_available_now,
@@ -581,7 +584,8 @@ class SparkStreamingJob:
         parsed = self.parse_review_stream(raw)
         valid_stream, invalid_stream = self.validate_review_stream(parsed)
         windowed = self.windowed_review_aggregation(
-            valid_stream, window_duration=window_duration, watermark_delay=watermark_delay
+            valid_stream, window_duration=window_duration, watermark_delay=watermark_delay,
+            slide_duration=slide_duration,
         )
 
         window_chk = f"{self.checkpoint_dir}/reviews_window"

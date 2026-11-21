@@ -63,15 +63,18 @@ def validate_stream_binding(binding: DatasetRef, env: dict[str, str], paths: dic
 def stream_configuration(
     *, window_seconds: int, watermark_seconds: int, topic: str, paths: dict[str, str],
     output_mode: str, negative_threshold: float, kafka_cluster_id: str, kafka_source: dict | None = None,
-    audit_path: str | None = None,
+    audit_path: str | None = None, slide_seconds: int | None = None,
 ) -> dict:
     """Pin every output and checkpoint-affecting setting before constructing Spark."""
     if not kafka_cluster_id or (kafka_source and kafka_source.get("cluster_id", kafka_cluster_id) != kafka_cluster_id):
         raise ValueError("Kafka cluster identity differs from the stream source")
+    if slide_seconds is not None and not 0 < slide_seconds <= window_seconds:
+        raise ValueError("Sliding step must be positive and no longer than the window")
     return {
         "serving_protocol": 3,
         "kafka_cluster_id": kafka_cluster_id,
         "window_seconds": window_seconds,
+        **({"slide_seconds": slide_seconds} if slide_seconds is not None else {}),
         "watermark_seconds": watermark_seconds,
         "topic": topic,
         **{key: paths[key] for key in ("checkpoint_dir", "output_path", "quarantine_path")},
