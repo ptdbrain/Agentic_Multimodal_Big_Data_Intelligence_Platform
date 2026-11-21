@@ -62,12 +62,12 @@ flowchart TD
 ```
 
 ### Architectural Highlights of Phase 1:
-1. **Deterministic Message Envelopes:** Every event contains an immutable `event_id` computed via `sha256(source|entity_id|event_time)`.
+1. **Deterministic message envelopes.** The producer derives an event ID from the source, event type and canonical payload through `ingestion/identity.py`.
 2. **At-Least-Once Kafka Delivery:** `RawConsumer` only commits Kafka offsets after atomic write confirmation to MinIO.
 3. **Cross-Batch Deduplication:** `SparkBatchETLJob` merges incoming records with the existing Silver layer via primary keys, guaranteeing idempotency.
 4. **Data Quarantine:** Defective records are routed to `quarantine/` with error metadata, preventing silent drops and pipeline poisoning.
-5. **Lakehouse Table Format:** ACID commit metadata logged in `_delta_log/*.json`, enabling time-travel audits and atomic merge upserts.
-6. **No-Hardcoding Serving:** Streamlit and Prometheus query the Data Warehouse dynamically.
+5. **Parquet publication and version history.** The custom Lakehouse table stores version metadata in PostgreSQL or local SQLite. The production Gold publisher writes validated Parquet under a generation manifest and archives published data with lineage. Storage recovery is per path. Publication of the SQL warehouse tables uses a PostgreSQL transaction. [Processing and publication guarantees](processing_analytics.md)
+6. **Serving.** Streamlit uses a per-dataset warehouse binding. Elasticsearch switches aliases after document checks. Prometheus scrapes exporters, and the operations dashboards display those measured series.
 
 ---
 

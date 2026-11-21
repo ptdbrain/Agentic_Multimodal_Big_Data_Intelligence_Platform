@@ -1,5 +1,7 @@
 # SentinelAI — Nguồn Dữ Liệu & Hướng Dẫn Thu Thập (Data Sources & Ingestion Guide)
 
+Nguồn lịch sử Online Retail II có giấy phép CC BY 4.0 và được xử lý riêng. Số liệu đối soát ngày 21/11 gồm 1.033.036 dòng giao dịch phân biệt, giữ giá GBP và thời gian hóa đơn gốc. Manifest ghi checksum workbook, Parquet và kết quả đối soát MinIO, Spark và PostgreSQL. [Nguồn UCI](https://archive.ics.uci.edu/dataset/502/online+retail+ii) · [Biên nhận đối soát](reports/online_retail_ii_volume_2026-11-21.json)
+
 Tài liệu này quy định danh mục các nguồn dữ liệu, nguyên tắc kỹ thuật, khung pháp lý & đạo đức và chính sách bảo mật/ẩn danh hoá được áp dụng trong nền tảng **SentinelAI (Phase 1)**.
 
 ---
