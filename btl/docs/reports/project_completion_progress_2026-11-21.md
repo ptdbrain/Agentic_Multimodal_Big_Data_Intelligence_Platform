@@ -11,6 +11,7 @@
 
 - Người dùng chọn 50 bài/ngày với backlog theo dõi riêng. Báo cáo nghiệm thu mới kiểm tra số ID bài phân biệt trong payload đã băm, số đầu vào, số Kafka giao và số Kafka đọc. Trạng thái `partial`, số URL chờ và retry hết lượt vẫn xuất hiện. Các lượt mới còn ghi số bài mới, bài đổi nội dung, bài giữ nguyên và quan sát cũ được giữ trong lịch sử.
 - 20 phản hồi HTTP gốc Tiki ngày 21/11 được xác minh SHA-256 và phân tích lại. Bộ parser mới tìm được 20 nhà bán theo sản phẩm và giá quan sát, giữ đúng giá và tiền tệ. Snapshot SQL cũ sẽ thay đổi từ lần xuất bản tiếp theo có dữ liệu nhà bán. Dashboard hỗ trợ lọc và nhóm theo nhà bán hiện tại, đồng thời hiển thị số sản phẩm chưa biết nhà bán.
+- Crawler Tiki chạy hằng ngày che định danh người đánh giá bằng `anon_redacted` trước khi chuyển bản ghi vào pipeline. Mã review gốc đã chuẩn hóa vẫn dùng để khử trùng. Dữ liệu đã xuất bản trước thay đổi giữ trường định danh theo quy trình cũ. Kiểm thử xác nhận bản ghi mới vẫn giữ đúng mã review.
 
 ## Dữ liệu giao dịch lịch sử
 
@@ -31,3 +32,18 @@ Cần kiểm tra lượt Tiki/web sau khi đổi mã, chạy ba chu kỳ theo l�
 - Đã tạo project Compose, volume và cấu hình riêng từ script khởi tạo. Cả 20 dịch vụ chạy, bốn target giám sát up, ba DAG nguồn tạm dừng trước khi thử. Một lần Airflow DAG test có nhãn manual đã xuất 10 sản phẩm và 160 review giả lập từ Kafka qua MinIO và Spark tới SQL. AppTest kiểm tra dashboard hiển thị đúng hai số trong phạm vi giả lập. [Biên nhận môi trường sạch](sentinel_fresh_stack_2026-11-21.json)
 - Bộ kiểm thử Spark qua Makefile có 119 test đạt. Nhóm kiểm thử streaming, binding và Kafka migration có 36 test đạt khi chạy với Java 17 và Spark Kafka connector. Hai lần gọi ban đầu đã phát hiện thiếu runtime Java và connector ở câu lệnh kiểm chứng. Kết quả đạt được lấy từ lần chạy lại với cấu hình đúng.
 - Kiểm tra điều hướng phát hiện lựa chọn phạm vi bị đặt lại khi chuyển trang. Giao diện hiện ghi lựa chọn theo phiên. Kiểm thử hồi quy chọn dữ liệu giả lập rồi chuyển sang trang Xu hướng xác nhận phạm vi được giữ.
+
+## Lệnh dựng môi trường kiểm tra riêng
+
+Từ thư mục btl, tạo config ở thư mục mới ngoài repository. Đặt hai cổng loopback riêng nếu máy đã có bản đang phục vụ.
+
+```bash
+stage_dir="$HOME/.local/state/sentinel/release-check"
+mkdir -p "$(dirname "$stage_dir")"
+python scripts/prepare_application.py --directory "$stage_dir"
+export DASHBOARD_PORT=18512 GRAFANA_PORT=13010
+docker compose --env-file "$stage_dir/compose.env" -p sentinel-release-check --profile streaming config --quiet
+docker compose --env-file "$stage_dir/compose.env" -p sentinel-release-check --profile streaming up -d --build
+```
+
+Kiểm tra Streamlit qua cổng 18512 và Grafana qua 13010. Kiểm tra ba DAG nguồn đều tạm dừng trước dữ liệu thử. Kết quả trên project riêng chỉ dùng để đối chiếu khả năng cài đặt. Chu kỳ nghiệm thu được đọc từ lịch của project đang phục vụ.

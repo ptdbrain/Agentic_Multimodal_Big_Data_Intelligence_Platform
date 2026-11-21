@@ -297,3 +297,14 @@ def test_managed_review_http_failure_never_looks_like_empty_completed_page(tmp_p
     assert result['status']==('failed' if status==429 else 'partial')
     if status==503:
         assert result['missing'] and not result['review_cursors'].get('tiki_101',{}).get('ids')
+
+
+def test_daily_crawler_redacts_reviewer_identity_before_publishing(tmp_path):
+    from scripts.collect_tiki_daily import tiki_crawler_factory
+
+    crawler = tiki_crawler_factory(1)("live-redaction-test", tmp_path)
+    row = crawler.standardize_review(
+        {"id": 123, "rating": 5, "created_by": {"id": 42}, "created_at": 1700000000}, "tiki_456"
+    )
+    assert row["user_id"] == "anon_redacted"
+    assert row["review_id"] == "tiki_rv_123"

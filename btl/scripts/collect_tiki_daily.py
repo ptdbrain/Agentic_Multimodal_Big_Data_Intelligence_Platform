@@ -28,7 +28,8 @@ def tiki_crawler_factory(delay_seconds: float):
     def factory(run_id, evidence_dir):
         from ingestion.crawler.tiki import TikiCrawler
         return TikiCrawler(collection_run_id=run_id, evidence_dir=evidence_dir,
-                           delay_seconds=delay_seconds, rate_limit_rps=1.0 / delay_seconds)
+                           delay_seconds=delay_seconds, rate_limit_rps=1.0 / delay_seconds,
+                           remove_user_id=True)
     return factory
 
 
