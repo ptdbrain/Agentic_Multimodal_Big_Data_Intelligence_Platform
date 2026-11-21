@@ -1,0 +1,31 @@
+{
+  "dataset": "Online Retail II",
+  "author": "Daqing Chen",
+  "year": 2012,
+  "publisher": "UCI Machine Learning Repository",
+  "url": "https://archive.ics.uci.edu/dataset/502/online+retail+ii",
+  "doi": "10.24432/C5CG6D",
+  "license": "CC BY 4.0",
+  "source_sha256": "572e36277c2390fbfde10664750731e0a86f55e33470d91919085f0408e67bfb",
+  "parquet_sha256": "c06f4485b5ec1be25913b335a8ac5e161d065b9812ba3c6909feb361f6e300d7",
+  "sheets": {
+    "Year 2009-2010": 525461,
+    "Year 2010-2011": 541910
+  },
+  "counts": {
+    "received": 1067371,
+    "distinct": 1033036,
+    "duplicate": 34335,
+    "rejected": 0,
+    "cancellation": 19104
+  },
+  "method": "Observed UK online retail lines. Customer ID excluded. Duplicate fingerprint uses all published business fields, excluding row location and Customer ID. Invoice clock retained as provided, with no inferred timezone. Cancellations and original quantity/unit price retained.",
+  "checked_at": "2026-11-21T16:50:55.009730+00:00",
+  "verified_minio_object_sha256": "c06f4485b5ec1be25913b335a8ac5e161d065b9812ba3c6909feb361f6e300d7",
+  "spark_local_workers": 2,
+  "sql_rows": 1033036,
+  "sql_distinct_invoices": 53628,
+  "sql_cancellations": 19104,
+  "verified_controls": "UCI workbook to attributed normalized Parquet, verified MinIO copy, actual Spark SQL aggregation and isolated PostgreSQL. The historical source is invoice lines in GBP. The proof does not exercise Kafka, distributed Spark workers, or dashboard serving.",
+  "test_namespace": "uci_retail_ii_bd6b9a7e85b"
+}
