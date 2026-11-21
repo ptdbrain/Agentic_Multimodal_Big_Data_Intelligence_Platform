@@ -1,7 +1,10 @@
+import pandas as pd
 import streamlit as st
 import plotly.express as px
+from analytics.basic import build_basic_report, price_sample_by_day, source_groups
 from analytics.trend.trends import TrendAnalyzer
 from dashboard import ui
+from dashboard.experience import options
 from dashboard.utils import load_reviews_data, render_data_sources, render_analytics_quality
 
 ui.setup_page(
@@ -9,8 +12,10 @@ ui.setup_page(
 )
 with ui.warehouse() as db:
     reviews = load_reviews_data(db=db)
+    products = db.read_table("products")
+    prices = db.read_table("price_daily_stats")
 render_data_sources(reviews)
-if reviews.empty:
+if reviews.empty and prices.empty:
     ui.empty_state(
         "Chưa đủ dữ liệu để phân tích xu hướng", "Cần đánh giá có ngày quan sát hợp lệ trong phạm vi đang chọn."
     )
@@ -21,6 +26,46 @@ with st.container(border=True):
     window = a.slider("Cửa sổ trung bình (ngày)", 3, 30, 7, 1)
     threshold = b.slider("Ngưỡng đánh giá tích cực (sao)", 3.0, 5.0, 4.0, 0.5)
     st.caption("Phân nhóm tích cực/tiêu cực theo điểm số. Ngày thiếu không được coi là ngày có 0 đánh giá.")
+    groups = source_groups(products, reviews, prices)
+    source = st.selectbox("Nhóm nguồn", groups, key="trend_source") if len(groups) > 1 else next(iter(groups), None)
+    controls = st.columns(3)
+    selected = {}
+    for control, column, label in zip(controls, ("brand", "category", "seller"), ("Thương hiệu", "Danh mục", "Nhà bán")):
+        selected[column] = control.multiselect(label, options(products, column), key=f"trend_{column}")
+    st.caption("Các bộ lọc phân nhóm theo danh mục hiện tại. Khi áp dụng cho lịch sử, nhà bán là nhà bán đang được ghi nhận cho sản phẩm.")
+if source is not None:
+    review_groups = reviews.get("source_group", pd.Series("unverified", index=reviews.index, dtype=object))
+    reviews = reviews.loc[review_groups.fillna("unverified").replace("", "unverified").eq(source)]
+if any(selected.values()) and not reviews.empty:
+    catalog_groups = products.get("source_group", pd.Series("unverified", index=products.index, dtype=object))
+    catalog = products.loc[catalog_groups.fillna("unverified").replace("", "unverified").eq(source)]
+    for dimension, values in selected.items():
+        if values:
+            catalog = catalog.loc[catalog[dimension].isin(values)]
+    if "product_id" in reviews and "product_id" in catalog:
+        reviews = reviews.loc[reviews["product_id"].isin(catalog["product_id"])]
+    else:
+        reviews = reviews.iloc[:0]
+try:
+    price_report = build_basic_report(
+        products, None, prices, source_group=source, brands=selected["brand"],
+        categories=selected["category"], sellers=selected["seller"],
+    )
+except ValueError as error:
+    st.warning(str(error))
+else:
+    sampled = price_sample_by_day(price_report.price_daily)
+    if not sampled.empty:
+        with st.container(border=True):
+            st.subheader("Giá quan sát theo ngày")
+            st.caption("Mỗi sản phẩm có trọng số như nhau. Cột vào mẫu và rời mẫu so với ngày có quan sát trước đó giúp nhận biết khi thành phần mẫu thay đổi.")
+            ui.chart(px.line(
+                sampled, x="date", y="avg_price", facet_row="currency", markers=True,
+                hover_data=["product_count", "common_products", "entered_products", "exited_products"],
+                labels={"date": "Ngày (UTC)", "avg_price": "Giá trung bình", "currency": "Đơn vị"},
+            ).update_yaxes(matches=None))
+            ui.table(sampled)
+            ui.download(sampled, "xu-huong-gia-theo-nhom.csv")
 daily = TrendAnalyzer.daily_review_trends(
     reviews, rolling_window=window, positive_threshold=threshold, negative_threshold=2.0
 )

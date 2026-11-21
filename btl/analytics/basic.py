@@ -80,12 +80,29 @@ def _linked(frame, catalog):
     return linked, len(frame) - len(linked)
 
 
+def price_sample_by_day(price_daily: pd.DataFrame) -> pd.DataFrame:
+    """Summarize the observed product means and expose changes in sample membership."""
+    columns = ["date", "currency", "avg_price", "product_count", "common_products", "entered_products", "exited_products"]
+    rows = []
+    for currency, prices in price_daily.groupby("currency"):
+        previous = None
+        for day, sample in prices.groupby("date", sort=True):
+            products = set(sample[KEYS].itertuples(index=False, name=None))
+            rows.append((day, currency, sample["avg_price"].mean(), len(products),
+                         len(products & previous) if previous is not None else None,
+                         len(products - previous) if previous is not None else None,
+                         len(previous - products) if previous is not None else None))
+            previous = products
+    return pd.DataFrame(rows, columns=columns)
+
+
 @dataclass
 class BasicReport:
     summary: dict
     coverage: dict
     brands: pd.DataFrame
     categories: pd.DataFrame
+    sellers: pd.DataFrame
     catalog_prices: pd.DataFrame
     products: pd.DataFrame
     star_distribution: pd.DataFrame
@@ -123,6 +140,7 @@ def build_basic_report(
     source_group: str | None = None,
     brands: Sequence[str] = (),
     categories: Sequence[str] = (),
+    sellers: Sequence[str] = (),
     start_date: date | str | None = None,
     end_date: date | str | None = None,
 ) -> BasicReport:
@@ -140,7 +158,7 @@ def build_basic_report(
         raise ValueError("Ambiguous catalog identity")
     reviews, unmatched_reviews = _linked(reviews, catalog)
     prices, unmatched_prices = _linked(prices, catalog)
-    for name, selected in (("brand", brands), ("category", categories)):
+    for name, selected in (("brand", brands), ("category", categories), ("seller", sellers)):
         if selected:
             catalog = catalog.loc[_column(catalog, name).isin(selected)].copy()
     reviews, _ = _linked(reviews, catalog)
@@ -246,6 +264,7 @@ def build_basic_report(
         ],
     )
     coverage = {
+        "catalog_seller_known": int(_column(catalog, "seller").astype("string").str.strip().fillna("").ne("").sum()),
         "rated_products": len(per_product),
         "top_three_ratings": int(per_product["rating_sample_size"].nlargest(3).sum()),
         "price_comparable_products": price_changes.loc[price_changes["status"].eq("available"), "product_id"].nunique(),
@@ -263,6 +282,7 @@ def build_basic_report(
         coverage,
         compare("brand"),
         compare("category"),
+        compare("seller"),
         price_summary,
         metrics,
         stars,

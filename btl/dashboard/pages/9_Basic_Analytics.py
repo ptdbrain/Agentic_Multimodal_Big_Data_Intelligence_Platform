@@ -38,9 +38,10 @@ with st.container(border=True):
         .replace("", "unverified")
         .eq(source)
     ]
-    left, right = st.columns(2)
+    left, right, third = st.columns(3)
     brands = left.multiselect("Thương hiệu", options(scope, "brand"), key="basic_brands")
     categories = right.multiselect("Danh mục", options(scope, "category"), key="basic_categories")
+    sellers = third.multiselect("Nhà bán", options(scope, "seller"), key="basic_sellers")
     dates = []
     for frame, column in ((reviews, "review_date"), (prices, "date")):
         if column in frame:
@@ -72,6 +73,7 @@ try:
         source_group=source,
         brands=brands,
         categories=categories,
+        sellers=sellers,
         start_date=start,
         end_date=end,
     )
@@ -101,6 +103,8 @@ if summary["products"]:
         rated = report.coverage["rated_products"]
         total = summary["products"]
         st.write(f"**{rated}/{total} sản phẩm** có đánh giá hợp lệ trong bộ lọc hiện tại.")
+        seller_known = report.coverage["catalog_seller_known"]
+        st.write(f"**{seller_known}/{total} sản phẩm** có thông tin nhà bán trong danh mục hiện tại.")
         if rated > 3:
             top = report.coverage["top_three_ratings"]
             samples = summary["valid_ratings"]
@@ -113,11 +117,13 @@ with comparison_tab:
     with st.container(border=True):
         dimension = st.selectbox(
             "So sánh theo",
-            ["brand", "category"],
-            format_func=lambda v: {"brand": "Thương hiệu", "category": "Danh mục"}[v],
+            ["brand", "category", "seller"],
+            format_func=lambda v: {"brand": "Thương hiệu", "category": "Danh mục", "seller": "Nhà bán"}[v],
             key="basic_dimension",
         )
-        comparison = report.brands if dimension == "brand" else report.categories
+        comparison = {"brand": report.brands, "category": report.categories, "seller": report.sellers}[dimension]
+        if dimension == "seller":
+            st.caption("Nhóm theo nhà bán trong danh mục hiện tại. Điểm thu được phản ánh đánh giá sản phẩm.")
         if comparison.empty:
             ui.empty_state("Không có sản phẩm phù hợp", "Thay đổi bộ lọc để xem thống kê.")
         else:

@@ -78,3 +78,14 @@ def test_tiki_visible_price_retains_its_observed_unit_and_raw_token():
     row=extract_page_fields('<h1>Observed phone</h1><div>250000 VND</div>','https://tiki.vn/phone-p123.html')
     assert row['currency']=='VND'
     assert row['price_raw']=='250000 VND'
+
+
+@pytest.mark.parametrize(("offer_id", "offer_price", "expected"), [(123, 250000, "Shop A"), (456, 250000, None), (123, 210000, None)])
+def test_tiki_current_seller_must_match_product_and_observed_price(offer_id, offer_price, expected):
+    product = {"@type": "Product", "name": "Fixture", "offers": {"price": 250000, "priceCurrency": "VND"}}
+    detail = {"id": offer_id, "name": "Fixture", "price": offer_price, "current_seller": {
+        "product_id": 9876, "name": "Shop A", "price": offer_price,
+    }}
+    html = (f'<script type="application/ld+json">{json.dumps(product)}</script>'
+            f'<script id="__NEXT_DATA__" type="application/json">{json.dumps({"props": {"product": detail}})}</script>')
+    assert extract_page_fields(html, "https://tiki.vn/phone-p123.html")["seller"] == expected

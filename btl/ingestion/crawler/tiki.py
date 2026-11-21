@@ -196,6 +196,30 @@ def observed_currency(raw_currency, raw_price):
     return declared or next(iter(tokens),None)
 
 
+def _current_offer_seller(soup, product_url, price):
+    product_id = product_id_from_url(product_url)
+    next_data = soup.find("script", id="__NEXT_DATA__")
+    if product_id is None or next_data is None or price is None:
+        return None
+    try:
+        document = json.loads(next_data.get_text())
+    except ValueError:
+        return None
+    names = set()
+    for node in walk_dicts(document):
+        offer = node.get("current_seller")
+        if not isinstance(offer, dict) or product_id != f"tiki_{node.get('id')}":
+            continue
+        # Tiki's current_seller.product_id identifies the merchant listing.
+        # The parent is the catalog product addressed by the URL.
+        if parse_price(node.get("price")) != price or parse_price(offer.get("price")) != price:
+            continue
+        name = scalar_text(offer.get("name"))
+        if name:
+            names.add(name)
+    return next(iter(names)) if len(names) == 1 else None
+
+
 def extract_page_fields(html: str, product_url: str, category_seed: str = "Electronics") -> Dict[str, Any]:
     """Extract metadata, pricing, rating, and seller specs from a Tiki product HTML page."""
     soup = BeautifulSoup(html, "html.parser")
@@ -290,6 +314,8 @@ def extract_page_fields(html: str, product_url: str, category_seed: str = "Elect
                         categories.append(scalar_text(label))
         category = categories[-1] if categories else None
     seller = scalar_text(pick(product, "seller", "seller_name", "sellerName", "merchant"))
+    if not seller:
+        seller = _current_offer_seller(soup, product_url, price)
     image = scalar_text(pick(product, "image", "image_url", "imageUrl", "thumbnail_url"))
 
     aggregate = pick(product, "aggregateRating", "aggregate_rating", "rating_summary", "ratingSummary")

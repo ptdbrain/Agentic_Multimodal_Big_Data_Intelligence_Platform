@@ -189,3 +189,14 @@ def test_article_source_breakdown_keeps_unknowns_and_uses_filtered_denominator()
     assert result.loc["Chưa xác định"].tolist() == [1, 25.0, 1]
     assert article_source_breakdown(articles.iloc[:1]).iloc[0]["article_share_pct"] == 100
     assert article_source_breakdown(articles.iloc[:0]).empty
+
+
+def test_price_sample_reports_membership_changes_per_currency():
+    from analytics.basic import build_basic_report, price_sample_by_day
+
+    p, r, prices = inputs()
+    sample = price_sample_by_day(build_basic_report(p, r, prices).price_daily)
+    vnd = sample.loc[sample["currency"].eq("VND")].reset_index(drop=True)
+    assert pd.isna(vnd.loc[0, "common_products"])
+    assert vnd.iloc[-1]["product_count"] == 1
+    assert vnd.iloc[-1]["common_products"] == 1 and vnd.iloc[-1]["exited_products"] == 1
