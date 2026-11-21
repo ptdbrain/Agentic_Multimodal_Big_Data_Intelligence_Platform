@@ -233,3 +233,20 @@ def test_docker_spark_fault_requires_tasks_on_both_owned_workers():
     state["workers"][1].update(coresused=2, host="172.20.0.99")
     with pytest.raises(ValueError):
         verify_active_spark_workers(state, {"172.20.0.2", "172.20.0.3"})
+
+
+def test_application_monitoring_configuration_survives_absent_host_mount():
+    from pathlib import Path
+    import yaml
+
+    root = Path(__file__).resolve().parents[1]
+    compose = yaml.safe_load((root / "docker-compose.yml").read_text())
+    for name, volume in (("prometheus", "prometheus_data"), ("alertmanager", "alertmanager_data")):
+        service = compose["services"][name]
+        assert service["volumes"] == [f"{volume}:/{name}"]
+        build = service["build"]
+        recipe = (root / build["dockerfile"]).read_text()
+        for option in service["command"]:
+            if option.startswith("--config.file="):
+                assert option.split("=", 1)[1] in recipe
+        assert service["restart"] == "unless-stopped"

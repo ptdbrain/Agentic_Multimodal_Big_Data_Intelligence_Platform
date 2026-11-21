@@ -1,0 +1,11 @@
+{
+  "verified": true,
+  "checked_at": "2026-11-21T16:48:45.092915+00:00",
+  "scenario": "Prometheus and Alertmanager started on an isolated network without any host config mount. The operations exporter was introduced after the production unavailability rule fired.",
+  "live_configuration_images": [
+    "sentinel-prometheus:local",
+    "sentinel-alertmanager:local"
+  ],
+  "firing_received_at": "2026-11-21T16:43:43.072678+00:00",
+  "resolved_received_at": "2026-11-21T16:48:43.072728+00:00"
+}

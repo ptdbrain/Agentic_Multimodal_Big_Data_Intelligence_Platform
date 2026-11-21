@@ -549,7 +549,10 @@ services:
     - --output
     - /var/lib/sentinel/notifications.jsonl
   prometheus:
-    image: prom/prometheus:v2.54.1
+    image: sentinel-prometheus:local
+    build:
+      context: .
+      dockerfile: docker/prometheus.Dockerfile
     mem_limit: 512m
     restart: unless-stopped
     networks:
@@ -558,12 +561,12 @@ services:
     - --config.file=/etc/prometheus/prometheus.yml
     - --storage.tsdb.path=/prometheus
     volumes:
-    - ./monitoring/prometheus-application.yml:/etc/prometheus/prometheus.yml:ro
-    - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
     - prometheus_data:/prometheus
-    - ./monitoring/datasets-alerts.yml:/etc/prometheus/datasets-alerts.yml:ro
   alertmanager:
-    image: prom/alertmanager:v0.27.0
+    image: sentinel-alertmanager:local
+    build:
+      context: .
+      dockerfile: docker/alertmanager.Dockerfile
     mem_limit: 128m
     restart: unless-stopped
     networks:
@@ -572,7 +575,6 @@ services:
     - --config.file=/etc/alertmanager/alertmanager.yml
     - --storage.path=/alertmanager
     volumes:
-    - ./monitoring/alertmanager-application.yml:/etc/alertmanager/alertmanager.yml:ro
     - alertmanager_data:/alertmanager
   grafana:
     image: grafana/grafana:11.2.0
