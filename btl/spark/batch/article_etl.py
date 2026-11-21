@@ -107,6 +107,7 @@ def _merge_article_serving(wh, silver, run_id):
     placeholder = '%s' if wh._engine_type == 'postgres' else '?'
     affected_dates = set()
     current_rows = []
+    counts = dict(new=0, updated=0, unchanged=0, older=0)
     for row in silver.to_dict('records'):
         cursor.execute(f'SELECT * FROM articles WHERE article_id={placeholder}', (row['article_id'],))
         stored = cursor.fetchone()
@@ -145,7 +146,14 @@ def _merge_article_serving(wh, silver, run_id):
         if older:
             # Keep this genuinely observed older version, but a delayed replay
             # cannot roll back the latest observed serving record or its stats.
+            counts["older"] += 1
             continue
+        if previous is None:
+            counts["new"] += 1
+        elif previous["content_fingerprint"] != fingerprint:
+            counts["updated"] += 1
+        else:
+            counts["unchanged"] += 1
         current_rows.append({**row, 'content_fingerprint': fingerprint, 'current_version': version,
                              'first_seen_run_id': previous['first_seen_run_id'] if previous else run_id,
                              'last_seen_run_id': run_id})
@@ -165,6 +173,7 @@ def _merge_article_serving(wh, silver, run_id):
             f'SELECT DATE(published_at), source_name, COUNT(*), SUM(LENGTH(body)), source_group, {placeholder} '
             f'FROM articles WHERE DATE(published_at)={placeholder} '
             'GROUP BY DATE(published_at), source_name, source_group', (run_id, date))
+    return counts
 
 
 @canonical_writer
@@ -215,7 +224,7 @@ def _publish_articles_locked(records, mode, run_id, prefix, bronze_paths):
                     'quarantine_path': quarantine_path, 'bronze_paths': bronze_paths or [], 'quality': quality,
                     'engine': 'pandas', 'status': 'complete'}
         with wh.transaction():
-            _merge_article_serving(wh, silver, run_id)
+            manifest["publication_counts"] = _merge_article_serving(wh, silver, run_id)
             wh.upsert_dataframe('article_pipeline_runs', pd.DataFrame([{
                 'run_id': run_id, 'manifest_json': json.dumps(manifest, ensure_ascii=False)}]), ['run_id'])
             import os

@@ -10,6 +10,28 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 
+def web_run_accounting(capture, receipt, daily_quota=None):
+    """Keep collection, queued URLs and resulting SQL changes distinct."""
+    publication = receipt.get("process_result") or {}
+    result = {
+        "requested_articles": capture.get("requested_articles"),
+        "collected_articles": capture.get("articles_collected"),
+        "pending_urls": len(capture["pending_urls"]) if "pending_urls" in capture else None,
+        "retry_exhausted_urls": len(capture["retry_exhausted_urls"]) if "retry_exhausted_urls" in capture else None,
+        "publication_counts": publication.get("publication_counts"),
+    }
+    if daily_quota is not None:
+        articles = capture.get("records") or []
+        article_ids = {row.get("article_id") for row in articles if row.get("article_id")}
+        result["daily_quota"] = daily_quota
+        result["quota_met"] = (
+            daily_quota <= len(article_ids) == len(articles) == result["collected_articles"]
+            == receipt.get("input_records") == publication.get("records_delivered")
+            == publication.get("records_consumed")
+        )
+    return result
+
+
 def assess(jobs, start, now, runs, monitoring_coverage):
     elapsed = (now - start).total_seconds()
     counts = {
@@ -22,6 +44,10 @@ def assess(jobs, start, now, runs, monitoring_coverage):
     }
     failures = [row for row in runs if row["run_type"] == "scheduled" and row["state"] == "failed"]
     partial = [row for row in runs if row["run_type"] == "scheduled" and row.get("coverage") == "partial"]
+    coverage_gaps = [
+        row for row in runs if row["run_type"] == "scheduled" and row["state"] == "success"
+        and not row.get("web_accounting", {}).get("quota_met", row.get("coverage") != "partial")
+    ]
     unverified = [
         row for row in runs
         if row["run_type"] == "scheduled" and row["state"] == "success" and not row["receipt_verified"]
@@ -35,7 +61,7 @@ def assess(jobs, start, now, runs, monitoring_coverage):
         and monitoring_coverage >= 0.99
     )
     return {
-        "accepted": operational and not partial,
+        "accepted": operational and not coverage_gaps,
         "operational_acceptance": operational,
         "elapsed_hours": elapsed / 3600,
         "earliest_review_at": (start + timedelta(hours=72)).isoformat(),
@@ -43,9 +69,10 @@ def assess(jobs, start, now, runs, monitoring_coverage):
         "failed_scheduled_runs": len(failures),
         "unverified_successful_scheduled_runs": len(unverified),
         "partial_scheduled_runs": len(partial),
+        "scheduled_runs_below_coverage_target": len(coverage_gaps),
         "monitoring_sample_coverage": monitoring_coverage,
         "required_monitoring_sample_coverage": 0.99,
-        "boundary": "At least72 real elapsed hours and3successful scheduled cycles per source, verified durable receipts, >=99% observed up samples, no failed runs. Partial collection remains a separate acceptance gap. Manual runs never count; sampled availability is not proof of multi-host HA.",
+        "boundary": "The gate requires 72 real hours, three verified scheduled cycles per source, at least 99% healthy monitoring samples, and every applicable coverage target. The raw partial-run count also tracks backlog when a distinct web quota is configured.",
     }
 
 
@@ -69,6 +96,7 @@ def monitoring_coverage(jobs: list[str], series: list[dict], expected: int) -> d
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--web-daily-quota", type=int, help="Minimum distinct articles in each verified scheduled web run")
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--window", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -77,6 +105,8 @@ def main():
     parser.add_argument("--prometheus-config", type=Path, default=ROOT / "monitoring" / default_config,
                         help="Scrape configuration defining every required monitoring job")
     args = parser.parse_args()
+    if args.web_daily_quota is not None and args.web_daily_quota < 1:
+        parser.error("--web-daily-quota must be positive")
     import yaml
     from airflow.models import DagRun, TaskInstance
     from airflow.utils.session import create_session
@@ -107,6 +137,7 @@ def main():
                     .all()
                 }
                 payload = folder / "capture.json"
+                capture_bytes = payload.read_bytes() if receipt.get("capture_sha256") and payload.is_file() else None
                 verified = (
                     receipt.get("run_id") == identity
                     and receipt.get("scheduler") == "airflow"
@@ -118,8 +149,8 @@ def main():
                     and receipt.get("processed_at") is not None
                     and receipt.get("input_records", 0) >= job["minimum_records"]
                     and all(states.get(task) == "success" for task in ("capture", "process"))
-                    and payload.is_file()
-                    and hashlib.sha256(payload.read_bytes()).hexdigest() == receipt.get("capture_sha256")
+                    and capture_bytes is not None
+                    and hashlib.sha256(capture_bytes).hexdigest() == receipt.get("capture_sha256")
                 )
                 runs.append(
                     {
@@ -129,6 +160,9 @@ def main():
                         "state": run.state,
                         "receipt_verified": verified,
                         "coverage": receipt.get("state"),
+                        **({"web_accounting": web_run_accounting(
+                            json.loads(capture_bytes), receipt, args.web_daily_quota
+                        )} if verified and job["adapter"] == "web" else {}),
                     }
                 )
     end = now.timestamp()
@@ -143,6 +177,7 @@ def main():
     expected = math.floor((end - begin) / step) + 1
     coverage = monitoring_coverage(required, series, expected)
     report = assess([job["id"] for job in jobs], start, now, runs, min(coverage.values()))
+    report["web_daily_quota"] = args.web_daily_quota
     report["monitoring_coverage_by_job"] = coverage
     report["checked_at"] = now.isoformat()
     report["runs"] = runs

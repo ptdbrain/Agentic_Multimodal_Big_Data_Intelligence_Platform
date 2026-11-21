@@ -67,3 +67,23 @@ def test_three_verified_cycles_cannot_hide_an_additional_corrupt_scheduled_recei
     result = assess(["web"], start, start + timedelta(days=4), runs, 1)
     assert not result["accepted"]
     assert result["unverified_successful_scheduled_runs"] == 1
+
+
+def test_approved_web_quota_keeps_backlog_visible_and_ignores_duplicate_articles():
+    from scripts.verify_source_acceptance import assess, web_run_accounting
+
+    capture = {"requested_articles": 50, "articles_collected": 50, "pending_urls": ["pending"],
+               "retry_exhausted_urls": [], "records": [{"article_id": str(i)} for i in range(50)]}
+    receipt = {"input_records": 50, "process_result": {"records_delivered": 50, "records_consumed": 50}}
+    counts = web_run_accounting(capture, receipt, daily_quota=50)
+    assert counts["quota_met"] is True and counts["pending_urls"] == 1
+    start = datetime(2026, 11, 21, tzinfo=timezone.utc)
+    later = start + timedelta(hours=72)
+    rows = [dict(job="web", run_id=f"scheduled__{i}", run_type="scheduled", state="success",
+                 receipt_verified=True, coverage="partial", web_accounting=counts) for i in range(3)]
+    output = assess(["web"], start, later, rows, 1)
+    assert output["accepted"] and output["partial_scheduled_runs"] == 3
+    capture["records"][-1]["article_id"] = "0"
+    rows[0]["web_accounting"] = web_run_accounting(capture, receipt, daily_quota=50)
+    assert rows[0]["web_accounting"]["quota_met"] is False
+    assert not assess(["web"], start, later, rows, 1)["accepted"]

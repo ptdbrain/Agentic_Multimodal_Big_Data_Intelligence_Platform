@@ -42,6 +42,18 @@ def test_article_publish_replay_replaces_serving_and_preserves_history():
     assert one['lake']['root'] == str(storage.base_dir.resolve())
     assert storage.object_exists(one['silver_path'])
     assert storage.object_exists(two['gold_path'])
+    assert one['publication_counts'] == {'new': 1, 'updated': 0, 'unchanged': 0, 'older': 0}
+    assert two['publication_counts'] == {'new': 0, 'updated': 0, 'unchanged': 1, 'older': 0}
+
+
+def test_article_publication_counts_changes_and_delayed_versions_separately():
+    older = article()
+    current = dict(older, title='New title', collected_at='2026-11-04T00:00:00Z')
+    publish_articles([older], mode='test', run_id='initial')
+    update = publish_articles([current], mode='test', run_id='updated')
+    delayed = publish_articles([older], mode='test', run_id='delayed')
+    assert update['publication_counts'] == {'new': 0, 'updated': 1, 'unchanged': 0, 'older': 0}
+    assert delayed['publication_counts'] == {'new': 0, 'updated': 0, 'unchanged': 0, 'older': 1}
 
 
 def test_article_updates_are_not_reported_as_duplicate_observations():
