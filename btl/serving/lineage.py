@@ -5,6 +5,7 @@ import json
 import math
 import re
 from collections.abc import Iterator, Sequence
+from datetime import datetime, timezone
 from pathlib import PurePosixPath
 
 from ingestion.privacy import sanitize_record_pii
@@ -271,7 +272,15 @@ def _winner_matches(payload: dict, envelope: dict, silver: dict, entity: str) ->
         if payload.get("source_url") != silver.get("source_url"):
             return False
         try:
-            if instant(payload.get("collected_at")) != instant(silver.get("collected_at")):
+            stored_clock = silver.get("collected_at")
+            raw_clock = silver.get("collected_at_raw")
+            # Warehouse snapshots store UTC without a zone and retain the source clock.
+            if raw_clock is not None and isinstance(stored_clock, datetime) and stored_clock.tzinfo is None:
+                stored_clock = stored_clock.replace(tzinfo=timezone.utc)
+            verified_clock = instant(stored_clock)
+            if raw_clock is not None and instant(raw_clock) != verified_clock:
+                return False
+            if instant(payload.get("collected_at")) != verified_clock:
                 return False
         except (TypeError, ValueError):
             return False

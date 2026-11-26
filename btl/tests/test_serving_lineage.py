@@ -195,7 +195,18 @@ def test_aggregate_recipe_checks_full_membership_and_pages_without_future_or_oth
     store.conn.close()
 
 
-def test_article_winner_uses_content_and_collection_clock_without_inventing_event_ids(tmp_path):
+@pytest.mark.parametrize(
+    "stored_clock, raw_clock, expected",
+    [
+        ("2026-11-13T01:00:00Z", None, "verified_winner"),
+        ("2026-11-13 01:00:00", "2026-11-13T08:00:00+07:00", "verified_winner"),
+        ("2026-11-13 01:00:00", None, "not_found"),
+        ("2026-11-13 01:00:00", "2026-11-13T01:01:00Z", "not_found"),
+    ],
+)
+def test_article_winner_uses_content_and_collection_clock_without_inventing_event_ids(
+    tmp_path, stored_clock, raw_clock, expected
+):
     import pandas as pd
     from serving.lineage import stage_lineage, trace_record
 
@@ -212,7 +223,10 @@ def test_article_winner_uses_content_and_collection_clock_without_inventing_even
     path.write_text(json.dumps([{"payload": article}]))
     silver = tmp_path / "silver/article_snapshots/article/articles.parquet"
     silver.parent.mkdir(parents=True)
-    pd.DataFrame([article]).to_parquet(silver)
+    snapshot = {**article, "collected_at": pd.Timestamp(stored_clock)}
+    if raw_clock is not None:
+        snapshot["collected_at_raw"] = raw_clock
+    pd.DataFrame([snapshot]).to_parquet(silver)
 
     def ref(file):
         raw = file.read_bytes()
@@ -235,8 +249,11 @@ def test_article_winner_uses_content_and_collection_clock_without_inventing_even
             },
         )
     result = trace_record(store, lake, "article", "articles", "a")
-    assert result["status"] == "verified_winner"
-    assert result["records"][0]["payload"]["content_sha256"] == digest
+    assert result["status"] == expected
+    if expected == "verified_winner":
+        assert result["records"][0]["payload"]["content_sha256"] == digest
+    else:
+        assert not result["records"]
     store.conn.close()
 
 
