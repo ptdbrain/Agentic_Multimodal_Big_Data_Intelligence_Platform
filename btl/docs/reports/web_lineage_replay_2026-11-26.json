@@ -1,0 +1,58 @@
+{
+  "staging": {
+    "generation": "d0dedb1d-99a4-466d-bcfc-62f1dbae7834",
+    "input_sha256": "966d69c4a826b9aea95d6645a7aea6f275b86f649fe431f1dd4c04a57c783b46",
+    "bronze_objects": 1,
+    "records_verified": 2,
+    "acquisition_method": "snapshot_replay",
+    "publication_counts": {
+      "new": 2,
+      "updated": 0,
+      "unchanged": 0,
+      "older": 0
+    }
+  },
+  "live": {
+    "generation": "06298d3a-6ffe-4fea-b7e5-2ff4cb5afa91",
+    "input_sha256": "966d69c4a826b9aea95d6645a7aea6f275b86f649fe431f1dd4c04a57c783b46",
+    "bronze_objects": 1,
+    "records_verified": 2,
+    "acquisition_method": "snapshot_replay",
+    "publication_counts": {
+      "new": 0,
+      "updated": 0,
+      "unchanged": 2,
+      "older": 0
+    }
+  },
+  "comparison": {
+    "verified_at": "2026-11-26T12:54:26.935561+00:00",
+    "before": "web-3846db0768951df2fc4cc8b48b2d06cd",
+    "after": "06298d3a-6ffe-4fea-b7e5-2ff4cb5afa91",
+    "articles": 500,
+    "only_provenance_metadata_changed": [
+      "acquisition_method",
+      "last_seen_run_id",
+      "original_acquisition_method",
+      "run_id"
+    ],
+    "both_replays_verified": true,
+    "gold_rows_equal": 174
+  },
+  "restored": {
+    "verified_at": "2026-11-26T12:55:53.886092+00:00",
+    "backup": "backup-20261126T125447-5078b0008ded",
+    "generation": "06298d3a-6ffe-4fea-b7e5-2ff4cb5afa91",
+    "total_articles_after_restore": 500,
+    "verified_replayed_articles_after_restore": 2
+  },
+  "dashboard": {
+    "generation": "06298d3a-6ffe-4fea-b7e5-2ff4cb5afa91",
+    "silver_articles": 500,
+    "distinct_bronze_winners": 500,
+    "legacy_without_pinned_bronze": 0,
+    "missing_examples": [],
+    "dashboard_trace_confirmed": true,
+    "example_article_id": "article_75c88b4180ac7f07ef13867f"
+  }
+}

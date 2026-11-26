@@ -27,11 +27,15 @@ Xem `docker compose logs alert-worker` sau khi worker tham gia consumer group. S
 
 Thử nghiệm riêng với Spark 3.5.0 và Delta Lake 3.1.0 trên MinIO staging. Hai bảng `silver.prices` và `gold.price_daily_stats` đọc đúng 262/282 dòng qua `versionAsOf` và khớp dữ liệu nguồn theo cả hai chiều. Phát lại cùng `txnAppId` và `txnVersion` giữ nguyên lịch sử. Cả hai bảng từ chối thêm cột theo mặc định, chỉ chấp nhận khi đặt `mergeSchema=true` và vẫn đọc được schema ở phiên cũ. Phép thử dùng một Spark driver. [Biên nhận thử nghiệm](delta_minio_pilot_2026-11-26.json) · [Tài liệu cấu hình lưu trữ Delta](https://docs.delta.io/delta-storage/)
 
+Thử nghiệm mở rộng đã đối soát **39 phiên xuất bản** được lưu trước lượt phát lại thủ công của web. Cả **195 phiên bảng trên 15 bảng** có cùng schema và dữ liệu với bản sao đã kiểm tra. Mỗi bảng đọc được theo từng phiên và phát lại phiên cuối giữ nguyên lịch sử. Spark 3.5 gặp lỗi với timestamp nano giây của Parquet bài web. Phép thử chuyển đơn vị về micro giây trên bản sao, so khớp từng giá trị khi đổi ngược, và chỉ mở rộng schema khi cột `seller` xuất hiện ở phiên 8 của hai bảng Tiki. [Kết quả từng bảng và mã phiên](delta_history_shadow_2026-11-26.json)
+
 ## Truy vết trên dashboard
 
 Commit `34884de` sửa việc đối chiếu giờ thu bài web khi Silver lưu UTC dưới dạng thiếu thông tin múi giờ. Mã lấy giờ gốc có múi giờ làm bằng chứng và yêu cầu giờ Bronze, giờ lưu Silver và giờ gốc khớp nhau. Bản đã triển khai truy vết được một review Tiki, một bài web và một review giả lập, đồng thời đối soát thành viên của một dòng mart giá Tiki.
 
-Đối chiếu toàn bộ phiên web mới nhất tìm được **498/500** bản ghi Silver khớp đối tượng Bronze trong biên nhận. Hai bài cũ ngày 12/11 cũng khớp một tệp Bronze đã lưu, nhưng tệp đó nằm ngoài biên nhận của phiên nên dashboard giữ trạng thái `not_found`. Có thể mở trang [Truy vết dữ liệu](http://127.0.0.1:18502/lineage), chọn `articles` và nhập `article_75c88b4180ac7f07ef13867f` để xem một trường hợp đã xác minh. [Biên nhận truy vết](lineage_live_2026-11-26.json)
+Phiên web ban đầu xác minh được **498/500** bài. Hai bài ngày 12/11 khớp tệp Bronze gốc nhưng thiếu tệp này trong biên nhận. Sau khi thử trên staging, hệ thống phát lại hai bài qua Kafka với nhãn `snapshot_replay` và nguồn gốc `live`. Phiên mới truy vết được **500/500** bài. Nội dung, thời gian thu thập và 174 dòng tổng hợp Gold khớp phiên trước. Lượt phát lại thủ công được ghi riêng với các lượt thu hằng ngày. Sau sao lưu mới, cả hai bài vẫn truy vết được từ MinIO và PostgreSQL phục hồi. [Biên nhận phát lại](web_lineage_replay_2026-11-26.json) · [Biên nhận phục hồi](nonai_native_handback_backup-20261126T125447-5078b0008ded.json)
+
+Mở trang [Truy vết dữ liệu](http://127.0.0.1:18502/lineage), chọn `articles` và nhập `article_75c88b4180ac7f07ef13867f` để xem một trường hợp đã xác minh. [Biên nhận truy vết ban đầu](lineage_live_2026-11-26.json)
 
 ## Hiệu năng và kiểm thử
 
@@ -53,5 +57,5 @@ Commit `34884de` sửa việc đối chiếu giờ thu bài web khi Silver lưu 
 
 - Báo cáo 19:15 của cửa sổ trước có năm chu kỳ hợp lệ mỗi nguồn, web đạt 50 bài/ngày và coverage giám sát **53,09%**. Backlog web tiếp tục có số đo riêng. Một cửa sổ bổ sung bắt đầu **19:32:18 ngày 26/11**, đủ 72 giờ sớm nhất **19:32:18 ngày 29/11** (giờ Việt Nam). Bộ xác minh ghi báo cáo mỗi giờ và giữ cả ba cửa sổ trước. Tiêu chí gồm ít nhất 99% mẫu giám sát, ba chu kỳ lịch hợp lệ mỗi nguồn và đủ quota web.
 - Độ trễ từ sự kiện giá Tiki mới đến PostgreSQL cần đo ở chu kỳ thật tiếp theo. Kiểm thử worker với dữ liệu giả lập chứng minh đường xử lý, gửi HTTP và khử trùng.
-- Thử nghiệm Delta mới bao phủ hai bảng Tiki. Chuyển dữ liệu đang phục vụ sang Delta còn cần ánh xạ tất cả phiên bản được giữ, so kết quả cho các bảng còn lại, kiểm soát writer, diễn tập khôi phục và chuyển lại đường đọc cũ. Tất cả điều kiện này cần được kiểm tra trước khi thay đường xuất bản đang phục vụ.
+- Chuyển hệ thống đang phục vụ sang Delta còn cần đưa đường xuất bản mới vào pipeline, kiểm soát các writer, diễn tập khôi phục và chứng minh có thể chuyển lại đường đọc cũ. Thử nghiệm 39 phiên dùng một Spark driver trên MinIO staging.
 - Giai đoạn AI sẽ tiếp nối sau khi nghiệm thu Giai đoạn 1.

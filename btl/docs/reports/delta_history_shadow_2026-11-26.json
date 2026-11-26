@@ -1,0 +1,480 @@
+{
+  "spark": "3.5.0",
+  "delta": "3.1.0",
+  "storage": "staging MinIO",
+  "writer_scope": "single driver",
+  "lossless_clock_rewrites_by_table": {
+    "web.silver.articles": 13,
+    "tiki.silver.prices": 13,
+    "tiki.silver.products": 13,
+    "tiki.silver.reviews": 13,
+    "simulation.silver.products": 13,
+    "simulation.silver.reviews": 13
+  },
+  "orders": "repository receipt order by publication time, then generation",
+  "schema_additions": [
+    {
+      "dataset": "tiki",
+      "table": "silver.prices",
+      "delta_version": 8,
+      "column": "seller"
+    },
+    {
+      "dataset": "tiki",
+      "table": "silver.products",
+      "delta_version": 8,
+      "column": "seller"
+    }
+  ],
+  "verified_at": "2026-11-26T12:56:12.413271+00:00",
+  "publication_cutoff": "Inventory captured before the manual web lineage replay",
+  "source_publications": 39,
+  "table_versions_verified": 195,
+  "tables_verified": 15,
+  "sources": {
+    "web": {
+      "versions_in_order": [
+        {
+          "generation": "web-daeebea08a61bf10b239700539147d7f",
+          "receipt_sha256": "d41dbebc84e38baef022ecacd9e4b587d6eded7345628bd17c6b1fde9a39296d"
+        },
+        {
+          "generation": "web-bea823c3a67e599f823ed81f3d688bf0",
+          "receipt_sha256": "685886646a59253d6e35d73cd8ec06a7564f8c36386311a676a55d7d761a4e36"
+        },
+        {
+          "generation": "web-c16dd3b3b12d32e6055d397cc8550f7d",
+          "receipt_sha256": "513fff2a9b042ace7dbb1527a205cfbe768d8282846a9163a8c03333b5589d0f"
+        },
+        {
+          "generation": "web-2299bd7970c717f3e7866bc0e077d061",
+          "receipt_sha256": "7963f121b97fd0284fae62a3ab00f5b817a92ffbe7e1f2214fcda8be28c6bdf6"
+        },
+        {
+          "generation": "web-fe409999c849e51fb280f2a88b038fb2",
+          "receipt_sha256": "58690b43c2937b67b67f6f9aa3ba5ce6dafbdf15c228b7b2fb879e91a0809f8d"
+        },
+        {
+          "generation": "web-b05e07d505f94401bd0ead5749eb8e0b",
+          "receipt_sha256": "6c27a3e374602ae529ff914fcc058ca1ebbb8f030cf26844145a9bcd1ae688f9"
+        },
+        {
+          "generation": "web-e4d749845e9538af26b085bdce06be4d",
+          "receipt_sha256": "f9feca290c5040d9f3ccd35b5112cd5ede688798b883c88cf276a93944c77f93"
+        },
+        {
+          "generation": "web-6b2fa9fb2eef82800f828c972b3ef34b",
+          "receipt_sha256": "156c30f12716a519b92dddc87445a09df579fa496e53d60fdd631b6ea5d10cc2"
+        },
+        {
+          "generation": "web-6048c48a20d60faed8fd600097729fd6",
+          "receipt_sha256": "cb7c7dc396fa244265c1e24a1f04244341860105e9bfa710b49dbd5af2effcab"
+        },
+        {
+          "generation": "web-a2c6f4a57e305ce2980ec13b9a44a4a6",
+          "receipt_sha256": "77e742638a115e90e6dbd12f4abf7a7d6c4506d2517a1e74f75ef6d2f7f7b950"
+        },
+        {
+          "generation": "web-6418d1e27d7b3e994a25fdb8b500c192",
+          "receipt_sha256": "d839127867df3d1721ea180160ca21e2bab25ef72323d07eced643205ec83a44"
+        },
+        {
+          "generation": "web-ba7222c6b7ab309117ed4f9bdadf965b",
+          "receipt_sha256": "83b8efeb3d37c19a95814765db6bb754fb155776a9273a43264fa494541d83f2"
+        },
+        {
+          "generation": "web-3846db0768951df2fc4cc8b48b2d06cd",
+          "receipt_sha256": "d8a65a31c89d9ba52a8d85f000318b6215bb603d89ff45892886f5e5c793f5af"
+        }
+      ],
+      "tables": {
+        "silver.articles": {
+          "rows_by_version": [
+            102,
+            152,
+            179,
+            202,
+            252,
+            260,
+            302,
+            335,
+            382,
+            383,
+            432,
+            481,
+            500
+          ],
+          "match_and_replay_verified": true
+        },
+        "gold.article_daily_stats": {
+          "rows_by_version": [
+            43,
+            66,
+            73,
+            85,
+            98,
+            104,
+            117,
+            132,
+            137,
+            137,
+            155,
+            167,
+            174
+          ],
+          "match_and_replay_verified": true
+        }
+      }
+    },
+    "tiki": {
+      "versions_in_order": [
+        {
+          "generation": "tiki-ff586a999c404d5e41a9e436892fce69",
+          "receipt_sha256": "f4f8cae3b8d88fdc35e20a97a9b45a25f501823aada20dc2bd9a9256e3eb22c5"
+        },
+        {
+          "generation": "tiki-5a16351c4fb13c96ced4997214eb589f",
+          "receipt_sha256": "4d11a47a71d4f545d0c9b44c64125c996bcf51912589f32650021a31569cbcce"
+        },
+        {
+          "generation": "tiki-9efd2bed0b9f1adb62c8b1fc0c7f2fea",
+          "receipt_sha256": "ee5df368ead87d055aa1c8a176e1c82a6330d56bfac51b8dff3ed5ce874b2669"
+        },
+        {
+          "generation": "tiki-f0b95979b34701755264ce3da8d4f29f",
+          "receipt_sha256": "c32aa4aedfecaa5a513c846f95a15966ef6665b84f84062ad2ceeed4a15e43df"
+        },
+        {
+          "generation": "tiki-f2634389a2b5df311c522584f5deb1fb",
+          "receipt_sha256": "e3990aa63deab9e44532837b3e97a00510aef0002a91b49da8e6918e0938f0d8"
+        },
+        {
+          "generation": "tiki-e14bb773b265009d10c595f3cc413099",
+          "receipt_sha256": "ffd4ca01f5076aba36b6bc9363763ade13f24d459762ba39a4c4b01a7369c2ab"
+        },
+        {
+          "generation": "tiki-5baa9d2a84e27f6b025c877f8b315a05",
+          "receipt_sha256": "21b17543d1dcc09e400f2bfa731ab86c1a34e4e9b3d103b54dd9a2c962186cbb"
+        },
+        {
+          "generation": "tiki-79e57e5b764c1b5d85060bd03d09e01f",
+          "receipt_sha256": "37a123d0ac8beaad57977d74e6ae08fa940cfc8865fed6bf08c1aed92719e47d"
+        },
+        {
+          "generation": "tiki-755a568f62c80eca490bf912a76b001b",
+          "receipt_sha256": "1b4a16e3cd9795b9100c280436c795ac7a801dc9072213b5c8a3e57c58230376"
+        },
+        {
+          "generation": "tiki-ba2d8a54694572a88dc5e548045f7254",
+          "receipt_sha256": "0a32e98d33d17f55f128e2b39efe62b013ee7307017001e766d8d9638b46079e"
+        },
+        {
+          "generation": "tiki-ab73e8c52ab52183581e4ec5fe463700",
+          "receipt_sha256": "71cefa961ba5b4abe9136566cfaa079c0ecd23063fe6e3c82bd0c9a1a20f6ebf"
+        },
+        {
+          "generation": "tiki-33aa9875762c0933159b99be339e31b3",
+          "receipt_sha256": "6963f87693ba31ffc656801a4a97307cd71ecab34e28c876aa03fa0049a2d2bc"
+        },
+        {
+          "generation": "tiki-9295b2a2f494765d5742651e67ec380b",
+          "receipt_sha256": "eae2c0fe95c7c99eac006ab92168f7f1efb021c7b93232c73851d138be9d13f5"
+        }
+      ],
+      "tables": {
+        "silver.prices": {
+          "rows_by_version": [
+            42,
+            62,
+            82,
+            102,
+            122,
+            142,
+            162,
+            182,
+            202,
+            222,
+            242,
+            262,
+            282
+          ],
+          "match_and_replay_verified": true
+        },
+        "silver.products": {
+          "rows_by_version": [
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20,
+            20
+          ],
+          "match_and_replay_verified": true
+        },
+        "silver.reviews": {
+          "rows_by_version": [
+            258,
+            259,
+            259,
+            261,
+            262,
+            262,
+            262,
+            262,
+            262,
+            263,
+            263,
+            263,
+            263
+          ],
+          "match_and_replay_verified": true
+        },
+        "gold.brand_daily_stats": {
+          "rows_by_version": [
+            205,
+            206,
+            206,
+            208,
+            208,
+            208,
+            208,
+            208,
+            208,
+            209,
+            209,
+            209,
+            209
+          ],
+          "match_and_replay_verified": true
+        },
+        "gold.category_daily_stats": {
+          "rows_by_version": [
+            204,
+            205,
+            205,
+            207,
+            207,
+            207,
+            207,
+            207,
+            207,
+            208,
+            208,
+            208,
+            208
+          ],
+          "match_and_replay_verified": true
+        },
+        "gold.price_daily_stats": {
+          "rows_by_version": [
+            42,
+            62,
+            82,
+            102,
+            122,
+            142,
+            162,
+            182,
+            202,
+            222,
+            242,
+            262,
+            282
+          ],
+          "match_and_replay_verified": true
+        },
+        "gold.product_daily_stats": {
+          "rows_by_version": [
+            216,
+            217,
+            217,
+            219,
+            220,
+            220,
+            220,
+            220,
+            220,
+            221,
+            221,
+            221,
+            221
+          ],
+          "match_and_replay_verified": true
+        }
+      }
+    },
+    "simulation": {
+      "versions_in_order": [
+        {
+          "generation": "simulation-be1a6cb2b80f1881174c7f4b8c281c47",
+          "receipt_sha256": "4165431ac5c77476063b42a7f759112d5a3111a9ffb119b28b10f8598ea2013e"
+        },
+        {
+          "generation": "simulation-099e307ad1ab66e17344c124f93894bc",
+          "receipt_sha256": "12ee3e255faf5a0aa94584ccd8b74c061907c83f3d79062996437debf2d36df2"
+        },
+        {
+          "generation": "simulation-693ce4743cb57436c4e8c11dcfbf4410",
+          "receipt_sha256": "0c489f3df9a028126e8e3b8eefe08975fcc1ffafa77a0493321565d560c197e8"
+        },
+        {
+          "generation": "simulation-6ed2f7c7008fbe60a3766540cc486fe4",
+          "receipt_sha256": "793d1eb25edf0b2c31d26e7c5694faaee2409810f59e39ddb76ab3685b701e9b"
+        },
+        {
+          "generation": "simulation-f150e2e0d258ff3c3596e08d6fa98078",
+          "receipt_sha256": "e7602df16a32de77d707d5a62c2d1f66eafb7363f3a6f88303ec72dda9f09a46"
+        },
+        {
+          "generation": "simulation-6cba2f7d72665118f14111f1b2606577",
+          "receipt_sha256": "e85f67de4a2a7e6305f146008cb4d927fc9bce206da7887400d443e34df0f956"
+        },
+        {
+          "generation": "simulation-c7990cf79377dd1338a6ba336a4f892d",
+          "receipt_sha256": "1acd8a419d42557e50a840c5f322ef16516ca68594422c197afc03b2d0e6decb"
+        },
+        {
+          "generation": "simulation-1beffb8044ac6a315aec17342792a2a5",
+          "receipt_sha256": "63c07a993c5434572a1b251ce449fec03d87210ff3cf9636bf46a334d313f606"
+        },
+        {
+          "generation": "simulation-4c0a6278f98efdeb568e613ca7a77d15",
+          "receipt_sha256": "b2ae34772182e08836c7aa8e2c12ac3b42a811812cac34f0a46b0ac4193be0e0"
+        },
+        {
+          "generation": "simulation-5094ac5c0aef40c631403b988ad81073",
+          "receipt_sha256": "f63bf03294bc7777f8f03d83b556e11d96df523cb5e1f21784b39144e4233722"
+        },
+        {
+          "generation": "simulation-b05500a461d97be8891ae862688faf3c",
+          "receipt_sha256": "4ff36bce16604d9a9349eb6f8de7d1794e6663bc09b16127687996d418553f9a"
+        },
+        {
+          "generation": "simulation-a737cc745d4409313ff8ee627d431d9c",
+          "receipt_sha256": "b40dafc82cea97388effaa51aea4f2f48fb4bcb7fe7011b9535615c96d19eca1"
+        },
+        {
+          "generation": "simulation-e126035e3a1913afe65d117e72459ed9",
+          "receipt_sha256": "54d19705b4a7c07262d1de6b9cb086941d5bf9200d042acd5b7deb769400f321"
+        }
+      ],
+      "tables": {
+        "silver.products": {
+          "rows_by_version": [
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10
+          ],
+          "match_and_replay_verified": true
+        },
+        "silver.reviews": {
+          "rows_by_version": [
+            160,
+            160,
+            160,
+            160,
+            160,
+            160,
+            160,
+            160,
+            160,
+            160,
+            160,
+            160,
+            160
+          ],
+          "match_and_replay_verified": true
+        },
+        "gold.brand_daily_stats": {
+          "rows_by_version": [
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76
+          ],
+          "match_and_replay_verified": true
+        },
+        "gold.category_daily_stats": {
+          "rows_by_version": [
+            48,
+            48,
+            48,
+            48,
+            48,
+            48,
+            48,
+            48,
+            48,
+            48,
+            48,
+            48,
+            48
+          ],
+          "match_and_replay_verified": true
+        },
+        "gold.price_daily_stats": {
+          "rows_by_version": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "match_and_replay_verified": true
+        },
+        "gold.product_daily_stats": {
+          "rows_by_version": [
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90,
+            90
+          ],
+          "match_and_replay_verified": true
+        }
+      }
+    }
+  }
+}

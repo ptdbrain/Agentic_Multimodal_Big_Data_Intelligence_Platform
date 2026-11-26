@@ -1,0 +1,47 @@
+{
+  "verified": true,
+  "checked_at": "2026-11-26T12:55:35.316259+00:00",
+  "snapshot_at": "2026-11-26T12:54:47.039628+00:00",
+  "cutover_at": "2026-11-20T04:14:49.192804+00:00",
+  "manifest_sha256": "ed48b7e984f0624a0262638d6735bc685f31cb38c276a104500940d3c8009b2d",
+  "restored_components": 8,
+  "restored_scheduled_cycle_counts": {
+    "tiki": 6,
+    "web": 6,
+    "simulation": 6
+  },
+  "restored_counts": {
+    "tiki.products": 20,
+    "tiki.reviews": 263,
+    "simulation.products": 10,
+    "simulation.reviews": 160,
+    "web.articles": 500
+  },
+  "paused_restored_dags": 3,
+  "original_native_owner_active": false,
+  "restored_sql_batch": 7,
+  "stream_frontier": {
+    "reviews_window": {
+      "batch_id": 7,
+      "end_offsets": {
+        "docker-simulation-reviews": {
+          "0": 222,
+          "1": 108,
+          "2": 630
+        }
+      }
+    },
+    "reviews_quarantine": {
+      "batch_id": 6,
+      "end_offsets": {
+        "docker-simulation-reviews": {
+          "0": 222,
+          "1": 108,
+          "2": 630
+        }
+      }
+    }
+  },
+  "restored_handover_transaction": true,
+  "boundary": "Docker remains the sole active owner. Restored native targets are isolated and paused. This rehearsal covers only writes through this backup. After additional scheduled captures, repeat using the latest drained snapshot; cross-cluster resume requires a fresh validated Kafka generation."
+}
