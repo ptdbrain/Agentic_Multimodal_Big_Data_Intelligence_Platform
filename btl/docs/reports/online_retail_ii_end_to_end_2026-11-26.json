@@ -1,0 +1,67 @@
+{
+  "source": {
+    "dataset": "Online Retail II",
+    "author": "Daqing Chen",
+    "year": 2012,
+    "publisher": "UCI Machine Learning Repository",
+    "url": "https://archive.ics.uci.edu/dataset/502/online+retail+ii",
+    "doi": "10.24432/C5CG6D",
+    "license": "CC BY 4.0",
+    "source_sha256": "572e36277c2390fbfde10664750731e0a86f55e33470d91919085f0408e67bfb",
+    "parquet_sha256": "c06f4485b5ec1be25913b335a8ac5e161d065b9812ba3c6909feb361f6e300d7",
+    "sheets": {
+      "Year 2009-2010": 525461,
+      "Year 2010-2011": 541910
+    },
+    "counts": {
+      "received": 1067371,
+      "distinct": 1033036,
+      "duplicate": 34335,
+      "rejected": 0,
+      "cancellation": 19104
+    },
+    "method": "Observed UK online retail lines. Customer ID excluded. Duplicate fingerprint uses all published business fields, excluding row location and Customer ID. Invoice clock retained as provided, with no inferred timezone. Cancellations and original quantity/unit price retained."
+  },
+  "archive_checked_at_utc": "2026-11-21T18:04:55.235626+00:00",
+  "spark_checked_at_utc": "2026-11-21T18:06:22.746845+00:00",
+  "archive_seconds": 335.911,
+  "kafka_acks": 1033036,
+  "kafka_offsets": {
+    "uci-online-retail-ii-full-20261122a/raw.events.retail.full-20261122a/0": {
+      "committed": 344721,
+      "end": 344721
+    },
+    "uci-online-retail-ii-full-20261122a/raw.events.retail.full-20261122a/1": {
+      "committed": 345236,
+      "end": 345236
+    },
+    "uci-online-retail-ii-full-20261122a/raw.events.retail.full-20261122a/2": {
+      "committed": 343079,
+      "end": 343079
+    }
+  },
+  "bronze_objects": 104,
+  "verified_bronze_rows": 1033036,
+  "spark_master": "spark://spark-master:7077",
+  "silver_rows": 1033036,
+  "gold_total_transaction_lines": 1033036,
+  "sql": {
+    "confirmed_rows_in_daily_counts": 1033036,
+    "days": 604,
+    "cancellation_lines": 19104,
+    "currency": "GBP",
+    "idempotent_republication": true,
+    "verified_environments": [
+      "isolated staging",
+      "live"
+    ]
+  },
+  "format_sample": {
+    "csv": 4000,
+    "json": 4000,
+    "jsonl": 4000,
+    "parquet": 4000,
+    "payload_hashes_match": true
+  },
+  "measurement_boundary": "Kafka and Spark used the isolated Compose cluster. The published PostgreSQL mart contains daily aggregates. Normalized transaction lines and Bronze objects remain separate from marketplace and web datasets."
+}
