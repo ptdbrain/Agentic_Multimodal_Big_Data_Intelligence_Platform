@@ -15,4 +15,6 @@
 - Báo cáo lúc 17:15 ghi **52,28%** mẫu giám sát đạt, dưới ngưỡng 99%. Trong đó có các khoảng ngắt dài 7,90–10,37 giờ. Mốc thời gian và biên nhận cũ được giữ để đối chiếu. Điều kiện còn thiếu là 72 giờ quan sát trên môi trường duy trì giám sát đủ liên tục.
 - Bản sao mới được tạo sau khi các DAG đã rảnh. Diễn tập phục hồi xác minh tám thành phần và lịch sử sáu chu kỳ của từng nguồn kể từ lúc chuyển đổi. Truy vấn trên đích phục hồi xác nhận mart UCI có 604 ngày, 1.033.036 dòng và 19.104 dòng có mã hủy. Sao lưu định kỳ được cấu hình thử lại sau 3 phút khi thất bại, tối đa bốn lần khởi động trong 30 phút. [Biên nhận phục hồi](nonai_native_handback_backup-20261126T102647-8bfea4654ca9.json)
 
-Các phần còn mở trước khi chốt Giai đoạn 1 gồm chứng minh cửa sổ trượt Kafka–SQL qua replay, cảnh báo giá mới theo đúng phạm vi thời gian thực, kiểm chứng đầy đủ phiên bản Silver/Gold của pipeline chính và phép đo giám sát 72 giờ đạt ngưỡng.
+Kiểm thử cửa sổ review 5 phút trượt mỗi phút đã chạy trên Kafka, Spark, Parquet và PostgreSQL thật. Kiểm thử xác nhận dữ liệu trùng không tăng số đếm khi khởi động lại, bản ghi đến trong watermark được cập nhật và bản ghi quá muộn bị loại. Phép thử dùng namespace riêng với dữ liệu giả lập có nhãn.
+
+Các phần còn mở trước khi chốt Giai đoạn 1 gồm cảnh báo giá mới theo đúng phạm vi thời gian thực, kiểm chứng đầy đủ phiên bản Silver/Gold của pipeline chính và phép đo giám sát 72 giờ đạt ngưỡng.
