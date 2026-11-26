@@ -1,0 +1,9 @@
+services:
+  alert-worker:
+    image: ${PRICE_ALERT_IMAGE:-sentinel-application:local}
+    environment:
+      PRICE_ALERT_DATASET: ${PRICE_ALERT_DATASET:?Select a marketplace or simulation dataset}
+    mem_limit: 256m
+    depends_on:
+      kafka:
+        condition: service_healthy
