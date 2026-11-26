@@ -1,0 +1,155 @@
+{
+  "stream_code_revision": "c3ddca2",
+  "isolated_price_gate": {
+    "input": "labelled synthetic fixtures",
+    "kafka_group_offsets": [
+      4,
+      4
+    ],
+    "sql_alerts": [
+      "PRICE_ANOMALY",
+      "PRICE_IQR_OUTLIER"
+    ],
+    "webhook_deliveries": 2,
+    "visibility_seconds_including_receive_window": 8.368678033002652
+  },
+  "price_sql_restore": {
+    "matches_live": true,
+    "verified_at": "2026-11-26T12:31:19.471010+00:00",
+    "snapshot": "backup-20261126T122931-b0fbb725ba58",
+    "table_row_counts": {
+      "price_stream_observations": 120,
+      "price_stream_events": 120
+    },
+    "fingerprint_method": "MD5 of ordered aggregate of each row digest",
+    "table_fingerprints": {
+      "price_stream_observations": "722a36d95bb470b297ebf430be9f99ac",
+      "price_stream_events": "bc3643fc81b4b2e3df0e81e5db70e67b"
+    }
+  },
+  "retail_sql_timing": {
+    "queries": 60,
+    "rows": 604,
+    "transactions_in_mart": 1033036,
+    "query_ms_p50": 10.437436998472549,
+    "query_ms_p95": 13.754173000052106,
+    "includes": "PostgreSQL connect, read-only snapshot, query and DataFrame materialization"
+  },
+  "retail_browser_timing": {
+    "navigations": 14,
+    "dashboard_ms_p50": 515.279035000276,
+    "dashboard_ms_p95": 706.6847329988377,
+    "measurement": "Local Chrome, new navigation in a warmed browser, until KPIs and CSV button are ready"
+  },
+  "previous_acceptance_window_snapshot": {
+    "checked_at": "2026-11-26T12:15:08.045248+00:00",
+    "accepted": false,
+    "scheduled_cycles_verified": {
+      "tiki": 5,
+      "web": 5,
+      "simulation": 5
+    },
+    "monitoring_sample_coverage": 0.5308713214079631,
+    "failed_scheduled_runs": 0,
+    "unverified_successful_scheduled_runs": 0,
+    "scheduled_runs_below_coverage_target": 0
+  },
+  "new_acceptance_window": {
+    "stability_window_started_at": "2026-11-26T12:32:18.039877+00:00",
+    "reason": "Prospective window following the Tiki Kafka price rollout and verified backup restore. All earlier windows and outages remain available.",
+    "cutover_id": "fe553490c737",
+    "owner": "docker-airflow"
+  },
+  "validation": {
+    "integration": {
+      "revision": "c3ddca2",
+      "passed": 73,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "deselected": 936,
+      "junit_sha256": "b296ec7bb5f1d8ab27cb4a7fc69f03f655617e72a476dbfa18d98c3eb7f0971b",
+      "seconds": 469.791,
+      "scope": "isolated Docker services, integration tests excluding airflow, live and docker marks",
+      "selected_cases_seconds": {
+        "test_price_alert_replay_keeps_one_delivery_per_rule": 17.033,
+        "test_actual_kafka_parquet_sql_progress_and_replay[sliding]": 14.067
+      }
+    },
+    "unit": {
+      "revision": "34884de",
+      "passed": 760,
+      "deselected": 252
+    },
+    "spark": {
+      "revision": "c3ddca2",
+      "passed": 120,
+      "deselected": 889,
+      "java_major": 17
+    }
+  },
+  "example_data_quality": {
+    "verified_at": "2026-11-26T12:46:30.530304+00:00",
+    "current_reports": {
+      "tiki": [
+        {
+          "entity": "prices",
+          "run_id": "tiki-9295b2a2f494765d5742651e67ec380b",
+          "received": 20,
+          "valid": 20,
+          "quarantined": 0,
+          "duplicates": 0,
+          "missing_observation_time": 0,
+          "dq_score": "100.00",
+          "timing_status": "measured"
+        },
+        {
+          "entity": "products",
+          "run_id": "tiki-9295b2a2f494765d5742651e67ec380b",
+          "received": 20,
+          "valid": 20,
+          "quarantined": 0,
+          "duplicates": 0,
+          "missing_observation_time": 20,
+          "dq_score": "100.00",
+          "timing_status": "measured"
+        },
+        {
+          "entity": "reviews",
+          "run_id": "tiki-9295b2a2f494765d5742651e67ec380b",
+          "received": 263,
+          "valid": 263,
+          "quarantined": 0,
+          "duplicates": 0,
+          "missing_observation_time": 0,
+          "dq_score": "100.00",
+          "timing_status": "measured"
+        }
+      ],
+      "simulation": [
+        {
+          "entity": "products",
+          "run_id": "simulation-e126035e3a1913afe65d117e72459ed9",
+          "received": 10,
+          "valid": 10,
+          "quarantined": 0,
+          "duplicates": 0,
+          "missing_observation_time": 0,
+          "dq_score": "100.00",
+          "timing_status": "measured"
+        },
+        {
+          "entity": "reviews",
+          "run_id": "simulation-e126035e3a1913afe65d117e72459ed9",
+          "received": 160,
+          "valid": 160,
+          "quarantined": 0,
+          "duplicates": 0,
+          "missing_observation_time": 0,
+          "dq_score": "100.00",
+          "timing_status": "measured"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "checked_at": "2026-11-26T12:36:33.804742+00:00",
+  "spark": "3.5.0",
+  "delta": "3.1.0",
+  "storage": "isolated MinIO on staging network",
+  "writer_scope": "one Spark driver",
+  "source": "two verified Tiki Parquet publications",
+  "tables": {
+    "silver.prices": {
+      "versions": [
+        {
+          "version": 0,
+          "rows": 262,
+          "matches_source": true,
+          "input_sha256": "d22ede5449b8e13bff45067cc77cc140dd7f2b264dc6f1793f2d073e7a2a10ac"
+        },
+        {
+          "version": 1,
+          "rows": 282,
+          "matches_source": true,
+          "input_sha256": "06dc7141dfca1e3f32c8164d717b53cedc6257773c9e0c7ff558d4f0aa93d983"
+        }
+      ],
+      "duplicate_txn_preserved_history": true,
+      "schema_evolution": {
+        "automatic_change_rejected": true,
+        "explicit_addition_version": 2,
+        "prior_schema_readable_at_version": 1
+      }
+    },
+    "gold.price_daily_stats": {
+      "versions": [
+        {
+          "version": 0,
+          "rows": 262,
+          "matches_source": true,
+          "input_sha256": "f7983b34abc287064170db4e0c620865222dd83fc36c0cdf82060b93d9469bb0"
+        },
+        {
+          "version": 1,
+          "rows": 282,
+          "matches_source": true,
+          "input_sha256": "884077e0e8e23303e91b3863055d7d5ffb3f2b3972a3ee4d71f207f33e54b376"
+        }
+      ],
+      "duplicate_txn_preserved_history": true,
+      "schema_evolution": {
+        "automatic_change_rejected": true,
+        "explicit_addition_version": 2,
+        "prior_schema_readable_at_version": 1
+      }
+    }
+  }
+}

@@ -17,4 +17,4 @@
 
 Kiểm thử cửa sổ review 5 phút trượt mỗi phút đã chạy trên Kafka, Spark, Parquet và PostgreSQL thật. Kiểm thử xác nhận dữ liệu trùng không tăng số đếm khi khởi động lại, bản ghi đến trong watermark được cập nhật và bản ghi quá muộn bị loại. Phép thử dùng namespace riêng với dữ liệu giả lập có nhãn.
 
-Các phần còn mở trước khi chốt Giai đoạn 1 gồm cảnh báo giá mới theo đúng phạm vi thời gian thực, kiểm chứng đầy đủ phiên bản Silver/Gold của pipeline chính và phép đo giám sát 72 giờ đạt ngưỡng.
+Kết quả kiểm chứng cuối ngày gồm worker giá Tiki, đọc lại phiên bản Silver/Gold, đo dashboard và cửa sổ giám sát bổ sung. [Báo cáo tối 26/11](project_completion_evening_2026-11-26.md)

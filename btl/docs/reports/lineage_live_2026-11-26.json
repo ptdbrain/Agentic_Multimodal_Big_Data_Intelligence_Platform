@@ -1,0 +1,63 @@
+{
+  "verified_at": "2026-11-26T12:42:27.958499+00:00",
+  "sources": {
+    "tiki": {
+      "source_group": "marketplace",
+      "generation": "tiki-9295b2a2f494765d5742651e67ec380b",
+      "entity": "reviews",
+      "result": "verified_winner",
+      "observed_occurrences": 1,
+      "receipt_sha256": "eae2c0fe95c7c99eac006ab92168f7f1efb021c7b93232c73851d138be9d13f5",
+      "bronze_object_sha256": "5f268e1289964c350d1d61a6c7b236668c443b5f7692bcaa0c0521c1a3d0579e",
+      "bronze_record_sha256": "549ff308d18e2075f70597f036984b0d5108bcd5ba1a6be61e232376f4c3cf1e"
+    },
+    "tiki_price_mart": {
+      "status": "verified_aggregate",
+      "number_of_members": 1,
+      "date": "2026-11-26",
+      "recipe_sha256": "c96cc13590108cdf70a74d3d2ace91f901dfe61f22464ecc7435933a691ab5c3"
+    },
+    "web": {
+      "source_group": "web_content",
+      "generation": "web-3846db0768951df2fc4cc8b48b2d06cd",
+      "entity": "articles",
+      "result": "verified_winner",
+      "observed_occurrences": 1,
+      "receipt_sha256": "d8a65a31c89d9ba52a8d85f000318b6215bb603d89ff45892886f5e5c793f5af",
+      "bronze_object_sha256": "62a8a8fd8eca1f1849c263f6b6f25da124538c400a2c7f3dc399e00a160733f2",
+      "bronze_record_sha256": "a00a51db7c3e7e601cc92aa5f2f70bce707d04bef52e1ff842c101b5ef639710"
+    },
+    "simulation": {
+      "source_group": "simulation",
+      "generation": "simulation-e126035e3a1913afe65d117e72459ed9",
+      "entity": "reviews",
+      "result": "verified_winner",
+      "observed_occurrences": 1,
+      "receipt_sha256": "54d19705b4a7c07262d1de6b9cb086941d5bf9200d042acd5b7deb769400f321",
+      "bronze_object_sha256": "f603e690f170c06b16bd34d9a677c9afed711c2fa2846d5d61f0c222302202bd",
+      "bronze_record_sha256": "635940d6f2b8d36166b49274a56486a788fd0f2611e231577cac6b01c946fb81"
+    }
+  },
+  "dashboard_revision": "34884de",
+  "web_dashboard": {
+    "generation": "web-3846db0768951df2fc4cc8b48b2d06cd",
+    "silver_articles": 500,
+    "distinct_bronze_winners": 498,
+    "legacy_without_pinned_bronze": 2,
+    "missing_examples": [
+      {
+        "observed_at": "2026-11-12T09:46:43.743726+00:00"
+      },
+      {
+        "observed_at": "2026-11-12T09:46:45.504037+00:00"
+      }
+    ],
+    "dashboard_trace_confirmed": true,
+    "example_article_id": "article_75c88b4180ac7f07ef13867f"
+  },
+  "legacy_bronze_candidates": {
+    "object_sha256": "b0b165948c6afd3bc0f3394c29eb783d2554fd63e5dccc228e5161418ce175fe",
+    "exact_matches": 2,
+    "part_of_current_receipt": false
+  }
+}

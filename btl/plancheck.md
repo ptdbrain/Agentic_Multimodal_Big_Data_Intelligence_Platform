@@ -179,12 +179,12 @@ Mục tiêu: biết chính xác lỗi đang có trước khi thêm tính năng. 
   s3://lake/_checkpoints/{job}/
   ```
 - [x] **(P0)** Bronze: ghi theo batch lớn (target 64–256 MB/file hoặc theo giờ), định dạng Parquet hoặc JSON nén.
-- [x] **(P0)** Silver/Gold: chuyển sang Delta (hoặc Iceberg); bật schema evolution có kiểm soát.
+- [ ] **(P0)** Chuyển Silver/Gold sang Delta hoặc Iceberg và bật schema evolution có kiểm soát. Hệ thống đang phục vụ dùng Parquet với manifest. [Bằng chứng phiên bản và thử nghiệm Delta](docs/reports/project_completion_evening_2026-11-26.md)
 - [x] **(P0)** Bỏ fallback im lặng; storage layer có interface rõ (`put/get/list`) và lỗi rõ ràng.
 - [x] **(P1)** Job compaction định kỳ (OPTIMIZE/ZORDER hoặc coalesce) chống small files.
 - [x] **(P1)** Chính sách vòng đời: Bronze giữ N ngày, Silver/Gold lâu hơn.
 - [x] **(P1)** Data dictionary cho từng bảng ở `docs/data_dictionary.md` (cột, kiểu, nullable, nguồn gốc, quy tắc).
-- [ ] **(P2)** Data lineage đơn giản (bảng nào sinh từ bảng nào) — có thể dùng sơ đồ trong docs hoặc OpenLineage.
+- [x] **(P2)** Truy vết bản ghi và số liệu tổng hợp qua biên nhận, Bronze, Silver và Gold. [Kiểm tra trên kho đang phục vụ](docs/reports/lineage_live_2026-11-26.json)
 
 ### WS4 — Xử lý Spark (Batch + Streaming)
 **Batch ETL (Bronze → Silver)**

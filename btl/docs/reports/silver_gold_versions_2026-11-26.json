@@ -1,0 +1,303 @@
+{
+  "verified_at": "2026-11-26T12:20:23.705549+00:00",
+  "datasets": {
+    "tiki": [
+      {
+        "generation": "tiki-9295b2a2f494765d5742651e67ec380b",
+        "receipt_sha256": "eae2c0fe95c7c99eac006ab92168f7f1efb021c7b93232c73851d138be9d13f5",
+        "active_at_verification": true,
+        "run_id": "tiki-9295b2a2f494765d5742651e67ec380b",
+        "snapshots": {
+          "silver": {
+            "prices": {
+              "rows": 282,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {
+                "VND": 282
+              }
+            },
+            "products": {
+              "rows": 20,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {
+                "VND": 20
+              }
+            },
+            "reviews": {
+              "rows": 263,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {}
+            }
+          },
+          "gold": {
+            "brand_daily_stats": {
+              "rows": 209,
+              "objects": 1,
+              "last_day": "2026-11-23",
+              "currency_counts": {
+                "VND": 209
+              }
+            },
+            "category_daily_stats": {
+              "rows": 208,
+              "objects": 1,
+              "last_day": "2026-11-23",
+              "currency_counts": {
+                "VND": 208
+              }
+            },
+            "price_daily_stats": {
+              "rows": 282,
+              "objects": 1,
+              "last_day": "2026-11-26",
+              "currency_counts": {
+                "VND": 282
+              }
+            },
+            "product_daily_stats": {
+              "rows": 221,
+              "objects": 1,
+              "last_day": "2026-11-23",
+              "currency_counts": {
+                "VND": 221
+              }
+            }
+          }
+        }
+      },
+      {
+        "generation": "tiki-33aa9875762c0933159b99be339e31b3",
+        "receipt_sha256": "6963f87693ba31ffc656801a4a97307cd71ecab34e28c876aa03fa0049a2d2bc",
+        "active_at_verification": false,
+        "run_id": "tiki-33aa9875762c0933159b99be339e31b3",
+        "snapshots": {
+          "silver": {
+            "prices": {
+              "rows": 262,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {
+                "VND": 262
+              }
+            },
+            "products": {
+              "rows": 20,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {
+                "VND": 20
+              }
+            },
+            "reviews": {
+              "rows": 263,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {}
+            }
+          },
+          "gold": {
+            "brand_daily_stats": {
+              "rows": 209,
+              "objects": 1,
+              "last_day": "2026-11-23",
+              "currency_counts": {
+                "VND": 209
+              }
+            },
+            "category_daily_stats": {
+              "rows": 208,
+              "objects": 1,
+              "last_day": "2026-11-23",
+              "currency_counts": {
+                "VND": 208
+              }
+            },
+            "price_daily_stats": {
+              "rows": 262,
+              "objects": 1,
+              "last_day": "2026-11-25",
+              "currency_counts": {
+                "VND": 262
+              }
+            },
+            "product_daily_stats": {
+              "rows": 221,
+              "objects": 1,
+              "last_day": "2026-11-23",
+              "currency_counts": {
+                "VND": 221
+              }
+            }
+          }
+        }
+      }
+    ],
+    "web": [
+      {
+        "generation": "web-3846db0768951df2fc4cc8b48b2d06cd",
+        "receipt_sha256": "d8a65a31c89d9ba52a8d85f000318b6215bb603d89ff45892886f5e5c793f5af",
+        "active_at_verification": true,
+        "run_id": "web-3846db0768951df2fc4cc8b48b2d06cd",
+        "snapshots": {
+          "silver": {
+            "articles": {
+              "rows": 500,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {}
+            }
+          },
+          "gold": {
+            "article_daily_stats": {
+              "rows": 174,
+              "objects": 1,
+              "last_day": "2026-11-17",
+              "currency_counts": {}
+            }
+          }
+        }
+      },
+      {
+        "generation": "web-ba7222c6b7ab309117ed4f9bdadf965b",
+        "receipt_sha256": "83b8efeb3d37c19a95814765db6bb754fb155776a9273a43264fa494541d83f2",
+        "active_at_verification": false,
+        "run_id": "web-ba7222c6b7ab309117ed4f9bdadf965b",
+        "snapshots": {
+          "silver": {
+            "articles": {
+              "rows": 481,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {}
+            }
+          },
+          "gold": {
+            "article_daily_stats": {
+              "rows": 167,
+              "objects": 1,
+              "last_day": "2026-11-17",
+              "currency_counts": {}
+            }
+          }
+        }
+      }
+    ],
+    "simulation": [
+      {
+        "generation": "simulation-e126035e3a1913afe65d117e72459ed9",
+        "receipt_sha256": "54d19705b4a7c07262d1de6b9cb086941d5bf9200d042acd5b7deb769400f321",
+        "active_at_verification": true,
+        "run_id": "simulation-e126035e3a1913afe65d117e72459ed9",
+        "snapshots": {
+          "silver": {
+            "products": {
+              "rows": 10,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {
+                "VND": 10
+              }
+            },
+            "reviews": {
+              "rows": 160,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {}
+            }
+          },
+          "gold": {
+            "brand_daily_stats": {
+              "rows": 76,
+              "objects": 1,
+              "last_day": "2026-09-23",
+              "currency_counts": {
+                "VND": 76
+              }
+            },
+            "category_daily_stats": {
+              "rows": 48,
+              "objects": 1,
+              "last_day": "2026-09-23",
+              "currency_counts": {
+                "VND": 48
+              }
+            },
+            "price_daily_stats": {
+              "rows": 0,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {}
+            },
+            "product_daily_stats": {
+              "rows": 90,
+              "objects": 1,
+              "last_day": "2026-09-23",
+              "currency_counts": {
+                "VND": 90
+              }
+            }
+          }
+        }
+      },
+      {
+        "generation": "simulation-a737cc745d4409313ff8ee627d431d9c",
+        "receipt_sha256": "b40dafc82cea97388effaa51aea4f2f48fb4bcb7fe7011b9535615c96d19eca1",
+        "active_at_verification": false,
+        "run_id": "simulation-a737cc745d4409313ff8ee627d431d9c",
+        "snapshots": {
+          "silver": {
+            "products": {
+              "rows": 10,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {
+                "VND": 10
+              }
+            },
+            "reviews": {
+              "rows": 160,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {}
+            }
+          },
+          "gold": {
+            "brand_daily_stats": {
+              "rows": 76,
+              "objects": 1,
+              "last_day": "2026-09-23",
+              "currency_counts": {
+                "VND": 76
+              }
+            },
+            "category_daily_stats": {
+              "rows": 48,
+              "objects": 1,
+              "last_day": "2026-09-23",
+              "currency_counts": {
+                "VND": 48
+              }
+            },
+            "price_daily_stats": {
+              "rows": 0,
+              "objects": 1,
+              "last_day": null,
+              "currency_counts": {}
+            },
+            "product_daily_stats": {
+              "rows": 90,
+              "objects": 1,
+              "last_day": "2026-09-23",
+              "currency_counts": {
+                "VND": 90
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}
