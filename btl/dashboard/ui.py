@@ -14,6 +14,10 @@ SCOPES = {
     "all": "Tất cả · Chẩn đoán",
 }
 TABLE_LABELS = {
+    "invoice_day": "Ngày trên hóa đơn",
+    "transaction_lines": "Dòng giao dịch",
+    "cancellations": "Dòng có mã hủy",
+    "line_amount": "Giá trị dòng có dấu",
     "product_id": "Mã sản phẩm",
     "product_name": "Sản phẩm",
     "brand": "Thương hiệu",

@@ -87,6 +87,13 @@ def page_groups():
                         url_path="articles",
                     ),
                 ),
+                (
+                    "retail-history",
+                    st.Page(
+                        str(ROOT / "pages/13_Retail_History.py"), title="Giao dịch lịch sử",
+                        icon=":material/receipt_long:", url_path="retail-history",
+                    ),
+                ),
             ],
         ),
         (

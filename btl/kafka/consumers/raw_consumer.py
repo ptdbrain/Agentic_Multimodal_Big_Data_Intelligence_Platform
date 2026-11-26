@@ -119,6 +119,9 @@ class RawConsumer:
     def _resolve_schema_name(self, topic: str) -> Optional[str]:
         """Maps Kafka topic to corresponding data contract JSON schema."""
         topic_lower = topic.lower()
+        retail_topic = settings.kafka.topic_events.lower() + ".retail"
+        if topic_lower == retail_topic or topic_lower.startswith(retail_topic + "."):
+            return "retail_transaction"
         configured = {
             name: getattr(settings.kafka, "topic_" + field).lower()
             for name, field in (("product", "products"), ("review", "reviews"),

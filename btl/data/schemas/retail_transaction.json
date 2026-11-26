@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Online Retail II transaction line",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "line_fingerprint", "source_sheet", "source_row", "invoice", "stock_code",
+    "description", "quantity", "invoice_local_time", "unit_price", "currency",
+    "country", "is_cancellation"
+  ],
+  "properties": {
+    "line_fingerprint": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "source_sheet": {"type": "string", "minLength": 1},
+    "source_row": {"type": "integer", "minimum": 2},
+    "invoice": {"type": "string", "minLength": 1},
+    "stock_code": {"type": "string", "minLength": 1},
+    "description": {"type": ["string", "null"]},
+    "quantity": {"type": "integer"},
+    "invoice_local_time": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?$"},
+    "unit_price": {"type": "string", "pattern": "^-?[0-9]+(\\.[0-9]{1,6})?$"},
+    "currency": {"const": "GBP"},
+    "country": {"type": ["string", "null"]},
+    "is_cancellation": {"type": "boolean"}
+  }
+}

@@ -30,7 +30,8 @@ class FileLoader:
             encodings = [encoding] if encoding else ["utf-8-sig", "cp1252", "latin1"]
             sep = delimiter if delimiter else ("\t" if ext == ".tsv" else None)
             identity_types = {name: 'string' for name in
-                              ('product_id', 'review_id', 'price_id', 'user_id', 'article_id', 'source_record_id')}
+                              ('product_id', 'review_id', 'price_id', 'user_id', 'article_id', 'source_record_id',
+                               'invoice', 'stock_code', 'line_fingerprint', 'unit_price')}
             for index, enc in enumerate(encodings):
                 try:
                     df = pd.read_csv(p, encoding=enc, sep=sep, dtype=identity_types,
