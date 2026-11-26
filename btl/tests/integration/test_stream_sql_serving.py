@@ -29,7 +29,8 @@ def cleanup_owned_test_scope(control, schema, topic):
             control.close()
 
 
-def test_actual_kafka_parquet_sql_progress_and_replay(tmp_path, spark_session):
+@pytest.mark.parametrize("window_minutes", [1, 5], ids=["tumbling", "sliding"])
+def test_actual_kafka_parquet_sql_progress_and_replay(tmp_path, spark_session, window_minutes):
     import psycopg2, json
     from config.settings import settings
     from serving.registry import DatasetRef
@@ -62,7 +63,10 @@ def test_actual_kafka_parquet_sql_progress_and_replay(tmp_path, spark_session):
     store = ServingStore(conn, binding.id, binding.source_group)
     with conn:
         store.initialize()
-    store.register_stream("g", {"window_seconds": 60, "watermark_seconds": 600})
+    config = {"window_seconds": window_minutes * 60, "watermark_seconds": 600}
+    if window_minutes == 5:
+        config["slide_seconds"] = 60
+    store.register_stream("g", config)
     topic = "sentinel-nonai-stream-" + uuid.uuid4().hex
     producer = StreamProducer()
     try:
@@ -93,24 +97,32 @@ def test_actual_kafka_parquet_sql_progress_and_replay(tmp_path, spark_session):
         quarantine_path=str(tmp_path / "quarantine"),
         serving_binding=binding,
         serving_generation="g",
+        serving_window_seconds=window_minutes * 60,
     )
     try:
-        job.start_review_stream(topics=topic, trigger_available_now=True)
+        job.start_review_stream(
+            topics=topic, trigger_available_now=True, window_duration=f"{window_minutes} minutes",
+            slide_duration="1 minute" if window_minutes == 5 else None,
+        )
         job.await_termination()
         job.observe_progress()
         job.stop()
-        assert spark_session.read.parquet(str(tmp_path / "metrics")).count() == 1
+        assert spark_session.read.parquet(str(tmp_path / "metrics")).count() == window_minutes
         assert spark_session.read.parquet(str(tmp_path / "quarantine")).count() == 1
-        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (1, 2)
+        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (
+            window_minutes, 2 * window_minutes,
+        )
         progress = store.execute("SELECT heartbeat_at,last_batch FROM stream_deployments").fetchone()
         assert progress[0] is not None and progress[1] >= 0
-        assert store.execute("SELECT COUNT(*) FROM serving_alerts").fetchone()[0] == 2
+        assert store.execute("SELECT COUNT(*) FROM serving_alerts").fetchone()[0] == 2 * window_minutes
         assert store.execute("SELECT COUNT(*) FROM serving_alerts WHERE state='firing'").fetchone()[0] == 0
         conn.commit()
         job.restart(trigger_available_now=True)
         job.await_termination()
         job.stop()
-        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (1, 2)
+        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (
+            window_minutes, 2 * window_minutes,
+        )
 
         def publish_more(rows):
             producer = StreamProducer()
@@ -146,7 +158,9 @@ def test_actual_kafka_parquet_sql_progress_and_replay(tmp_path, spark_session):
         # replaying an already seen review_id must not increase it.
         conn.commit()
         publish_more([("r3", 3, "2026-11-13T10:00:00Z"), ("r1", 5, "2026-11-13T10:00:00Z")])
-        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (1, 3), json.dumps({
+        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (
+            window_minutes, 3 * window_minutes,
+        ), json.dumps({
             "deployment": store.execute("SELECT last_batch FROM stream_deployments").fetchall(),
             "pending": store.execute("SELECT batch_id,review_count FROM stream_pending_windows").fetchall(),
             "queries": [{key: (q.lastProgress or {}).get(key) for key in ("batchId", "sources")}
@@ -154,14 +168,18 @@ def test_actual_kafka_parquet_sql_progress_and_replay(tmp_path, spark_session):
         })
         conn.commit()
         publish_more([("future-frontier", 4, "2026-11-13T10:20:00Z")])
-        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (2, 4)
+        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (
+            2 * window_minutes, 4 * window_minutes,
+        )
         from serving.store import instant
 
         watermark = store.execute("SELECT watermark FROM stream_deployments").fetchone()[0]
         assert instant(watermark) >= instant("2026-11-13T10:10:00Z")
         conn.commit()
         progresses = publish_more([("too-late", 1, "2026-11-13T10:00:00Z")])
-        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (2, 4)
+        assert store.execute("SELECT COUNT(*),SUM(review_count) FROM stream_windows").fetchone() == (
+            2 * window_minutes, 4 * window_minutes,
+        )
         assert any(
             operator.get("numRowsDroppedByWatermark", 0) >= 1
             for progress in progresses
